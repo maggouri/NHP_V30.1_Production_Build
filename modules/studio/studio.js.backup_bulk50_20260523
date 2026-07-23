@@ -1,0 +1,4326 @@
+﻿/**
+ * Studio Module for Niche Hunter Pro
+ * Modularized version of the Studio Pipeline
+ */
+
+let STUDIO = {
+    step1Files: [], step1Results: [],
+    step2Files: [], step2Results: [],
+    step3Files: [],
+    currentStep: 1,
+    isProcessingPeel: false,
+    isProcessingTeemaster: false,
+    isProcessingRenamer: false,
+    isAutoPipelineRunning: false,
+    get grid1() { return document.getElementById('studio-grid-1'); },
+    get grid2() { return document.getElementById('tm-queue-grid'); },
+    get fileList3() { return document.getElementById('studio-file-list-3'); },
+    get peelProcessBtn() { return document.getElementById('studio-peel-process-btn'); },
+    get peelDownloadBtn() { return document.getElementById('studio-peel-download-btn'); },
+    get toStep2Btn() { return document.getElementById('studio-to-step2-btn'); },
+    get teemasterProcessBtn() { return document.getElementById('tm-start-btn'); },
+    get teemasterDownloadBtn() { return document.getElementById('studio-teemaster-download-btn'); },
+    get toStep3Btn() { return document.getElementById('studio-to-step3-btn'); },
+    get toSeoBtn() { return document.getElementById('studio-to-seo-btn'); },
+    get seoClearFirstToggle() { return document.getElementById('studio-seo-clear-first'); },
+    get bulkNameInput() { return document.getElementById('studio-bulk-name'); },
+    get geminiKey() { return document.getElementById('tm-gemini-key')?.value; },
+    get useAi() { return document.getElementById('tm-use-ai-bg')?.checked; },
+    get useManual() { return document.getElementById('tm-use-manual-bg')?.checked; },
+    get tolerance() { return parseInt(document.getElementById('tm-tolerance')?.value) || 30; },
+    get manualColorHex() { return document.getElementById('tm-manual-color')?.value; },
+
+    repo: {
+        grid: document.getElementById('repo-items-grid'),
+        count: document.getElementById('repo-count-status'),
+        qty: document.getElementById('repo-transfer-qty'),
+        items: []
+    }
+};
+
+// References to global functions/objects passed during init
+let showToast, switchTab, getWorkspaceHandle, getDesignQueue, setDesignQueue, saveQueueToStorage, renderQueue, showDesignPreview;
+const STUDIO_AUTO_PIPELINE_SETTINGS_KEY = 'studioAutoPipelineSettings';
+const STUDIO_AUTO_PIPELINE_DEFAULTS = {
+    enabled: false,
+    detectFour: true,
+    useAiCrop: true,
+    removeOriginal: true,
+    pauseAfterCrop: true,
+    autoBgRemove: true,
+    suggestNiche: true,
+    autoSendToSeo: false
+};
+const STUDIO_TEEMASTER_PROOFREADER_URL = 'https://gemini.google.com/gem/72a0fd652c4a';
+const STUDIO_CHATGPT_HUB_URL = 'https://chatgpt.com/g/g-69db6eabc5e48191844d04a90423616c-artisan-teepublic';
+const STUDIO_GOOGLE_AI_RENAME_URL = 'https://www.google.com/search?udm=50';
+const STUDIO_TEEMASTER_PROOFREADER_CAPTURE_KEY = 'studio_teemaster_proofreader_capture';
+const STUDIO_TEEMASTER_PROOFREADER_CAPTURE_TTL = 30 * 60 * 1000;
+const STUDIO_TEEMASTER_PROOFREADER_WINDOWS_KEY = 'studioTeemasterProofreaderWindowsEnabled';
+const STUDIO_GEMINI_HUB_WINDOWS_KEY = 'studioGeminiHubWindowsEnabled';
+const isLowSpecModeEnabled = () => !!window.NHP_IS_LIGHT_MODE || !!window.NHP_LOW_SPEC_MODE;
+let studioMasterTopGateInitialized = false;
+let studioEventListenersBound = false;
+let studioModuleInitialized = false;
+let studioPanelBootstrapped = false;
+const STUDIO_GRID_MAX_BY_MODE = { performance: 80, balanced: 48, lite: 24, ultra: 16 };
+const STUDIO_REPO_MAX_BY_MODE = { performance: 60, balanced: 36, lite: 20, ultra: 12 };
+
+function isStudioPanelActive() {
+    return !!document.getElementById('panel-studio')?.classList.contains('active');
+}
+
+function getStudioGridMax() {
+    const mode = window.NHP_PERFORMANCE_MODE || 'balanced';
+    return STUDIO_GRID_MAX_BY_MODE[mode] || STUDIO_GRID_MAX_BY_MODE.balanced;
+}
+
+function getStudioRepoMax() {
+    const mode = window.NHP_PERFORMANCE_MODE || 'balanced';
+    return STUDIO_REPO_MAX_BY_MODE[mode] || STUDIO_REPO_MAX_BY_MODE.balanced;
+}
+
+function buildStudioFilesFingerprint(filesArr) {
+    if (!Array.isArray(filesArr) || filesArr.length === 0) return 'empty';
+    const slice = filesArr.slice(0, 24);
+    const sig = slice.map((f, i) => {
+        const metaState = [
+            f.meta?.suggested_niche || '',
+            f.meta?.google_ai_rename_status || '',
+            f.meta?.google_ai_filename || ''
+        ].join(',');
+        return `${i}:${f.name}:${f.customName || ''}:${f.status || ''}:${f.selected ? 1 : 0}:${metaState}`;
+    }).join('|');
+    return `${filesArr.length}|${sig}`;
+}
+
+function studioYieldToUi() {
+    return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+function bootstrapStudioPanel() {
+    chrome.storage.local.get(['studio_buffered_images'], (res) => {
+        if (res.studio_buffered_images && res.studio_buffered_images.length > 0) {
+            res.studio_buffered_images.forEach((img) => studioProcessCapturedImage(img));
+            chrome.storage.local.remove('studio_buffered_images');
+        }
+    });
+
+    if (getWorkspaceHandle()) {
+        studioRefreshRepository();
+    }
+
+    initTeeMasterEngine();
+
+    setTimeout(() => {
+        setupNicheImportForRepository();
+    }, isLowSpecModeEnabled() ? 1200 : 800);
+}
+
+export function activateStudioPanel() {
+    if (!document.getElementById('panel-studio')) return;
+    if (!studioPanelBootstrapped) {
+        studioPanelBootstrapped = true;
+        bootstrapStudioPanel();
+        return;
+    }
+    if (STUDIO.grid1) {
+        STUDIO.grid1._renderFp = '';
+        const removeFn = (idx) => {
+            STUDIO.step1Files.splice(idx, 1);
+            studioRenderGrid(STUDIO.grid1, STUDIO.step1Files, removeFn);
+            studioUpdateStep1UI();
+            studioUpdateCounts();
+        };
+        studioRenderGrid(STUDIO.grid1, STUDIO.step1Files, removeFn);
+    }
+    if (STUDIO.step3Files.length > 0) {
+        STUDIO.fileList3 && (STUDIO.fileList3._renderFp = '');
+        studioRenderFileList3();
+    }
+    if (getWorkspaceHandle()) studioRefreshRepository();
+}
+
+/**
+ * Initialize Studio Module
+ */
+export function initStudioModule(helpers) {
+    if (studioModuleInitialized) return;
+    studioModuleInitialized = true;
+
+    showToast = helpers.showToast;
+    switchTab = helpers.switchTab;
+    getWorkspaceHandle = helpers.getWorkspaceHandle;
+    getDesignQueue = helpers.getDesignQueue;
+    setDesignQueue = helpers.setDesignQueue;
+    saveQueueToStorage = helpers.saveQueueToStorage;
+    renderQueue = helpers.renderQueue;
+    showDesignPreview = helpers.showDesignPreview;
+
+    console.log('🎨 Studio Module: Initializing...');
+    document.getElementById('panel-studio')?.classList.add('tm-studio-compact');
+
+    setupEventListeners();
+    setupAutoPipelineControls();
+    studioInitMasterTopGateLayout();
+    studioActivateStep(1);
+
+    window.NHP_activateStudioPanel = activateStudioPanel;
+}
+
+function studioSetPeelGateVisibility(isOpen) {
+    // Hover-only gate: keep function for backward compatibility with existing calls.
+    void isOpen;
+}
+
+function studioInitMasterTopGateLayout() {
+    if (studioMasterTopGateInitialized) return;
+    const panel = document.getElementById('panel-studio');
+    const masterGate = document.getElementById('master-top-gate');
+    const section1 = document.getElementById('studio-section-1');
+    const section3 = document.getElementById('studio-section-3');
+    if (!panel || !masterGate || !section1 || !section3) return;
+
+    studioMasterTopGateInitialized = true;
+    panel.classList.add('studio-gate-mode');
+
+    if (!masterGate.contains(section1)) {
+        masterGate.appendChild(section1);
+    }
+
+    let middleColumn = document.getElementById('studio-master-gate-middle');
+    if (!middleColumn) {
+        middleColumn = document.createElement('div');
+        middleColumn.id = 'studio-master-gate-middle';
+        middleColumn.className = 'studio-panel-section';
+    }
+    if (!masterGate.contains(middleColumn)) {
+        masterGate.appendChild(middleColumn);
+    }
+
+    const uploadInline = document.querySelector('#studio-section-2 .tm-upload-inline');
+    if (uploadInline && !middleColumn.contains(uploadInline)) {
+        middleColumn.appendChild(uploadInline);
+    }
+
+    const queueSection = document.getElementById('tm-queue-section');
+    if (queueSection) {
+        if (!middleColumn.contains(queueSection)) {
+            middleColumn.appendChild(queueSection);
+        }
+        queueSection.style.display = 'block';
+    }
+
+    if (!masterGate.contains(section3)) {
+        masterGate.appendChild(section3);
+    }
+}
+
+/**
+ * Event Listener Setup
+ */
+function setupEventListeners() {
+    if (studioEventListenersBound) return;
+    studioEventListenersBound = true;
+
+    // Nav Buttons
+    const nav1 = document.getElementById('studio-nav-step1');
+    const nav2 = document.getElementById('studio-nav-step2');
+    const nav3 = document.getElementById('studio-nav-step3');
+
+    if (nav1) nav1.addEventListener('click', () => studioGoToStep(1));
+    if (nav2) nav2.addEventListener('click', () => studioGoToStep(2));
+    if (nav3) nav3.addEventListener('click', () => studioGoToStep(3));
+
+    // Upload Zones
+    studioSetupDragDrop('studio-upload-zone-1', 'studio-file-input-1', (files) => studioHandleFiles1(files));
+    studioSetupDragDrop('studio-upload-zone-2', 'studio-file-input-2', (files) => studioHandleTeemasterSilentUpload(files));
+    studioSetupDragDrop('studio-upload-zone-3', 'studio-file-input-3', (files) => studioHandleFiles3(files));
+
+    document.getElementById('studio-upload-btn-1')?.addEventListener('click', () => document.getElementById('studio-file-input-1').click());
+    document.getElementById('studio-upload-btn-2')?.addEventListener('click', () => document.getElementById('studio-file-input-2').click());
+    document.getElementById('studio-upload-btn-3')?.addEventListener('click', () => document.getElementById('studio-file-input-3').click());
+
+    document.getElementById('studio-file-input-1')?.addEventListener('change', (e) => studioHandleFiles1(e.target.files));
+    document.getElementById('studio-file-input-2')?.addEventListener('change', (e) => studioHandleTeemasterSilentUpload(e.target.files));
+    document.getElementById('studio-file-input-3')?.addEventListener('change', (e) => studioHandleFiles3(e.target.files));
+
+    // Process & Action Buttons
+    document.getElementById('studio-peel-process-btn')?.addEventListener('click', studioPeelBananaProcess);
+    document.getElementById('studio-peel-download-btn')?.addEventListener('click', studioPeelDownloadAll);
+    document.getElementById('studio-to-step2-btn')?.addEventListener('click', () => studioGoToStep(2));
+
+    document.getElementById('studio-to-step3-btn')?.addEventListener('click', () => studioGoToStep(3));
+    document.getElementById('studio-teemaster-download-btn')?.addEventListener('click', studioTeemasterBulkDownload);
+
+    document.getElementById('studio-apply-bulk-name')?.addEventListener('click', studioApplyBulkName);
+    document.getElementById('studio-google-ai-rename-btn')?.addEventListener('click', studioGoogleAiAutoRenameSelected);
+    document.getElementById('studio-download-final-btn')?.addEventListener('click', studioDownloadFinal);
+    document.getElementById('studio-download-selected-btn')?.addEventListener('click', studioDownloadSelected);
+    document.getElementById('studio-save-repo-btn')?.addEventListener('click', studioCommitToRepo);
+    document.getElementById('studio-reset-pipeline-btn')?.addEventListener('click', studioResetPipeline);
+
+
+    document.getElementById('studio-to-seo-btn')?.addEventListener('click', () => studioSendToDestination('seo'));
+    document.getElementById('studio-to-aut-btn')?.addEventListener('click', () => studioSendToDestination('aut'));
+    document.getElementById('studio-to-both-btn')?.addEventListener('click', () => studioSendToDestination('both'));
+
+    // Repo List Checkboxes
+    const selectAll3 = document.getElementById('studio-select-all-3');
+    if (selectAll3) {
+        selectAll3.onchange = () => {
+            STUDIO.step3Files.forEach(f => f.selected = selectAll3.checked);
+            studioRenderFileList3();
+        };
+    }
+
+    const selectAllRepo = document.getElementById('repo-select-all');
+    if (selectAllRepo) {
+        selectAllRepo.onchange = () => {
+            const checks = STUDIO.repo.grid.querySelectorAll('.repo-item-check');
+            checks.forEach(cb => cb.checked = selectAllRepo.checked);
+        };
+    }
+
+    studioInitGeminiHubWindowToggle();
+
+    // Gemini Hub Trigger: sends the latest selected Studio image to the Gemini web bridge.
+    document.getElementById('btn-studio-gemini')?.addEventListener('click', async () => {
+        const openHub = await studioGetStoredBoolean(STUDIO_GEMINI_HUB_WINDOWS_KEY, true);
+        const active = studioGetActiveImageDataURL();
+        const hubUrl = 'https://gemini.google.com/gem/17JX6Wb5RhTO25MXBEEYdAJZ0agwbQ-Yg?usp=sharing';
+
+        if (!active) {
+            if (openHub) {
+                chrome.windows.create({
+                    url: hubUrl,
+                    type: 'popup',
+                    width: 900,
+                    height: 700
+                });
+            } else {
+                showToast('لا توجد صورة محدّدة — افتح Studio وارفع صورة أولًا');
+            }
+            return;
+        }
+
+        try {
+            const dataURL = active.dataURL;
+            const hasPrefix = typeof dataURL === 'string' && dataURL.startsWith('data:');
+            const mimeType = hasPrefix
+                ? (dataURL.match(/^data:([^;,]+)[;,]/i)?.[1] || 'image/png')
+                : 'image/png';
+            const cleanBase64 = hasPrefix ? (dataURL.split(',')[1] || '') : (dataURL || '');
+            console.log('[NHP-IMG] picked', active.name, mimeType, `${Math.round((cleanBase64.length * 0.75) / 1024)}KB`);
+            console.log('[NHP-IMG] base64 ready', cleanBase64.length, hasPrefix);
+
+            const prompt = 'حلّل هذه الصورة لاقتراح تحسينات Studio (وصف بصري + كلمات مفتاحية + ملاحظات تصميم).';
+            console.log('[NHP-IMG] sending', {
+                host: 'gemini.google.com',
+                hasInlineData: !!cleanBase64,
+                mimeType,
+                base64Length: cleanBase64.length
+            });
+
+            const response = await chrome.runtime.sendMessage({
+                action: 'SEND_AI_IMAGE_TO_TARGET',
+                dataUrl: dataURL,
+                nicheName: active.name || 'Studio design',
+                targetUrl: hubUrl,
+                promptText: prompt
+            });
+            console.log('[NHP-IMG] response', response?.success ?? 'unknown');
+
+            if (!response || response.success === false) {
+                console.warn('[NHP-IMG] error body', response?.error || 'no response');
+                showToast('فشل إرسال الصورة إلى Gemini');
+            } else {
+                showToast('تم إرسال الصورة إلى Gemini');
+            }
+        } catch (err) {
+            console.warn('[NHP-IMG] error', err?.message, err?.stack?.split('\n')[0]);
+            showToast('خطأ أثناء إرسال الصورة');
+        }
+    });
+
+    document.getElementById('btn-studio-chatgpt')?.addEventListener('click', async () => {
+        const openHub = await studioGetStoredBoolean(STUDIO_GEMINI_HUB_WINDOWS_KEY, true);
+        const active = studioGetActiveImageDataURL();
+        const hubUrl = STUDIO_CHATGPT_HUB_URL;
+
+        if (!active) {
+            if (openHub) {
+                chrome.windows.create({
+                    url: hubUrl,
+                    type: 'popup',
+                    width: 900,
+                    height: 700
+                });
+            } else {
+                showToast('لا توجد صورة محدّدة — افتح Studio وارفع صورة أولًا');
+            }
+            return;
+        }
+
+        try {
+            const dataURL = active.dataURL;
+            const hasPrefix = typeof dataURL === 'string' && dataURL.startsWith('data:');
+            const mimeType = hasPrefix
+                ? (dataURL.match(/^data:([^;,]+)[;,]/i)?.[1] || 'image/png')
+                : 'image/png';
+            const cleanBase64 = hasPrefix ? (dataURL.split(',')[1] || '') : (dataURL || '');
+            const prompt = 'حلّل هذه الصورة لاقتراح تحسينات Studio (وصف بصري + كلمات مفتاحية + ملاحظات تصميم).';
+
+            console.log('[NHP-IMG][GPT] sending', {
+                host: 'chatgpt.com',
+                hasInlineData: !!cleanBase64,
+                mimeType,
+                base64Length: cleanBase64.length
+            });
+
+            const response = await chrome.runtime.sendMessage({
+                action: 'SEND_AI_IMAGE_TO_TARGET',
+                dataUrl: dataURL,
+                nicheName: active.name || 'Studio design',
+                targetUrl: hubUrl,
+                promptText: prompt
+            });
+
+            if (!response || response.success === false) {
+                console.warn('[NHP-IMG][GPT] error body', response?.error || 'no response');
+                showToast('فشل إرسال الصورة إلى ChatGPT');
+            } else {
+                showToast('تم إرسال الصورة إلى ChatGPT');
+            }
+        } catch (err) {
+            console.warn('[NHP-IMG][GPT] error', err?.message, err?.stack?.split('\n')[0]);
+            showToast('خطأ أثناء إرسال الصورة');
+        }
+    });
+
+    /* Repository toolbar: optional DOM — studio-repo block may be absent from studio.html; handlers no-op safely */
+    // Repository Persistent Buttons
+    document.getElementById('repo-send-to-seo')?.addEventListener('click', () => studioTransferFromRepo('seo'));
+    document.getElementById('repo-send-to-aut')?.addEventListener('click', () => studioTransferFromRepo('aut'));
+    document.getElementById('repo-delete-from-repo')?.addEventListener('click', studioDeleteSelectedFromRepo);
+
+    // Initial Refresh
+    studioUpdateCounts();
+}
+
+function studioGetAutoPipelineElements() {
+    return {
+        enabled: document.getElementById('studio-auto-enable'),
+        detectFour: document.getElementById('studio-auto-detect-four'),
+        useAiCrop: document.getElementById('studio-auto-ai-crop'),
+        removeOriginal: document.getElementById('studio-auto-remove-original'),
+        pauseAfterCrop: document.getElementById('studio-auto-pause-after-crop'),
+        autoBgRemove: document.getElementById('studio-auto-bg-remove'),
+        suggestNiche: document.getElementById('studio-auto-suggest-niche'),
+        autoSendToSeo: document.getElementById('studio-auto-send-seo'),
+        status: document.getElementById('studio-auto-status')
+    };
+}
+
+function studioGetAutoPipelineSettingsFromUI() {
+    const els = studioGetAutoPipelineElements();
+    return {
+        enabled: Boolean(els.enabled?.checked),
+        detectFour: els.detectFour ? els.detectFour.checked !== false : true,
+        useAiCrop: els.useAiCrop ? els.useAiCrop.checked !== false : true,
+        removeOriginal: els.removeOriginal ? els.removeOriginal.checked !== false : true,
+        pauseAfterCrop: els.pauseAfterCrop ? els.pauseAfterCrop.checked !== false : true,
+        autoBgRemove: els.autoBgRemove ? els.autoBgRemove.checked !== false : true,
+        suggestNiche: els.suggestNiche ? els.suggestNiche.checked !== false : true,
+        autoSendToSeo: Boolean(els.autoSendToSeo?.checked)
+    };
+}
+
+function studioApplyAutoPipelineSettingsToUI(settings = {}) {
+    const normalized = { ...STUDIO_AUTO_PIPELINE_DEFAULTS, ...(settings || {}) };
+    const els = studioGetAutoPipelineElements();
+    if (els.enabled) els.enabled.checked = Boolean(normalized.enabled);
+    if (els.detectFour) els.detectFour.checked = normalized.detectFour !== false;
+    if (els.useAiCrop) els.useAiCrop.checked = normalized.useAiCrop !== false;
+    if (els.removeOriginal) els.removeOriginal.checked = normalized.removeOriginal !== false;
+    if (els.pauseAfterCrop) els.pauseAfterCrop.checked = normalized.pauseAfterCrop !== false;
+    if (els.autoBgRemove) els.autoBgRemove.checked = normalized.autoBgRemove !== false;
+    if (els.suggestNiche) els.suggestNiche.checked = normalized.suggestNiche !== false;
+    if (els.autoSendToSeo) els.autoSendToSeo.checked = Boolean(normalized.autoSendToSeo);
+    studioUpdateAutoPipelineStatus();
+}
+
+function studioUpdateAutoPipelineStatus(message = '') {
+    const els = studioGetAutoPipelineElements();
+    if (!els.status) return;
+    const settings = studioGetAutoPipelineSettingsFromUI();
+
+    if (message) {
+        els.status.textContent = message;
+        els.status.style.color = 'var(--text-muted)';
+        return;
+    }
+
+    if (!settings.enabled) {
+        els.status.textContent = 'الوضع اليدوي هو النشط حاليا.';
+        els.status.style.color = 'var(--text-muted)';
+        return;
+    }
+
+    const parts = [];
+    if (settings.detectFour) parts.push('اكتشاف 4');
+    if (settings.useAiCrop) parts.push('قص AI');
+    if (settings.removeOriginal) parts.push('حذف الأصل');
+    if (settings.pauseAfterCrop) parts.push('مراجعة يدوية بعد القص');
+    if (settings.autoBgRemove) parts.push('تنظيف الخلفية');
+    if (settings.suggestNiche) parts.push('اقتراح نيتش');
+    if (settings.autoSendToSeo) parts.push('إرسال إلى SEO');
+    els.status.textContent = `الوضع التلقائي جاهز: ${parts.join(' • ') || 'بدون خطوات فرعية إضافية'}`;
+    els.status.style.color = '#FBBF24';
+}
+
+async function studioPersistAutoPipelineSettings() {
+    const next = studioGetAutoPipelineSettingsFromUI();
+    await chrome.storage.local.set({ [STUDIO_AUTO_PIPELINE_SETTINGS_KEY]: next });
+    studioUpdateAutoPipelineStatus();
+    return next;
+}
+
+function setupAutoPipelineControls() {
+    const els = studioGetAutoPipelineElements();
+    if (!els.enabled) return;
+
+    chrome.storage.local.get([STUDIO_AUTO_PIPELINE_SETTINGS_KEY], (res) => {
+        studioApplyAutoPipelineSettingsToUI(res[STUDIO_AUTO_PIPELINE_SETTINGS_KEY] || STUDIO_AUTO_PIPELINE_DEFAULTS);
+    });
+
+    [els.enabled, els.detectFour, els.useAiCrop, els.removeOriginal, els.pauseAfterCrop, els.autoBgRemove, els.suggestNiche, els.autoSendToSeo]
+        .filter(Boolean)
+        .forEach((el) => {
+            el.addEventListener('change', () => {
+                studioPersistAutoPipelineSettings().catch(() => {
+                    studioUpdateAutoPipelineStatus('تعذر حفظ إعدادات الوضع التلقائي.');
+                });
+            });
+        });
+}
+
+// Global Message Listener for capturing images
+chrome.runtime.onMessage.addListener((msg) => {
+    if (msg.action === 'studio_add_image') {
+        studioProcessCapturedImage(msg.data);
+    }
+    
+    if (msg.action === 'GEMINI_PROGRESS') {
+        const wrap = document.getElementById('ai-studio-progress-wrap');
+        const text = document.getElementById('ai-studio-progress-text');
+        const percent = document.getElementById('ai-studio-progress-percent');
+        const fill = document.getElementById('ai-studio-progress-fill');
+
+        if (wrap && text && percent && fill) {
+            wrap.classList.remove('hidden');
+            text.innerText = msg.text || "Working...";
+            percent.innerText = `${msg.percent}%`;
+            fill.style.width = `${msg.percent}%`;
+            
+            // إذا اكتمل التحميل، نخفي الشريط بعد فترة قصيرة
+            if (msg.percent >= 100) {
+                showToast("✅ اكتمل توليد التصميم وجاري جلبه للطابور!");
+                setTimeout(() => {
+                    wrap.classList.add('hidden');
+                    fill.style.width = '0%';
+                }, 8000);
+            }
+        }
+    }
+});
+
+/**
+ * Capture Image from context menu/external source
+ */
+async function studioProcessCapturedImage(data) {
+    if (!data || !data.dataURL) return;
+    const item = { name: data.name || `captured_${Date.now()}.png`, dataURL: data.dataURL, status: '' };
+    const captureState = await chrome.storage.local.get(STUDIO_TEEMASTER_PROOFREADER_CAPTURE_KEY).catch(() => ({}));
+    const proofCapture = captureState?.[STUDIO_TEEMASTER_PROOFREADER_CAPTURE_KEY];
+    if (proofCapture && Number(proofCapture.activeUntil || 0) > Date.now()) {
+        item.name = `proofread_fixed_${item.name}`;
+        item.status = '🍌 عادت من Gemini، جاري إزالة العلامة...';
+        item.selectedForProof = false;
+        await studioTeemasterAddProofreadImageThroughPeel(item);
+        return;
+    }
+    STUDIO.step1Files.push(item);
+    const removeFn1 = (idx) => {
+        STUDIO.step1Files.splice(idx, 1);
+        studioRenderGrid(STUDIO.grid1, STUDIO.step1Files, removeFn1);
+        studioUpdateStep1UI(); studioUpdateCounts();
+    };
+    studioRenderGrid(STUDIO.grid1, STUDIO.step1Files, removeFn1);
+    studioUpdateStep1UI(); studioUpdateCounts();
+    showToast(`✨ تم التقاط تصميم من Gemini بنجاح!`);
+}
+
+async function studioTeemasterAddProofreadImageThroughPeel(item) {
+    if (!item || !item.dataURL) return;
+    try {
+        showToast('🍌 تم استقبال صورة مصححة من Gemini، جاري تمريرها عبر Peel Banana...');
+        const result = await chrome.runtime.sendMessage({ action: 'peel_banana', dataURL: item.dataURL });
+        const cleanDataURL = result?.success && result.dataURL ? result.dataURL : item.dataURL;
+        const finalItem = {
+            ...item,
+            dataURL: cleanDataURL,
+            thumbnail: await studioCreateThumbnail(cleanDataURL, isLowSpecModeEnabled() ? 120 : 160).catch(() => null),
+            status: result?.success ? '✅ مصححة ومنظفة من العلامة' : '⚠️ مصححة، أضيفت بدون تنظيف العلامة',
+            selectedForProof: false
+        };
+        STUDIO.step2Files.push(finalItem);
+        studioTeemasterRefreshQueue();
+        studioUpdateCounts();
+        showToast(result?.success
+            ? '✅ تم تنظيف الصورة المصححة وإضافتها لطابور TeeMaster'
+            : '⚠️ وصلت الصورة المصححة، لكن Peel Banana لم ينجح. تمت إضافتها للطابور كما هي.');
+    } catch (error) {
+        item.status = '⚠️ مصححة، أضيفت بدون تنظيف العلامة';
+        item.thumbnail = await studioCreateThumbnail(item.dataURL, isLowSpecModeEnabled() ? 120 : 160).catch(() => null);
+        STUDIO.step2Files.push(item);
+        studioTeemasterRefreshQueue();
+        studioUpdateCounts();
+        showToast(`⚠️ تعذر تنظيف الصورة المصححة: ${error.message || 'خطأ غير معروف'}`);
+    }
+}
+
+/**
+ * Navigation between pipeline steps
+ */
+function studioGoToStep(step) {
+    console.log(`🎨 Studio: Transitioning to Step ${step}`);
+
+    // Logic to move files between steps if empty
+    if (step === 2 && STUDIO.step2Files.length === 0) {
+        if (STUDIO.step1Results.length > 0) {
+            console.log('📦 Auto-transferring Step 1 results to Step 2');
+            STUDIO.step2Files = STUDIO.step1Results.map(r => ({ name: r.name, dataURL: r.dataURL, thumbnail: r.thumbnail || null, status: '' }));
+        } else if (STUDIO.step1Files.length > 0) {
+            console.log('📦 Auto-transferring Step 1 raw files to Step 2');
+            STUDIO.step2Files = STUDIO.step1Files.map(r => ({ name: r.name, dataURL: r.dataURL, thumbnail: r.thumbnail || null, status: '' }));
+        }
+        if (STUDIO.step2Files.length > 0 && typeof studioTeemasterRefreshQueue === 'function') {
+            studioTeemasterRefreshQueue();
+        }
+    }
+
+    if (step === 3 && STUDIO.step3Files.length === 0) {
+        if (STUDIO.step2Results.length > 0) {
+            STUDIO.step3Files = STUDIO.step2Results.map(r => ({ name: r.name, dataURL: r.dataURL, thumbnail: r.thumbnail || null, status: '', selected: true }));
+        } else if (STUDIO.step2Files.length > 0) {
+            STUDIO.step3Files = STUDIO.step2Files.map(r => ({ name: r.name, dataURL: r.dataURL, thumbnail: r.thumbnail || null, status: '', selected: true }));
+        }
+        if (STUDIO.step3Files.length > 0) studioRenderFileList3();
+    }
+
+    studioActivateStep(step);
+
+    let currentFiles = (step === 1) ? STUDIO.step1Files : (step === 2) ? STUDIO.step2Files : STUDIO.step3Files;
+    if (currentFiles.length === 0) {
+        const input = document.getElementById(`studio-file-input-${step}`);
+        if (input) {
+            console.log(`📂 Opening file picker for Step ${step}`);
+            input.click();
+        }
+    }
+}
+
+function studioActivateStep(step) {
+    STUDIO.currentStep = step;
+    const panel = document.getElementById('panel-studio');
+    const gateMode = true;
+    if (panel) {
+        panel.classList.toggle('studio-gate-mode', gateMode);
+    }
+    studioSetPeelGateVisibility(false);
+    for (let i = 1; i <= 3; i++) {
+        const sec = document.getElementById(`studio-section-${i}`);
+        if (sec) sec.classList.toggle('active', i === step);
+        const icon = document.getElementById(`studio-icon-step${i}`);
+        const label = document.getElementById(`studio-label-step${i}`);
+        if (icon) {
+            icon.classList.toggle('active', i === step);
+            let isDone = (i === 1 && STUDIO.step1Results.length > 0) ||
+                (i === 2 && STUDIO.step2Results.length > 0) ||
+                (i === 3 && STUDIO.step3Files.length > 0);
+            if (isDone) icon.classList.add('done');
+            else icon.classList.remove('done');
+        }
+        if (label) label.classList.toggle('active', i === step);
+    }
+}
+
+/**
+ * File Helpers
+ */
+function studioReadFileAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+            const dataUrl = e.target.result;
+            console.log('[NHP-IMG] base64 ready', String(dataUrl || '').length, String(dataUrl || '').startsWith('data:'));
+            resolve(dataUrl);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+function studioDataURLtoBlob(dataURL) {
+    const arr = dataURL.split(','), mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]); let n = bstr.length; const u8arr = new Uint8Array(n);
+    while (n--) u8arr[n] = bstr.charCodeAt(n);
+    return new Blob([u8arr], { type: mime });
+}
+
+function studioHexToRgb(hex = '#000000') {
+    const safe = String(hex || '#000000').replace('#', '').padEnd(6, '0').slice(0, 6);
+    return {
+        r: parseInt(safe.slice(0, 2), 16) || 0,
+        g: parseInt(safe.slice(2, 4), 16) || 0,
+        b: parseInt(safe.slice(4, 6), 16) || 0
+    };
+}
+
+function studioGetDisplayImageSrc(item) {
+    return item?.thumbnail || item?.dataURL || item?.url || '';
+}
+
+async function studioEnsureThumbnail(item, maxWidth = 160) {
+    if (!item || item.thumbnail || !item.dataURL) return item;
+    item.thumbnail = await studioCreateThumbnail(item.dataURL, maxWidth);
+    return item;
+}
+
+function studioClamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+}
+
+function studioSafeBaseName(name = 'design') {
+    return String(name || 'design')
+        .replace(/\.[^/.]+$/, '')
+        .replace(/[^a-zA-Z0-9_-]+/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_+|_+$/g, '') || `design_${Date.now()}`;
+}
+
+function studioSanitizeFilenameSegment(text = '') {
+    return String(text || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_+|_+$/g, '');
+}
+
+function studioColorDistanceSq(r, g, b, target) {
+    const dr = r - target.r;
+    const dg = g - target.g;
+    const db = b - target.b;
+    return (dr * dr) + (dg * dg) + (db * db);
+}
+
+async function studioLoadImageElement(dataURL) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = dataURL;
+    });
+}
+
+function studioSampleBackgroundColor(ctx, width, height) {
+    const samplePoints = [
+        [6, 6],
+        [Math.max(0, width - 7), 6],
+        [6, Math.max(0, height - 7)],
+        [Math.max(0, width - 7), Math.max(0, height - 7)],
+        [Math.floor(width * 0.5), 6],
+        [Math.floor(width * 0.5), Math.max(0, height - 7)]
+    ];
+
+    let sumR = 0, sumG = 0, sumB = 0, count = 0;
+    samplePoints.forEach(([x, y]) => {
+        const px = ctx.getImageData(studioClamp(x, 0, width - 1), studioClamp(y, 0, height - 1), 1, 1).data;
+        if (px[3] > 8) {
+            sumR += px[0];
+            sumG += px[1];
+            sumB += px[2];
+            count++;
+        }
+    });
+
+    if (!count) return { r: 0, g: 0, b: 0 };
+    return {
+        r: Math.round(sumR / count),
+        g: Math.round(sumG / count),
+        b: Math.round(sumB / count)
+    };
+}
+
+function studioFindContentBoundsInRegion(imageData, width, height, region, bgColor, tolerance = 30, options = {}) {
+    const { x0, y0, x1, y1 } = region;
+    const data = imageData.data;
+    const step = Math.max(1, Math.floor(Math.max(width, height) / 1400));
+    const thresholdSq = Math.pow(Math.max(18, tolerance + (options.thresholdBoost ?? 14)), 2);
+    const minPixelCount = Math.max(18, Math.round(options.minPixelCount ?? 140));
+    const minAreaRatio = Math.max(0.00008, Number(options.minAreaRatio ?? 0.0015));
+    let minX = x1, minY = y1, maxX = x0, maxY = y0, count = 0;
+
+    for (let y = y0; y < y1; y += step) {
+        for (let x = x0; x < x1; x += step) {
+            const idx = ((y * width) + x) * 4;
+            const alpha = data[idx + 3];
+            if (alpha <= 22) continue;
+            if (studioColorDistanceSq(data[idx], data[idx + 1], data[idx + 2], bgColor) <= thresholdSq) continue;
+            count++;
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+        }
+    }
+
+    const regionArea = Math.max(1, (x1 - x0) * (y1 - y0));
+    if (!count || count < Math.max(minPixelCount, Math.round(regionArea * minAreaRatio))) return null;
+
+    return {
+        minX,
+        minY,
+        maxX,
+        maxY,
+        width: (maxX - minX) + 1,
+        height: (maxY - minY) + 1,
+        pixelCount: count
+    };
+}
+
+function studioDetectRegionCandidate(ctx, imageData, region, bgColor, tolerance = 30) {
+    const attempts = [
+        { thresholdBoost: 14, minPixelCount: 140, minAreaRatio: 0.0015, paddingRatio: 0.055 },
+        { thresholdBoost: 10, minPixelCount: 90, minAreaRatio: 0.0010, paddingRatio: 0.045 },
+        { thresholdBoost: 6, minPixelCount: 56, minAreaRatio: 0.00055, paddingRatio: 0.035 },
+        { thresholdBoost: 2, minPixelCount: 32, minAreaRatio: 0.00022, paddingRatio: 0.025 }
+    ];
+
+    for (const attempt of attempts) {
+        const bounds = studioFindContentBoundsInRegion(
+            imageData,
+            ctx.canvas.width,
+            ctx.canvas.height,
+            region,
+            bgColor,
+            tolerance,
+            attempt
+        );
+        if (!bounds) continue;
+
+        const rect = studioNormalizeRectCropBox(bounds, ctx.canvas.width, ctx.canvas.height, attempt.paddingRatio);
+        if (!rect) continue;
+
+        const constrained = studioConstrainCropBoxToQuadrant({
+            ...rect,
+            slot: region.slot
+        }, region.slot, ctx.canvas.width, ctx.canvas.height);
+
+        const refined = studioRefineCropBoxUsingForeground(ctx, {
+            ...constrained,
+            slot: region.slot
+        }, bgColor, tolerance);
+
+        const finalized = studioFinalizeDetectedBox(
+            ctx,
+            refined.box || constrained,
+            bgColor,
+            tolerance,
+            refined.diagnostics || {},
+            {
+                allowUnsafeEdges: true,
+                minEdgeQuality: attempt.minAreaRatio <= 0.00022 ? 0.44 : 0.56
+            }
+        );
+
+        if (!finalized.accepted) continue;
+
+        return {
+            ...(finalized.box || refined.box || constrained),
+            slot: region.slot,
+            pixelCount: bounds.pixelCount,
+            confidence: studioClamp((finalized.confidence * 0.82) + 0.12, 0.28, 0.99),
+            edge_safe: Boolean(finalized.edgeSafe),
+            edge_quality: finalized.edgeQuality
+        };
+    }
+
+    const forcedBounds = studioFindContentBoundsInRegion(
+        imageData,
+        ctx.canvas.width,
+        ctx.canvas.height,
+        region,
+        bgColor,
+        Math.max(10, tolerance - 10),
+        {
+            thresholdBoost: -2,
+            minPixelCount: 12,
+            minAreaRatio: 0.00005
+        }
+    );
+    if (!forcedBounds) return null;
+
+    const forcedRect = studioNormalizeRectCropBox(forcedBounds, ctx.canvas.width, ctx.canvas.height, 0.015);
+    if (!forcedRect) return null;
+
+    const forcedConstrained = studioConstrainCropBoxToQuadrant({
+        ...forcedRect,
+        slot: region.slot
+    }, region.slot, ctx.canvas.width, ctx.canvas.height);
+
+    const forcedRefined = studioRefineCropBoxUsingForeground(ctx, {
+        ...forcedConstrained,
+        slot: region.slot
+    }, bgColor, Math.max(10, tolerance - 8));
+
+    const forcedBox = forcedRefined.box || forcedConstrained;
+    const forcedMetrics = studioMeasureEdgeForegroundRatio(ctx, forcedBox, bgColor, tolerance);
+    const forcedEdgeLeak = Math.max(forcedMetrics.top || 0, forcedMetrics.bottom || 0, forcedMetrics.left || 0, forcedMetrics.right || 0);
+    const forcedEdgeQuality = studioClamp(1 - (forcedEdgeLeak / 0.28), 0, 1);
+
+    return {
+        ...forcedBox,
+        slot: region.slot,
+        pixelCount: forcedBounds.pixelCount,
+        confidence: studioClamp((studioEvaluateCropQuality(forcedBox, forcedRefined.diagnostics || {}) * 0.55) + (forcedEdgeQuality * 0.15) + 0.08, 0.16, 0.55),
+        edge_safe: Boolean(studioHasCleanBlackEdges(forcedMetrics, 0.05)),
+        edge_quality: forcedEdgeQuality,
+        forced_candidate: true
+    };
+
+    return null;
+}
+
+function studioNormalizeRectCropBox(bounds, imageWidth, imageHeight, paddingRatio = 0.08) {
+    if (!bounds || bounds.width <= 0 || bounds.height <= 0) return null;
+    const padX = Math.max(10, Math.round(bounds.width * paddingRatio));
+    const padY = Math.max(10, Math.round(bounds.height * paddingRatio));
+    const x = studioClamp(bounds.minX - padX, 0, imageWidth - 1);
+    const y = studioClamp(bounds.minY - padY, 0, imageHeight - 1);
+    const right = studioClamp(bounds.maxX + padX, 0, imageWidth - 1);
+    const bottom = studioClamp(bounds.maxY + padY, 0, imageHeight - 1);
+    return {
+        x,
+        y,
+        width: Math.max(1, (right - x) + 1),
+        height: Math.max(1, (bottom - y) + 1)
+    };
+}
+
+function studioNormalizeSquareCropBox(bounds, imageWidth, imageHeight, paddingRatio = 0.12) {
+    if (!bounds || bounds.width <= 0 || bounds.height <= 0) return null;
+    let size = Math.max(bounds.width, bounds.height);
+    size += Math.max(14, Math.round(size * paddingRatio) * 2);
+    size = Math.min(size, imageWidth, imageHeight);
+
+    const centerX = bounds.minX + (bounds.width / 2);
+    const centerY = bounds.minY + (bounds.height / 2);
+
+    let x = Math.round(centerX - (size / 2));
+    let y = Math.round(centerY - (size / 2));
+    x = studioClamp(x, 0, Math.max(0, imageWidth - size));
+    y = studioClamp(y, 0, Math.max(0, imageHeight - size));
+
+    return {
+        x,
+        y,
+        size: Math.round(size)
+    };
+}
+
+function studioGetBoxWidth(box) {
+    return Math.max(1, Math.round(Number(box?.width || box?.size || 0) || 1));
+}
+
+function studioGetBoxHeight(box) {
+    return Math.max(1, Math.round(Number(box?.height || box?.size || 0) || 1));
+}
+
+function studioInferCropSlot(box, imageWidth, imageHeight) {
+    const label = String(box?.label || '').toLowerCase();
+    if (label.includes('top_left') || label.includes('upper_left')) return 0;
+    if (label.includes('top_right') || label.includes('upper_right')) return 1;
+    if (label.includes('bottom_left') || label.includes('lower_left')) return 2;
+    if (label.includes('bottom_right') || label.includes('lower_right')) return 3;
+
+    const width = studioGetBoxWidth(box);
+    const height = studioGetBoxHeight(box);
+    const centerX = (Number(box?.x) || 0) + (width / 2);
+    const centerY = (Number(box?.y) || 0) + (height / 2);
+    const isRight = centerX >= (imageWidth / 2);
+    const isBottom = centerY >= (imageHeight / 2);
+    if (!isBottom && !isRight) return 0;
+    if (!isBottom && isRight) return 1;
+    if (isBottom && !isRight) return 2;
+    return 3;
+}
+
+function studioGetQuadrantBounds(slot, imageWidth, imageHeight, bleedRatio = 0.07) {
+    const halfW = imageWidth / 2;
+    const halfH = imageHeight / 2;
+    const bleedX = Math.round(imageWidth * bleedRatio);
+    const bleedY = Math.round(imageHeight * bleedRatio);
+    const left = slot === 1 || slot === 3 ? Math.max(0, Math.floor(halfW - bleedX)) : 0;
+    const top = slot >= 2 ? Math.max(0, Math.floor(halfH - bleedY)) : 0;
+    const right = slot === 0 || slot === 2 ? Math.min(imageWidth, Math.ceil(halfW + bleedX)) : imageWidth;
+    const bottom = slot <= 1 ? Math.min(imageHeight, Math.ceil(halfH + bleedY)) : imageHeight;
+    return { left, top, right, bottom };
+}
+
+function studioConstrainCropBoxToQuadrant(box, slot, imageWidth, imageHeight) {
+    const bounds = studioGetQuadrantBounds(slot, imageWidth, imageHeight);
+    const width = studioGetBoxWidth(box);
+    const height = studioGetBoxHeight(box);
+    const left = studioClamp(Math.round(Number(box?.x) || 0), 0, imageWidth - 1);
+    const top = studioClamp(Math.round(Number(box?.y) || 0), 0, imageHeight - 1);
+    const right = studioClamp(left + width, 1, imageWidth);
+    const bottom = studioClamp(top + height, 1, imageHeight);
+
+    const clippedLeft = Math.max(left, bounds.left);
+    const clippedTop = Math.max(top, bounds.top);
+    const clippedRight = Math.min(right, bounds.right);
+    const clippedBottom = Math.min(bottom, bounds.bottom);
+    const clippedWidth = clippedRight - clippedLeft;
+    const clippedHeight = clippedBottom - clippedTop;
+
+    const originalArea = Math.max(1, width * height);
+    const clippedArea = Math.max(0, clippedWidth * clippedHeight);
+    if (clippedWidth < 24 || clippedHeight < 24 || (clippedArea / originalArea) < 0.55) {
+        return {
+            ...box,
+            x: left,
+            y: top,
+            width,
+            height,
+            slot
+        };
+    }
+
+    return {
+        ...box,
+        x: clippedLeft,
+        y: clippedTop,
+        width: clippedWidth,
+        height: clippedHeight,
+        slot
+    };
+}
+
+function studioMeasureForegroundPixel(ctx, imageWidth, bgColor, thresholdSq, x, y) {
+    const px = ctx.getImageData(studioClamp(x, 0, imageWidth - 1), studioClamp(y, 0, ctx.canvas.height - 1), 1, 1).data;
+    if (px[3] <= 22) return 0;
+    return studioColorDistanceSq(px[0], px[1], px[2], bgColor) > thresholdSq ? 1 : 0;
+}
+
+function studioComputeAxisDensity(ctx, box, bgColor, tolerance = 30) {
+    const width = studioGetBoxWidth(box);
+    const height = studioGetBoxHeight(box);
+    const thresholdSq = Math.pow(Math.max(30, tolerance + 14), 2);
+    const sampleStep = Math.max(1, Math.floor(Math.max(width, height) / 260));
+    const rowSamples = Math.max(1, Math.ceil(height / sampleStep));
+    const colSamples = Math.max(1, Math.ceil(width / sampleStep));
+    const rowDensity = new Array(rowSamples).fill(0);
+    const colDensity = new Array(colSamples).fill(0);
+
+    for (let rowIndex = 0; rowIndex < rowSamples; rowIndex++) {
+        const y = Math.min(height - 1, rowIndex * sampleStep);
+        let active = 0;
+        for (let x = 0; x < width; x += sampleStep) {
+            active += studioMeasureForegroundPixel(ctx, ctx.canvas.width, bgColor, thresholdSq, box.x + x, box.y + y);
+        }
+        rowDensity[rowIndex] = active / Math.max(1, colSamples);
+    }
+
+    for (let colIndex = 0; colIndex < colSamples; colIndex++) {
+        const x = Math.min(width - 1, colIndex * sampleStep);
+        let active = 0;
+        for (let y = 0; y < height; y += sampleStep) {
+            active += studioMeasureForegroundPixel(ctx, ctx.canvas.width, bgColor, thresholdSq, box.x + x, box.y + y);
+        }
+        colDensity[colIndex] = active / Math.max(1, rowSamples);
+    }
+
+    return { rowDensity, colDensity, sampleStep };
+}
+
+function studioFindDenseBandRange(density = [], length = 0, edgeTrimLimit = 0.18) {
+    if (!Array.isArray(density) || !density.length || length <= 0) {
+        return { start: 0, end: Math.max(0, length - 1), trimmedStart: 0, trimmedEnd: 0 };
+    }
+
+    const samples = density.filter((v) => Number.isFinite(v) && v > 0);
+    if (!samples.length) {
+        return { start: 0, end: Math.max(0, length - 1), trimmedStart: 0, trimmedEnd: 0 };
+    }
+
+    const maxDensity = Math.max(...samples);
+    const hardThreshold = Math.max(0.08, maxDensity * 0.33);
+    const softThreshold = Math.max(0.025, maxDensity * 0.15);
+    const trimLimit = Math.max(4, Math.round(length * edgeTrimLimit));
+
+    let start = 0;
+    while (start < Math.min(length - 1, trimLimit) && (density[start] || 0) < hardThreshold) {
+        start++;
+    }
+    while (start < Math.min(length - 1, trimLimit) && (density[start] || 0) < softThreshold) {
+        start++;
+    }
+
+    let end = length - 1;
+    while (end > Math.max(0, length - trimLimit - 1) && (density[end] || 0) < hardThreshold) {
+        end--;
+    }
+    while (end > Math.max(0, length - trimLimit - 1) && (density[end] || 0) < softThreshold) {
+        end--;
+    }
+
+    if (end <= start) {
+        return { start: 0, end: length - 1, trimmedStart: 0, trimmedEnd: 0 };
+    }
+
+    return {
+        start,
+        end,
+        trimmedStart: start,
+        trimmedEnd: (length - 1) - end
+    };
+}
+
+function studioBuildForegroundComponents(ctx, box, bgColor, tolerance = 30) {
+    const width = studioGetBoxWidth(box);
+    const height = studioGetBoxHeight(box);
+    const sampleStep = Math.max(1, Math.floor(Math.max(width, height) / 220));
+    const gridW = Math.max(1, Math.ceil(width / sampleStep));
+    const gridH = Math.max(1, Math.ceil(height / sampleStep));
+    const active = new Uint8Array(gridW * gridH);
+    const thresholdSq = Math.pow(Math.max(30, tolerance + 14), 2);
+
+    for (let gy = 0; gy < gridH; gy++) {
+        for (let gx = 0; gx < gridW; gx++) {
+            const px = Math.min(width - 1, gx * sampleStep);
+            const py = Math.min(height - 1, gy * sampleStep);
+            const idx = (gy * gridW) + gx;
+            active[idx] = studioMeasureForegroundPixel(ctx, ctx.canvas.width, bgColor, thresholdSq, box.x + px, box.y + py);
+        }
+    }
+
+    const visited = new Uint8Array(gridW * gridH);
+    const components = [];
+
+    for (let gy = 0; gy < gridH; gy++) {
+        for (let gx = 0; gx < gridW; gx++) {
+            const startIdx = (gy * gridW) + gx;
+            if (!active[startIdx] || visited[startIdx]) continue;
+
+            const queue = [[gx, gy]];
+            visited[startIdx] = 1;
+            let qIndex = 0;
+            let minGX = gx, minGY = gy, maxGX = gx, maxGY = gy, cells = 0;
+
+            while (qIndex < queue.length) {
+                const [cx, cy] = queue[qIndex++];
+                cells++;
+                if (cx < minGX) minGX = cx;
+                if (cy < minGY) minGY = cy;
+                if (cx > maxGX) maxGX = cx;
+                if (cy > maxGY) maxGY = cy;
+
+                [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dx, dy]) => {
+                    const nx = cx + dx;
+                    const ny = cy + dy;
+                    if (nx < 0 || ny < 0 || nx >= gridW || ny >= gridH) return;
+                    const nIdx = (ny * gridW) + nx;
+                    if (!active[nIdx] || visited[nIdx]) return;
+                    visited[nIdx] = 1;
+                    queue.push([nx, ny]);
+                });
+            }
+
+            const compWidth = ((maxGX - minGX) + 1) * sampleStep;
+            const compHeight = ((maxGY - minGY) + 1) * sampleStep;
+            const centerX = ((minGX + maxGX + 1) / 2) * sampleStep;
+            const centerY = ((minGY + maxGY + 1) / 2) * sampleStep;
+            components.push({
+                cells,
+                sampleStep,
+                x: box.x + (minGX * sampleStep),
+                y: box.y + (minGY * sampleStep),
+                width: Math.min(width, compWidth),
+                height: Math.min(height, compHeight),
+                centerX: box.x + centerX,
+                centerY: box.y + centerY
+            });
+        }
+    }
+
+    return components;
+}
+
+function studioScoreForegroundComponent(component, box) {
+    const boxWidth = studioGetBoxWidth(box);
+    const boxHeight = studioGetBoxHeight(box);
+    const boxCenterX = box.x + (boxWidth / 2);
+    const boxCenterY = box.y + (boxHeight / 2);
+    const normDx = Math.abs(component.centerX - boxCenterX) / Math.max(1, boxWidth / 2);
+    const normDy = Math.abs(component.centerY - boxCenterY) / Math.max(1, boxHeight / 2);
+    const centerPenalty = Math.min(1.2, (normDx * 0.7) + (normDy * 0.9));
+    const aspect = component.width / Math.max(1, component.height);
+    const thinPenalty = (aspect > 4 || aspect < 0.22) ? 0.4 : 1;
+    return component.cells * (1.25 - (centerPenalty * 0.45)) * thinPenalty;
+}
+
+function studioRefineCropBoxUsingForeground(ctx, box, bgColor, tolerance = 30) {
+    const width = studioGetBoxWidth(box);
+    const height = studioGetBoxHeight(box);
+    if (width < 24 || height < 24) return { box };
+
+    const components = studioBuildForegroundComponents(ctx, box, bgColor, tolerance)
+        .filter((component) => component.cells >= 6);
+    if (!components.length) return { box };
+
+    const main = [...components].sort((a, b) => studioScoreForegroundComponent(b, box) - studioScoreForegroundComponent(a, box))[0];
+    const maxDim = Math.max(width, height);
+    let minX = main.x;
+    let minY = main.y;
+    let maxX = main.x + main.width;
+    let maxY = main.y + main.height;
+    let keptComponents = 1;
+
+    components.forEach((component) => {
+        if (component === main) return;
+        const areaRatio = component.cells / Math.max(1, main.cells);
+        const gapX = Math.max(0, Math.max(minX - (component.x + component.width), component.x - maxX));
+        const gapY = Math.max(0, Math.max(minY - (component.y + component.height), component.y - maxY));
+        const nearestGap = Math.min(gapX, gapY);
+        const nearMain = nearestGap <= Math.max(18, Math.round(maxDim * 0.055));
+        const textLike = (
+            component.width > (width * 0.55) && component.height < (height * 0.18)
+        ) || (
+            component.height > (height * 0.55) && component.width < (width * 0.16)
+        );
+        if (areaRatio >= 0.08 && nearMain && !textLike) {
+            minX = Math.min(minX, component.x);
+            minY = Math.min(minY, component.y);
+            maxX = Math.max(maxX, component.x + component.width);
+            maxY = Math.max(maxY, component.y + component.height);
+            keptComponents++;
+        }
+    });
+
+    const refined = {
+        ...box,
+        x: studioClamp(Math.round(minX), 0, ctx.canvas.width - 1),
+        y: studioClamp(Math.round(minY), 0, ctx.canvas.height - 1),
+        width: studioClamp(Math.round(maxX - minX), 1, ctx.canvas.width - Math.round(minX)),
+        height: studioClamp(Math.round(maxY - minY), 1, ctx.canvas.height - Math.round(minY))
+    };
+
+    const density = studioComputeAxisDensity(ctx, refined, bgColor, tolerance);
+    const rowRange = studioFindDenseBandRange(density.rowDensity, density.rowDensity.length, 0.18);
+    const colRange = studioFindDenseBandRange(density.colDensity, density.colDensity.length, 0.14);
+    const offsetX = colRange.start * density.sampleStep;
+    const offsetY = rowRange.start * density.sampleStep;
+    const endX = Math.min(refined.width, ((colRange.end + 1) * density.sampleStep));
+    const endY = Math.min(refined.height, ((rowRange.end + 1) * density.sampleStep));
+    const trimmed = {
+        ...refined,
+        x: studioClamp(refined.x + offsetX, 0, ctx.canvas.width - 1),
+        y: studioClamp(refined.y + offsetY, 0, ctx.canvas.height - 1),
+        width: studioClamp(endX - offsetX, 1, ctx.canvas.width - (refined.x + offsetX)),
+        height: studioClamp(endY - offsetY, 1, ctx.canvas.height - (refined.y + offsetY))
+    };
+
+    return {
+        box: trimmed,
+        diagnostics: {
+            keptComponents,
+            trimmedTop: rowRange.trimmedStart * density.sampleStep,
+            trimmedBottom: rowRange.trimmedEnd * density.sampleStep,
+            trimmedLeft: colRange.trimmedStart * density.sampleStep,
+            trimmedRight: colRange.trimmedEnd * density.sampleStep
+        }
+    };
+}
+
+function studioEvaluateCropQuality(box, diagnostics = {}) {
+    const width = studioGetBoxWidth(box);
+    const height = studioGetBoxHeight(box);
+    const maxDim = Math.max(width, height);
+    const trimPenalty = (
+        (diagnostics.trimmedTop || 0) +
+        (diagnostics.trimmedBottom || 0) +
+        (diagnostics.trimmedLeft || 0) +
+        (diagnostics.trimmedRight || 0)
+    ) / Math.max(1, maxDim);
+    const multiPartBonus = diagnostics.keptComponents > 1 ? 0.06 : 0;
+    return studioClamp(0.72 + multiPartBonus - (trimPenalty * 0.28), 0.35, 0.98);
+}
+
+function studioMeasureEdgeForegroundRatio(ctx, box, bgColor, tolerance = 30) {
+    const width = studioGetBoxWidth(box);
+    const height = studioGetBoxHeight(box);
+    const edgeBand = Math.max(3, Math.min(18, Math.round(Math.min(width, height) * 0.06)));
+    const sampleStep = Math.max(1, Math.floor(Math.max(width, height) / 240));
+    const thresholdSq = Math.pow(Math.max(30, tolerance + 12), 2);
+
+    const measureBand = (axis, startOffset, bandSize) => {
+        let total = 0;
+        let fg = 0;
+        if (axis === 'top' || axis === 'bottom') {
+            const startY = axis === 'top' ? box.y + startOffset : (box.y + height - startOffset - bandSize);
+            for (let y = 0; y < bandSize; y += sampleStep) {
+                for (let x = 0; x < width; x += sampleStep) {
+                    total++;
+                    fg += studioMeasureForegroundPixel(ctx, ctx.canvas.width, bgColor, thresholdSq, box.x + x, startY + y);
+                }
+            }
+        } else {
+            const startX = axis === 'left' ? box.x + startOffset : (box.x + width - startOffset - bandSize);
+            for (let x = 0; x < bandSize; x += sampleStep) {
+                for (let y = 0; y < height; y += sampleStep) {
+                    total++;
+                    fg += studioMeasureForegroundPixel(ctx, ctx.canvas.width, bgColor, thresholdSq, startX + x, box.y + y);
+                }
+            }
+        }
+        return total ? (fg / total) : 0;
+    };
+
+    return {
+        edgeBand,
+        top: measureBand('top', 0, edgeBand),
+        bottom: measureBand('bottom', 0, edgeBand),
+        left: measureBand('left', 0, edgeBand),
+        right: measureBand('right', 0, edgeBand)
+    };
+}
+
+function studioHasCleanBlackEdges(metrics, maxForegroundRatio = 0.035) {
+    if (!metrics) return false;
+    return ['top', 'bottom', 'left', 'right'].every((edge) => (metrics[edge] || 0) <= maxForegroundRatio);
+}
+
+function studioAutoInsetUntilEdgesClean(ctx, box, bgColor, tolerance = 30) {
+    let current = { ...box };
+    const maxIterations = 8;
+    const baseStep = Math.max(2, Math.round(Math.min(studioGetBoxWidth(box), studioGetBoxHeight(box)) * 0.035));
+    let lastMetrics = studioMeasureEdgeForegroundRatio(ctx, current, bgColor, tolerance);
+
+    for (let i = 0; i < maxIterations; i++) {
+        if (studioHasCleanBlackEdges(lastMetrics)) {
+            return { box: current, edgeMetrics: lastMetrics, edgeSafe: true, edgeIterations: i };
+        }
+
+        const insetTop = (lastMetrics.top || 0) > 0.035 ? baseStep : 0;
+        const insetBottom = (lastMetrics.bottom || 0) > 0.035 ? baseStep : 0;
+        const insetLeft = (lastMetrics.left || 0) > 0.035 ? baseStep : 0;
+        const insetRight = (lastMetrics.right || 0) > 0.035 ? baseStep : 0;
+        const next = {
+            x: current.x + insetLeft,
+            y: current.y + insetTop,
+            width: current.width - insetLeft - insetRight,
+            height: current.height - insetTop - insetBottom
+        };
+
+        if (next.width < 40 || next.height < 40) {
+            break;
+        }
+
+        current = {
+            ...current,
+            ...next
+        };
+        lastMetrics = studioMeasureEdgeForegroundRatio(ctx, current, bgColor, tolerance);
+    }
+
+    return {
+        box: current,
+        edgeMetrics: lastMetrics,
+        edgeSafe: studioHasCleanBlackEdges(lastMetrics),
+        edgeIterations: maxIterations
+    };
+}
+
+function studioFinalizeDetectedBox(ctx, candidateBox, bgColor, tolerance = 30, diagnostics = {}, options = {}) {
+    const settings = {
+        allowUnsafeEdges: true,
+        minEdgeQuality: 0.72,
+        ...options
+    };
+    const edgePass = studioAutoInsetUntilEdgesClean(ctx, candidateBox, bgColor, tolerance);
+    const finalBox = edgePass.box || candidateBox;
+    const quality = studioEvaluateCropQuality(finalBox, diagnostics || {});
+    const edgeMetrics = edgePass.edgeMetrics || studioMeasureEdgeForegroundRatio(ctx, finalBox, bgColor, tolerance);
+    const maxEdgeLeak = Math.max(edgeMetrics.top || 0, edgeMetrics.bottom || 0, edgeMetrics.left || 0, edgeMetrics.right || 0);
+    const edgeQuality = studioClamp(1 - (maxEdgeLeak / 0.18), 0, 1);
+    const accepted = edgePass.edgeSafe || (settings.allowUnsafeEdges && edgeQuality >= settings.minEdgeQuality);
+
+    return {
+        accepted,
+        box: finalBox,
+        quality,
+        edgeSafe: edgePass.edgeSafe,
+        edgeQuality,
+        edgeMetrics,
+        confidence: studioClamp((quality * 0.72) + (edgeQuality * 0.28), 0.3, 0.99)
+    };
+}
+
+function studioBoxesOverlapRatio(a, b) {
+    const left = Math.max(a.x, b.x);
+    const top = Math.max(a.y, b.y);
+    const right = Math.min(a.x + studioGetBoxWidth(a), b.x + studioGetBoxWidth(b));
+    const bottom = Math.min(a.y + studioGetBoxHeight(a), b.y + studioGetBoxHeight(b));
+    const overlapW = Math.max(0, right - left);
+    const overlapH = Math.max(0, bottom - top);
+    const overlapArea = overlapW * overlapH;
+    const minArea = Math.max(1, Math.min(studioGetBoxWidth(a) * studioGetBoxHeight(a), studioGetBoxWidth(b) * studioGetBoxHeight(b)));
+    return overlapArea / minArea;
+}
+
+function studioBuildGlobalForegroundComponents(ctx, bgColor, tolerance = 30) {
+    const width = ctx.canvas.width;
+    const height = ctx.canvas.height;
+    const sampleStep = Math.max(2, Math.floor(Math.max(width, height) / 180));
+    const gridW = Math.max(1, Math.ceil(width / sampleStep));
+    const gridH = Math.max(1, Math.ceil(height / sampleStep));
+    const active = new Uint8Array(gridW * gridH);
+    const thresholdSq = Math.pow(Math.max(18, tolerance + 10), 2);
+
+    for (let gy = 0; gy < gridH; gy++) {
+        for (let gx = 0; gx < gridW; gx++) {
+            let fg = 0;
+            let total = 0;
+            for (let yy = 0; yy < sampleStep; yy += Math.max(1, Math.floor(sampleStep / 2))) {
+                for (let xx = 0; xx < sampleStep; xx += Math.max(1, Math.floor(sampleStep / 2))) {
+                    const px = Math.min(width - 1, (gx * sampleStep) + xx);
+                    const py = Math.min(height - 1, (gy * sampleStep) + yy);
+                    total++;
+                    fg += studioMeasureForegroundPixel(ctx, width, bgColor, thresholdSq, px, py);
+                }
+            }
+            active[(gy * gridW) + gx] = total && (fg / total) >= 0.3 ? 1 : 0;
+        }
+    }
+
+    const visited = new Uint8Array(gridW * gridH);
+    const components = [];
+    for (let gy = 0; gy < gridH; gy++) {
+        for (let gx = 0; gx < gridW; gx++) {
+            const startIdx = (gy * gridW) + gx;
+            if (!active[startIdx] || visited[startIdx]) continue;
+
+            const queue = [[gx, gy]];
+            visited[startIdx] = 1;
+            let qIndex = 0;
+            let minGX = gx, minGY = gy, maxGX = gx, maxGY = gy, cells = 0;
+
+            while (qIndex < queue.length) {
+                const [cx, cy] = queue[qIndex++];
+                cells++;
+                if (cx < minGX) minGX = cx;
+                if (cy < minGY) minGY = cy;
+                if (cx > maxGX) maxGX = cx;
+                if (cy > maxGY) maxGY = cy;
+
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                        if (!dx && !dy) continue;
+                        const nx = cx + dx;
+                        const ny = cy + dy;
+                        if (nx < 0 || ny < 0 || nx >= gridW || ny >= gridH) continue;
+                        const nIdx = (ny * gridW) + nx;
+                        if (!active[nIdx] || visited[nIdx]) continue;
+                        visited[nIdx] = 1;
+                        queue.push([nx, ny]);
+                    }
+                }
+            }
+
+            const compWidth = ((maxGX - minGX) + 1) * sampleStep;
+            const compHeight = ((maxGY - minGY) + 1) * sampleStep;
+            const area = compWidth * compHeight;
+            if (cells < 3 || area < Math.max(900, width * height * 0.0025)) continue;
+
+            components.push({
+                x: minGX * sampleStep,
+                y: minGY * sampleStep,
+                width: Math.min(width - (minGX * sampleStep), compWidth),
+                height: Math.min(height - (minGY * sampleStep), compHeight),
+                cells,
+                centerX: ((minGX + maxGX + 1) / 2) * sampleStep,
+                centerY: ((minGY + maxGY + 1) / 2) * sampleStep
+            });
+        }
+    }
+
+    return components;
+}
+
+function studioMergeGlobalComponents(components = [], imageWidth, imageHeight) {
+    if (!components.length) return [];
+    const remaining = [...components].sort((a, b) => (b.cells || 0) - (a.cells || 0));
+    const groups = [];
+
+    while (remaining.length) {
+        let current = { ...remaining.shift() };
+        let changed = true;
+
+        while (changed) {
+            changed = false;
+            for (let i = remaining.length - 1; i >= 0; i--) {
+                const candidate = remaining[i];
+                const gapX = Math.max(0, Math.max(current.x - (candidate.x + candidate.width), candidate.x - (current.x + current.width)));
+                const gapY = Math.max(0, Math.max(current.y - (candidate.y + candidate.height), candidate.y - (current.y + current.height)));
+                const near = gapX <= Math.max(18, imageWidth * 0.035) && gapY <= Math.max(18, imageHeight * 0.04);
+                const overlap = studioBoxesOverlapRatio(current, candidate) > 0.08;
+                const sameZone = Math.abs((current.centerX || 0) - (candidate.centerX || 0)) <= imageWidth * 0.22 &&
+                    Math.abs((current.centerY || 0) - (candidate.centerY || 0)) <= imageHeight * 0.22;
+                if (!((near && sameZone) || overlap)) continue;
+
+                const nextLeft = Math.min(current.x, candidate.x);
+                const nextTop = Math.min(current.y, candidate.y);
+                const nextRight = Math.max(current.x + current.width, candidate.x + candidate.width);
+                const nextBottom = Math.max(current.y + current.height, candidate.y + candidate.height);
+                current = {
+                    x: nextLeft,
+                    y: nextTop,
+                    width: nextRight - nextLeft,
+                    height: nextBottom - nextTop,
+                    cells: (current.cells || 0) + (candidate.cells || 0),
+                    centerX: nextLeft + ((nextRight - nextLeft) / 2),
+                    centerY: nextTop + ((nextBottom - nextTop) / 2)
+                };
+                remaining.splice(i, 1);
+                changed = true;
+            }
+        }
+
+        groups.push(current);
+    }
+
+    return groups;
+}
+
+function studioScoreDesignGroup(group, imageWidth, imageHeight) {
+    const areaRatio = (group.width * group.height) / Math.max(1, imageWidth * imageHeight);
+    const aspect = group.width / Math.max(1, group.height);
+    const aspectPenalty = (aspect > 4.8 || aspect < 0.2) ? 0.55 : 1;
+    const centerX = group.x + (group.width / 2);
+    const centerY = group.y + (group.height / 2);
+    const dx = Math.abs(centerX - (imageWidth / 2)) / Math.max(1, imageWidth / 2);
+    const dy = Math.abs(centerY - (imageHeight / 2)) / Math.max(1, imageHeight / 2);
+    const centralPenalty = Math.max(0.72, 1 - ((dx + dy) * 0.14));
+    return ((group.cells || 0) * 0.55 + areaRatio * 1000) * aspectPenalty * centralPenalty;
+}
+
+function studioSelectBestFourGroups(groups = [], imageWidth, imageHeight) {
+    const enriched = groups
+        .map((group) => ({
+            ...group,
+            slot: studioInferCropSlot(group, imageWidth, imageHeight),
+            groupScore: studioScoreDesignGroup(group, imageWidth, imageHeight)
+        }))
+        .sort((a, b) => b.groupScore - a.groupScore);
+
+    const bySlot = new Map();
+    enriched.forEach((group) => {
+        if (!bySlot.has(group.slot)) bySlot.set(group.slot, []);
+        bySlot.get(group.slot).push(group);
+    });
+
+    const picked = [];
+    for (const slot of [0, 1, 2, 3]) {
+        const candidates = bySlot.get(slot) || [];
+        const chosen = candidates.find((candidate) => picked.every((item) => studioBoxesOverlapRatio(item, candidate) < 0.18));
+        if (chosen) picked.push(chosen);
+    }
+
+    if (picked.length === 4) {
+        return studioSortCropBoxes(picked);
+    }
+
+    for (const candidate of enriched) {
+        if (picked.length >= 4) break;
+        if (picked.some((item) => studioBoxesOverlapRatio(item, candidate) >= 0.22)) continue;
+        picked.push(candidate);
+    }
+
+    return picked.length === 4 ? studioSortCropBoxes(picked) : [];
+}
+
+async function studioDetectDesignGroupsGlobal(dataURL, tolerance = 30) {
+    const img = await studioLoadImageElement(dataURL);
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0);
+
+    const bgColor = studioSampleBackgroundColor(ctx, canvas.width, canvas.height);
+    const components = studioBuildGlobalForegroundComponents(ctx, bgColor, tolerance);
+    const groups = studioMergeGlobalComponents(components, canvas.width, canvas.height);
+    const selected = studioSelectBestFourGroups(groups, canvas.width, canvas.height);
+    if (selected.length !== 4) {
+        return {
+            canvas,
+            bgColor,
+            boxes: [],
+            method: 'global-components',
+            confidence: selected.length / 4
+        };
+    }
+
+    const boxes = selected
+        .map((group) => {
+            const rect = studioNormalizeRectCropBox({
+                minX: group.x,
+                minY: group.y,
+                maxX: group.x + group.width - 1,
+                maxY: group.y + group.height - 1,
+                width: group.width,
+                height: group.height
+            }, canvas.width, canvas.height, 0.04);
+            if (!rect) return null;
+            const constrained = studioConstrainCropBoxToQuadrant({ ...rect, slot: group.slot }, group.slot, canvas.width, canvas.height);
+            const refined = studioRefineCropBoxUsingForeground(ctx, constrained, bgColor, tolerance);
+            const finalized = studioFinalizeDetectedBox(
+                ctx,
+                refined.box || constrained,
+                bgColor,
+                tolerance,
+                refined.diagnostics || {},
+                { allowUnsafeEdges: true, minEdgeQuality: 0.5 }
+            );
+            if (!finalized.accepted) return null;
+            return {
+                ...(finalized.box || refined.box || constrained),
+                slot: group.slot,
+                confidence: studioClamp((finalized.confidence * 0.84) + 0.1, 0.3, 0.99),
+                edge_safe: Boolean(finalized.edgeSafe),
+                edge_quality: finalized.edgeQuality
+            };
+        })
+        .filter(Boolean);
+
+    return {
+        canvas,
+        bgColor,
+        boxes: studioSortCropBoxes(boxes),
+        method: 'global-components',
+        confidence: boxes.length === 4
+            ? boxes.reduce((sum, box) => sum + (box.confidence || 0), 0) / boxes.length
+            : (boxes.length / 4)
+    };
+}
+
+async function studioDetectQuadBoxes(dataURL, tolerance = 30) {
+    const img = await studioLoadImageElement(dataURL);
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0);
+
+    const bgColor = studioSampleBackgroundColor(ctx, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const halfW = Math.floor(canvas.width / 2);
+    const halfH = Math.floor(canvas.height / 2);
+    const regions = [
+        { x0: 0, y0: 0, x1: halfW, y1: halfH, slot: 0 },
+        { x0: halfW, y0: 0, x1: canvas.width, y1: halfH, slot: 1 },
+        { x0: 0, y0: halfH, x1: halfW, y1: canvas.height, slot: 2 },
+        { x0: halfW, y0: halfH, x1: canvas.width, y1: canvas.height, slot: 3 }
+    ];
+
+    const boxes = regions
+        .map((region) => studioDetectRegionCandidate(ctx, imageData, region, bgColor, tolerance))
+        .filter(Boolean);
+
+    return {
+        canvas,
+        bgColor,
+        boxes,
+        method: 'heuristic-square',
+        confidence: boxes.length === 4 ? 1 : (boxes.length / 4)
+    };
+}
+
+function studioSortCropBoxes(boxes = []) {
+    return [...boxes].sort((a, b) => {
+        const rowDelta = Math.abs(a.y - b.y);
+        if (rowDelta > Math.max(a.height || a.size || 0, b.height || b.size || 0) * 0.5) {
+            return a.y - b.y;
+        }
+        return a.x - b.x;
+    });
+}
+
+function studioNormalizeAiCropBox(box, imageWidth, imageHeight) {
+    if (!box) return null;
+    const x = studioClamp(Math.round(Number(box.x) || 0), 0, Math.max(0, imageWidth - 1));
+    const y = studioClamp(Math.round(Number(box.y) || 0), 0, Math.max(0, imageHeight - 1));
+    const width = Math.round(Number(box.width) || 0);
+    const height = Math.round(Number(box.height) || 0);
+    if (width < 20 || height < 20) return null;
+    const normalized = {
+        x,
+        y,
+        width: studioClamp(width, 1, imageWidth - x),
+        height: studioClamp(height, 1, imageHeight - y),
+        confidence: Number(box.confidence) || 0,
+        label: String(box.label || '').trim(),
+        kind: String(box.kind || box.type || 'design').trim().toLowerCase()
+    };
+    if (normalized.kind && normalized.kind !== 'design') return null;
+    return normalized;
+}
+
+function studioExtractJsonBlock(text = '') {
+    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fenced?.[1]) return fenced[1].trim();
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    if (firstBrace >= 0 && lastBrace > firstBrace) {
+        return text.slice(firstBrace, lastBrace + 1).trim();
+    }
+    return text.trim();
+}
+
+async function studioDetectQuadBoxesWithAI(dataURL, apiKey) {
+    if (!apiKey) return null;
+    const img = await studioLoadImageElement(dataURL);
+    const cleanBase64 = dataURL.includes(',') ? dataURL.split(',')[1] : dataURL;
+    const prompt = `You are detecting four separate POD designs inside one composite image.\nThe image usually contains 4 independent designs arranged in a grid on a plain background.\nReturn valid JSON only with this exact schema:\n{"items":[{"label":"top_left","kind":"design","x":123,"y":45,"width":678,"height":543,"confidence":0.93,"notes":"short note"}]}\nRules:\n- Return exactly 4 items when possible.\n- Only return the MAIN ART / printable design area for each quadrant.\n- Exclude external titles, subtitles, numbers, labels, descriptions, mockup captions, badges, side notes, vintage style headers, footer text, and detached text strips above, below, left, or right of the artwork.\n- If text is a detached heading such as "Design #7" or "Vintage Style", it must NOT be included.\n- Keep text only when it is clearly integrated inside the printable artwork itself.\n- Use pixel coordinates relative to the ORIGINAL image size.\n- Boxes must tightly cover each design, and rectangles are allowed. Do not force squares.\n- Do not include background margins unless needed.\n- confidence must be between 0 and 1.\n- kind must be "design" for every returned item.\n- Labels should reflect approximate order like top_left, top_right, bottom_left, bottom_right.\n- If you are not confident, still return your best 4 boxes, but stay conservative and avoid surrounding text.\nOriginal image width: ${img.width}\nOriginal image height: ${img.height}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+    try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(img, 0, 0);
+        const bgColor = studioSampleBackgroundColor(ctx, canvas.width, canvas.height);
+
+        console.log('[NHP-IMG] sending', {
+            host: 'generativelanguage.googleapis.com',
+            hasInlineData: true,
+            mimeType: 'image/png',
+            base64Length: cleanBase64.length,
+            hasKey: !!apiKey
+        });
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{
+                    role: 'user',
+                    parts: [
+                        { text: prompt },
+                        { inlineData: { mimeType: 'image/png', data: cleanBase64 } }
+                    ]
+                }]
+            })
+        });
+        console.log('[NHP-IMG] response', response.status);
+        if (!response.ok) {
+            console.warn('[NHP-IMG] error body', await response.text());
+            return null;
+        }
+        const data = await response.json();
+        if (data.error) throw new Error(data.error.message);
+
+        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const jsonText = studioExtractJsonBlock(rawText);
+        const parsed = JSON.parse(jsonText);
+        const items = Array.isArray(parsed?.items) ? parsed.items : [];
+        const boxes = studioSortCropBoxes(
+            items
+                .map((box) => {
+                    const normalized = studioNormalizeAiCropBox(box, img.width, img.height);
+                    if (!normalized) return null;
+                    const slot = studioInferCropSlot(normalized, img.width, img.height);
+                    const constrained = studioConstrainCropBoxToQuadrant(normalized, slot, img.width, img.height);
+                    const refined = studioRefineCropBoxUsingForeground(ctx, constrained, bgColor, 28);
+                    const finalized = studioFinalizeDetectedBox(
+                        ctx,
+                        refined.box || constrained,
+                        bgColor,
+                        28,
+                        refined.diagnostics || {},
+                        { allowUnsafeEdges: true, minEdgeQuality: 0.54 }
+                    );
+                    if (!finalized.accepted) return null;
+                    return {
+                        ...(finalized.box || refined.box || constrained),
+                        slot,
+                        label: normalized.label,
+                        confidence: studioClamp(((normalized.confidence || 0.7) * 0.56) + (finalized.confidence * 0.3) + 0.12, 0.35, 0.99),
+                        edge_safe: Boolean(finalized.edgeSafe),
+                        edge_quality: finalized.edgeQuality
+                    };
+                })
+                .filter(Boolean)
+        );
+
+        if (boxes.length !== 4) return null;
+
+        const avgConfidence = boxes.reduce((sum, box) => sum + (box.confidence || 0), 0) / boxes.length;
+
+        return {
+            canvas,
+            boxes,
+            method: 'ai-rect',
+            confidence: avgConfidence || 0.75
+        };
+    } catch (error) {
+        console.warn('[NHP-IMG] error', error?.message, error?.stack?.split('\n')[0]);
+        console.error('AI Crop Detection Error:', error);
+        return null;
+    }
+}
+
+async function studioCreateExtractedItemsFromDetection(item, detection) {
+    const baseName = studioSafeBaseName(item.name);
+    const extractedItems = [];
+
+    for (let index = 0; index < detection.boxes.length; index++) {
+        const box = detection.boxes[index];
+        const temp = document.createElement('canvas');
+        const cropW = Math.max(1, Math.round(box.width || box.size || 1));
+        const cropH = Math.max(1, Math.round(box.height || box.size || 1));
+        temp.width = cropW;
+        temp.height = cropH;
+        const tctx = temp.getContext('2d');
+        tctx.clearRect(0, 0, cropW, cropH);
+        tctx.drawImage(
+            detection.canvas,
+            box.x,
+            box.y,
+            cropW,
+            cropH,
+            0,
+            0,
+            cropW,
+            cropH
+        );
+
+        const newItem = {
+            name: `${baseName}_auto_${index + 1}.png`,
+            dataURL: temp.toDataURL('image/png'),
+            status: 'جاهز للمعالجة',
+            selected: true,
+            meta: {
+                source_name: item.name,
+                auto_detected: true,
+                auto_slot: box.slot ?? index,
+                auto_crop_method: detection.method || 'unknown',
+                auto_crop_confidence: box.confidence || detection.confidence || 0
+            }
+        };
+        await studioEnsureThumbnail(newItem, 120);
+        extractedItems.push(newItem);
+    }
+
+    return extractedItems;
+}
+
+async function studioExtractDesignsFromCompositeItem(item, options = {}) {
+    const settings = { tolerance: STUDIO.tolerance, useAiCrop: true, apiKey: STUDIO.geminiKey, ...options };
+    let detection = null;
+
+    const globalDetection = await studioDetectDesignGroupsGlobal(item.dataURL, settings.tolerance);
+    if (globalDetection?.boxes?.length === 4 && globalDetection.confidence >= 0.34) {
+        detection = globalDetection;
+    }
+
+    if (!detection && settings.useAiCrop && settings.apiKey) {
+        const aiDetection = await studioDetectQuadBoxesWithAI(item.dataURL, settings.apiKey);
+        if (aiDetection && aiDetection.confidence >= 0.45) {
+            detection = aiDetection;
+        }
+    }
+    if (!detection) {
+        const heuristicDetection = await studioDetectQuadBoxes(item.dataURL, settings.tolerance);
+        detection = heuristicDetection;
+    }
+
+    if (!detection || detection.boxes.length !== 4) {
+        return { success: false, extractedItems: [], confidence: detection?.confidence || 0 };
+    }
+
+    const extractedItems = await studioCreateExtractedItemsFromDetection(item, detection);
+    return {
+        success: extractedItems.length === 4,
+        extractedItems,
+        confidence: detection.confidence,
+        method: detection.method || 'unknown'
+    };
+}
+
+async function studioAutoExtractCurrentComposite() {
+    const TM = window.STUDIO_TME;
+    if (!TM || !STUDIO.step2Files.length) {
+        showToast('⚠️ لا توجد صورة جاهزة للاستخراج التلقائي');
+        return;
+    }
+
+    const targetIndex = studioClamp(TM.currentIndex || 0, 0, STUDIO.step2Files.length - 1);
+    const sourceItem = STUDIO.step2Files[targetIndex];
+    studioUpdateAutoPipelineStatus(`جاري محاولة استخراج العناصر من ${sourceItem.name}...`);
+
+    try {
+        const result = await studioExtractDesignsFromCompositeItem(sourceItem, {
+            useAiCrop: studioGetAutoPipelineSettingsFromUI().useAiCrop
+        });
+        if (!result.success) {
+            showToast('⚠️ تعذر اكتشاف 4 عناصر بوضوح. يمكنك المتابعة يدويا.');
+            studioUpdateAutoPipelineStatus('لم تصل الصورة لثقة كافية، تم الإبقاء على المسار اليدوي.');
+            return;
+        }
+
+        const settings = studioGetAutoPipelineSettingsFromUI();
+        const replacementItems = result.extractedItems;
+        const nextQueue = [...STUDIO.step2Files];
+        if (settings.removeOriginal) {
+            nextQueue.splice(targetIndex, 1, ...replacementItems);
+        } else {
+            nextQueue.splice(targetIndex + 1, 0, ...replacementItems);
+        }
+        STUDIO.step2Files = nextQueue;
+        studioTeemasterRefreshQueue();
+        const confidenceText = typeof result.confidence === 'number' ? ` بنسبة ثقة ${Math.round(result.confidence * 100)}%` : '';
+        showToast(`✅ تم استخراج ${replacementItems.length} تصاميم تلقائيا${confidenceText}`);
+        studioUpdateAutoPipelineStatus(`اكتمل الاستخراج التلقائي عبر ${result.method || 'المحلل'} ويمكنك المتابعة يدويا أو تلقائيا.`);
+    } catch (error) {
+        console.error('Auto Extract Error:', error);
+        showToast('❌ فشل الاستخراج التلقائي لهذه الصورة');
+        studioUpdateAutoPipelineStatus('حدث خطأ أثناء الاستخراج التلقائي.');
+    }
+}
+
+async function studioApplyBulkGlobalMagicToQueue() {
+    const TM = window.STUDIO_TME;
+    if (!TM || !Array.isArray(STUDIO.step2Files) || STUDIO.step2Files.length === 0) {
+        showToast('⚠️ لا توجد صور في طابور المرحلة الثانية');
+        return;
+    }
+    if (STUDIO.isProcessingTeemaster || STUDIO.isAutoPipelineRunning) {
+        showToast('⚠️ انتظر حتى تنتهي العملية الحالية');
+        return;
+    }
+
+    studioTeemasterCommitCurrentImage();
+    const { r, g, b } = studioHexToRgb(STUDIO.manualColorHex || '#000000');
+    const tolerance = STUDIO.tolerance;
+    const originalIndex = TM.currentIndex || 0;
+    STUDIO.isProcessingTeemaster = true;
+    studioTeemasterRefreshQueue();
+    studioUpdateAutoPipelineStatus('جاري تطبيق السحر الشامل على كل صور الطابور...');
+
+    try {
+        for (let index = 0; index < STUDIO.step2Files.length; index++) {
+            const item = STUDIO.step2Files[index];
+            const img = await studioLoadImageElement(item.dataURL);
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            ctx.drawImage(img, 0, 0);
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            studioTeemasterApplyGlobalRemoval(imageData, r, g, b, tolerance);
+            ctx.putImageData(imageData, 0, 0);
+
+            item.dataURL = canvas.toDataURL('image/png');
+            item.thumbnail = studioCreateThumbnailFromCanvas(canvas, 120);
+            item.status = 'تم تنظيف الخلفية جماعيا';
+
+            if (index === originalIndex) {
+                TM.currentIndex = index;
+            }
+        }
+
+        TM.currentIndex = studioClamp(originalIndex, 0, Math.max(0, STUDIO.step2Files.length - 1));
+        studioTeemasterRefreshQueue();
+        showToast(`✅ تم تطبيق السحر الشامل على ${STUDIO.step2Files.length} صورة`);
+        studioUpdateAutoPipelineStatus('اكتمل تنظيف الخلفية الجماعي على كامل الطابور.');
+    } catch (error) {
+        console.error('Bulk Global Magic Error:', error);
+        showToast('❌ فشل تطبيق السحر الشامل على الطابور');
+        studioUpdateAutoPipelineStatus('حدث خطأ أثناء تنظيف الخلفية الجماعي.');
+    } finally {
+        STUDIO.isProcessingTeemaster = false;
+        studioTeemasterRefreshQueue();
+    }
+}
+
+/**
+ * دالة تحليل الصورة عبر Gemini واستخراج اسم ملف مناسب
+ */
+async function generateFilenameFromImageAI(base64Data, apiKey) {
+    const prompt = `You are an expert Print-on-Demand designer. 
+Analyze the visual elements, subjects, and mood of the attached image.
+Generate a highly descriptive, short, SEO-friendly file name based ONLY on what you see.
+Rules:
+- Max 3 to 5 words.
+- Lowercase only.
+- Separate words with underscores (_).
+- NO special characters, NO file extensions.
+- Output ONLY the exact file name string, nothing else.`;
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    
+    // تنظيف صيغة Base64 إذا كانت تحتوي على البادئة (data:image/png;base64,)
+    const cleanBase64 = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
+
+    const payload = {
+        contents: [{
+            role: 'user',
+            parts: [
+                { text: prompt },
+                { inlineData: { mimeType: 'image/png', data: cleanBase64 } }
+            ]
+        }]
+    };
+
+    try {
+        console.log('[NHP-IMG] sending', {
+            host: 'generativelanguage.googleapis.com',
+            hasInlineData: true,
+            mimeType: 'image/png',
+            base64Length: cleanBase64.length,
+            hasKey: !!apiKey
+        });
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        console.log('[NHP-IMG] response', response.status);
+        if (!response.ok) {
+            console.warn('[NHP-IMG] error body', await response.text());
+            return null;
+        }
+        const data = await response.json();
+        if (data.error) throw new Error(data.error.message);
+        
+        let aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!aiText) return null;
+
+        // تنظيف المخرجات للتأكد من أنها صالحة كاسم ملف
+        aiText = aiText.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+        return aiText;
+    } catch (error) {
+        console.warn('[NHP-IMG] error', error?.message, error?.stack?.split('\n')[0]);
+        console.error('❌ AI Rename Error:', error);
+        return null;
+    }
+}
+
+function studioBuildGoogleAiRenamePrompt(noteCandidates = [], currentName = '') {
+    const notes = noteCandidates.length
+        ? noteCandidates.map((item, index) => `${index + 1}. ${item}`).join('\n')
+        : 'No note list is available.';
+    return `You are naming a print-on-demand T-shirt design from a small thumbnail.
+Use the image first. Use the note list only to choose the best matching niche when it clearly matches.
+
+Current file name: ${currentName || 'unknown'}
+
+Note list:
+${notes}
+
+Return only valid JSON with this exact shape:
+{"filename":"3_to_6_lowercase_words_with_underscores","selected_note":"exact note from list or empty","suggested_title":"2_to_6_english_words_when_no_note_matches","confidence":0.0}
+
+Rules:
+- filename must be English, lowercase, SEO-friendly, no extension.
+- use underscores only between words.
+- do not invent a protected brand, celebrity, team, or trademark.
+- if a note matches the image, base the filename on that note and the visible design.
+- if no note matches the image, invent a short accurate generic POD title from the visible design and put it in suggested_title.
+- when selected_note is empty, base filename on suggested_title.
+- output JSON only.`;
+}
+
+function studioExtractJsonObject(text = '') {
+    const value = String(text || '').trim();
+    const fenced = value.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    const source = fenced ? fenced[1] : value;
+    const match = source.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    try {
+        return JSON.parse(match[0]);
+    } catch (_) {
+        return null;
+    }
+}
+
+function studioNormalizeAiFilename(value = '') {
+    return studioSanitizeFilenameSegment(String(value || '').replace(/\.[a-z0-9]+$/i, '')).slice(0, 80);
+}
+
+function studioEnsureUniqueFilename(baseName, file, selectedFiles) {
+    const clean = studioNormalizeAiFilename(baseName) || `design_ai_${Date.now()}`;
+    const duplicateCount = selectedFiles.filter((candidate) => (
+        candidate !== file && studioNormalizeAiFilename(candidate.customName || candidate.name) === clean
+    )).length;
+    return duplicateCount ? `${clean}_${duplicateCount + 1}` : clean;
+}
+
+async function studioGetGoogleAiRenameSuggestion(file, noteCandidates) {
+    const thumbnail = file.thumbnail || await studioCreateThumbnail(file.dataURL, isLowSpecModeEnabled() ? 140 : 220);
+    if (thumbnail && !file.thumbnail) file.thumbnail = thumbnail;
+    const prompt = studioBuildGoogleAiRenamePrompt(noteCandidates, file.customName || file.name || '');
+    const response = await chrome.runtime.sendMessage({
+        action: 'call_gemini_web',
+        prompt,
+        base64: thumbnail || file.dataURL,
+        mimeType: 'image/jpeg',
+        taskMode: 'text',
+        url: STUDIO_GOOGLE_AI_RENAME_URL,
+        fallbackUrl: STUDIO_GOOGLE_AI_RENAME_URL
+    });
+
+    if (!response?.success) {
+        throw new Error(response?.error || 'Google AI Mode rename failed.');
+    }
+
+    const rawText = response?.data?.result || response?.text || response?.result || '';
+    const parsed = studioExtractJsonObject(rawText);
+    const fallbackTitle = parsed?.suggested_title || parsed?.suggestedTitle || '';
+    const filename = studioNormalizeAiFilename(parsed?.filename || fallbackTitle || rawText);
+    if (!filename) return null;
+    return {
+        filename,
+        selectedNote: String(parsed?.selected_note || '').trim(),
+        suggestedTitle: String(fallbackTitle || '').trim(),
+        confidence: Number(parsed?.confidence || 0)
+    };
+}
+
+async function studioGoogleAiAutoRenameSelected() {
+    const selectedFiles = STUDIO.step3Files.filter(f => f.selected);
+    if (!selectedFiles.length) {
+        showToast('⚠️ حدد صورة واحدة على الأقل قبل تشغيل Google AI Auto Name');
+        return;
+    }
+    if (STUDIO.isProcessingRenamer) {
+        showToast('⏳ التسمية الذكية تعمل الآن');
+        return;
+    }
+
+    const btn = document.getElementById('studio-google-ai-rename-btn');
+    const originalHtml = btn?.innerHTML || '';
+    const noteCandidates = await studioGetStoredNiches(80);
+    let applied = 0;
+
+    STUDIO.isProcessingRenamer = true;
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Google AI...';
+    }
+
+    try {
+        for (let index = 0; index < selectedFiles.length; index++) {
+            const file = selectedFiles[index];
+            file.meta = { ...(file.meta || {}), google_ai_rename_status: 'running' };
+            studioRenderFileList3();
+            showToast(`🤖 Google AI يحلل الصورة ${index + 1}/${selectedFiles.length}`);
+
+            try {
+                const suggestion = await studioGetGoogleAiRenameSuggestion(file, noteCandidates);
+                if (suggestion?.filename) {
+                    file.customName = studioEnsureUniqueFilename(suggestion.filename, file, selectedFiles);
+                    file.meta = {
+                        ...(file.meta || {}),
+                        google_ai_rename_status: 'done',
+                        google_ai_filename: file.customName,
+                        google_ai_confidence: suggestion.confidence || null,
+                        suggested_niche: suggestion.selectedNote || suggestion.suggestedTitle || file.meta?.suggested_niche || null
+                    };
+                    applied++;
+                } else {
+                    file.meta = { ...(file.meta || {}), google_ai_rename_status: 'empty' };
+                }
+            } catch (error) {
+                console.warn('Google AI rename failed:', error);
+                file.meta = {
+                    ...(file.meta || {}),
+                    google_ai_rename_status: 'failed',
+                    google_ai_error: error?.message || 'Google AI rename failed'
+                };
+            }
+
+            studioRenderFileList3();
+            await new Promise(resolve => setTimeout(resolve, 1200));
+        }
+
+        showToast(applied > 0 ? `✅ Google AI سمّى ${applied} صورة` : '⚠️ لم يرجع Google AI أسماء صالحة');
+    } finally {
+        STUDIO.isProcessingRenamer = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml || '<i class="fa-brands fa-google"></i> Google AI Auto Name';
+        }
+        studioRenderFileList3();
+    }
+}
+
+/**
+ * Rendering Logic
+ */
+function studioRenderGrid(gridEl, filesArr, onRemoveFn) {
+    if (!gridEl) return;
+    const fp = buildStudioFilesFingerprint(filesArr);
+    if (gridEl._renderFp === fp) return;
+    gridEl._renderFp = fp;
+
+    gridEl.innerHTML = '';
+    const max = getStudioGridMax();
+    const visible = filesArr.slice(0, max);
+    visible.forEach((item, idx) => {
+        const card = document.createElement('div');
+        card.className = 'studio-img-card';
+        const img = document.createElement('img');
+        img.src = studioGetDisplayImageSrc(item);
+        img.alt = item.name;
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'img-remove';
+        removeBtn.innerHTML = '✕';
+        removeBtn.onclick = (e) => { e.stopPropagation(); onRemoveFn(idx); };
+        const statusEl = document.createElement('div');
+        statusEl.className = 'img-status';
+        statusEl.textContent = item.status || '';
+        statusEl.style.display = item.status ? 'block' : 'none';
+        card.appendChild(img); card.appendChild(removeBtn); card.appendChild(statusEl);
+        gridEl.appendChild(card);
+    });
+    if (filesArr.length > max) {
+        const more = document.createElement('div');
+        more.className = 'empty-msg';
+        more.style.cssText = 'grid-column:1/-1;font-size:10px;opacity:0.75;padding:6px;';
+        more.textContent = `+${filesArr.length - max} صورة مخفية لتحسين الأداء`;
+        gridEl.appendChild(more);
+    }
+}
+
+function studioRenderFileList3() {
+    const listEl = STUDIO.fileList3;
+    if (!listEl) return;
+    const fp = buildStudioFilesFingerprint(STUDIO.step3Files);
+    if (listEl._renderFp === fp) return;
+    listEl._renderFp = fp;
+
+    listEl.innerHTML = '';
+    if (STUDIO.step3Files.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:12px;">لا توجد صور بعد</div>';
+        return;
+    }
+    STUDIO.step3Files.forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.className = `studio-file-item ${item.selected ? 'selected' : ''}`;
+        row.style.cursor = 'default';
+        const check = document.createElement('input');
+        check.type = 'checkbox';
+        check.className = 'studio-item-check-3';
+        check.checked = !!item.selected;
+        check.style.cssText = 'width:14px; height:14px; accent-color:var(--primary); cursor:pointer; flex-shrink:0;';
+        check.onchange = () => {
+            item.selected = check.checked;
+            row.classList.toggle('selected', item.selected);
+            studioUpdateStep3SelectionUI();
+        };
+        const thumb = document.createElement('img');
+        thumb.className = 'studio-file-thumb';
+        thumb.src = studioGetDisplayImageSrc(item);
+        thumb.alt = item.name;
+        thumb.style.cursor = 'pointer';
+        thumb.onclick = () => { check.checked = !check.checked; check.onchange(); };
+        const nameInput = document.createElement('input');
+        nameInput.className = 'studio-file-name-edit';
+        nameInput.type = 'text';
+        nameInput.value = (item.customName || item.name.replace(/\.[^.]+$/, ''));
+        nameInput.placeholder = 'اسم الملف...';
+        nameInput.onchange = () => { STUDIO.step3Files[idx].customName = nameInput.value.trim() || item.name; };
+        const extSpan = document.createElement('span');
+        extSpan.style.cssText = 'color:var(--text-muted);font-size:10px;flex-shrink:0;';
+        extSpan.textContent = '.png';
+        row.appendChild(check); row.appendChild(thumb); row.appendChild(nameInput); row.appendChild(extSpan);
+
+        if (item.meta?.suggested_niche) {
+            const nicheBadge = document.createElement('span');
+            nicheBadge.style.cssText = 'color:#FBBF24;font-size:10px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);padding:3px 6px;border-radius:999px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+            nicheBadge.title = item.meta.suggested_niche;
+            nicheBadge.textContent = `🎯 ${item.meta.suggested_niche}`;
+            row.appendChild(nicheBadge);
+        }
+        if (item.meta?.google_ai_rename_status) {
+            const status = item.meta.google_ai_rename_status;
+            const aiBadge = document.createElement('span');
+            const tone = status === 'done'
+                ? 'color:#93C5FD;background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.28);'
+                : status === 'failed'
+                    ? 'color:#FCA5A5;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.28);'
+                    : 'color:#CBD5E1;background:rgba(148,163,184,0.12);border:1px solid rgba(148,163,184,0.25);';
+            aiBadge.style.cssText = `${tone}font-size:10px;padding:3px 6px;border-radius:999px;white-space:nowrap;`;
+            aiBadge.title = item.meta.google_ai_error || item.meta.google_ai_filename || 'Google AI rename';
+            aiBadge.textContent = status === 'running' ? 'Google AI...' : status === 'done' ? 'Google AI' : status;
+            row.appendChild(aiBadge);
+        }
+        if (typeof item.meta?.auto_crop_confidence === 'number') {
+            const confBadge = document.createElement('span');
+            const confidence = Math.round(item.meta.auto_crop_confidence * 100);
+            confBadge.style.cssText = 'color:#A78BFA;font-size:10px;background:rgba(108,99,255,0.12);border:1px solid rgba(108,99,255,0.25);padding:3px 6px;border-radius:999px;white-space:nowrap;';
+            confBadge.title = item.meta?.auto_crop_method || 'auto-crop';
+            confBadge.textContent = `AI Crop ${confidence}%`;
+            row.appendChild(confBadge);
+        }
+        listEl.appendChild(row);
+    });
+    studioUpdateCounts();
+    studioUpdateStep3SelectionUI();
+}
+
+function studioUpdateStep3SelectionUI() {
+    const selectedCount = STUDIO.step3Files.filter(f => f.selected).length;
+    const dlSelectedBtn = document.getElementById('studio-download-selected-btn');
+    const saveRepoBtn = document.getElementById('studio-save-repo-btn');
+    const selectAll = document.getElementById('studio-select-all-3');
+    if (dlSelectedBtn) {
+        dlSelectedBtn.disabled = selectedCount === 0;
+        dlSelectedBtn.innerHTML = `<i class="fa-solid fa-square-check"></i> تحميل المختار (${selectedCount})`;
+    }
+    if (saveRepoBtn) {
+        saveRepoBtn.innerHTML = `<i class="fa-solid fa-server"></i> حفظ ${selectedCount > 0 ? 'المحدد' : 'الكل'} في المستودع`;
+    }
+    if (selectAll) {
+        selectAll.checked = selectedCount === STUDIO.step3Files.length && selectedCount > 0;
+    }
+}
+
+function studioUpdateCounts() {
+    const counts = [
+        ['studio-step1-count', STUDIO.step1Files.length],
+        ['studio-step2-count', STUDIO.step2Files.length],
+        ['studio-step3-count', STUDIO.step3Files.length],
+        ['studio-step2-badge', STUDIO.step2Files.length || STUDIO.step1Results.length],
+        ['studio-step3-badge', STUDIO.step3Files.length || STUDIO.step2Results.length],
+        ['studio-seo-badge', STUDIO.step3Files.length],
+    ];
+    counts.forEach(([id, n]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = `${n} صور`;
+        // New enabled logic for additional destination buttons
+        if (id === 'studio-seo-badge') {
+            const has = (n > 0);
+            ['studio-to-seo-btn', 'studio-to-aut-btn', 'studio-to-both-btn', 'studio-save-repo-btn'].forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) btn.disabled = !has;
+            });
+        }
+    });
+}
+
+/**
+ * Handle File Selection
+ */
+async function studioHandleFiles1(files) {
+    const valid = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (!valid.length) { showToast('⚠️ لا توجد صور صحيحة'); return; }
+    for (const file of valid) {
+        console.log('[NHP-IMG] picked', file.name, file.type || 'unknown', `${Math.round((file.size || 0) / 1024)}KB`);
+        const dataURL = await studioReadFileAsDataURL(file);
+        STUDIO.step1Files.push({ file, name: file.name, dataURL, status: '' });
+    }
+    const removeFn = (idx) => {
+        STUDIO.step1Files.splice(idx, 1);
+        studioRenderGrid(STUDIO.grid1, STUDIO.step1Files, removeFn);
+        studioUpdateStep1UI(); studioUpdateCounts();
+    };
+    studioRenderGrid(STUDIO.grid1, STUDIO.step1Files, removeFn);
+    studioUpdateStep1UI(); studioUpdateCounts();
+    showToast(`✅ تمت إضافة ${valid.length} صورة للمرحلة 1`);
+}
+
+function studioUpdateStep1UI() {
+    const has = STUDIO.step1Files.length > 0;
+    const hasRes = STUDIO.step1Results.length > 0;
+    if (STUDIO.peelProcessBtn) STUDIO.peelProcessBtn.disabled = !has || STUDIO.isProcessingPeel;
+    if (STUDIO.peelDownloadBtn) STUDIO.peelDownloadBtn.style.display = hasRes ? 'flex' : 'none';
+    if (STUDIO.toStep2Btn) { STUDIO.toStep2Btn.disabled = !(has || hasRes); const b = document.getElementById('studio-step2-badge'); if (b) b.textContent = `${hasRes ? STUDIO.step1Results.length : STUDIO.step1Files.length} صور`; }
+}
+
+async function studioHandleFiles2(files) {
+    const valid = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (!valid.length) return;
+    for (const file of valid) {
+        console.log('[NHP-IMG] picked', file.name, file.type || 'unknown', `${Math.round((file.size || 0) / 1024)}KB`);
+        const dataURL = await studioReadFileAsDataURL(file);
+        const item = { file, name: file.name, dataURL, status: '' };
+        await studioEnsureThumbnail(item, 120);
+        STUDIO.step2Files.push(item);
+    }
+    studioUpdateCounts();
+    if (typeof studioTeemasterRefreshQueue === 'function') studioTeemasterRefreshQueue();
+    showToast(`✅ تمت إضافة ${valid.length} صورة للمرحلة 2`);
+}
+
+function studioSetSilentLoadingIndicator(active) {
+    const spinner = document.getElementById('studio-silent-loading');
+    if (!spinner) return;
+    spinner.classList.toggle('is-active', !!active);
+    spinner.setAttribute('aria-hidden', active ? 'false' : 'true');
+}
+
+async function studioHandleTeemasterSilentUpload(files) {
+    const valid = Array.from(files || []).filter(f => f && f.type && f.type.startsWith('image/'));
+    if (!valid.length) {
+        showToast('⚠️ لا توجد صور صحيحة');
+        return;
+    }
+    if (STUDIO.isProcessingPeel) {
+        showToast('⏳ Peel Banana يعمل الآن، انتظر حتى الاكتمال');
+        return;
+    }
+
+    studioSetSilentLoadingIndicator(true);
+    try {
+        await studioHandleFiles1(valid);
+        await studioPeelBananaProcess();
+    } finally {
+        studioSetSilentLoadingIndicator(false);
+    }
+}
+
+async function studioHandleFiles3(files) {
+    const valid = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (!valid.length) return;
+    for (const file of valid) {
+        console.log('[NHP-IMG] picked', file.name, file.type || 'unknown', `${Math.round((file.size || 0) / 1024)}KB`);
+        const dataURL = await studioReadFileAsDataURL(file);
+        const item = { file, name: file.name, dataURL, status: '', selected: true };
+        await studioEnsureThumbnail(item, 140);
+        STUDIO.step3Files.push(item);
+    }
+    studioRenderFileList3();
+}
+
+/**
+ * Pipeline Step Actions
+ */
+async function studioPeelBananaProcess() {
+    if (STUDIO.isProcessingPeel || STUDIO.step1Files.length === 0) return;
+    STUDIO.isProcessingPeel = true;
+    studioUpdateStep1UI();
+    const progWrap = document.getElementById('studio-peel-progress');
+    const progBar = document.getElementById('studio-peel-bar');
+    const progText = document.getElementById('studio-peel-pct');
+    if (progWrap) progWrap.style.display = 'block';
+
+    STUDIO.step1Results = [];
+    const total = STUDIO.step1Files.length;
+    for (let i = 0; i < total; i++) {
+        const item = STUDIO.step1Files[i];
+        item.status = 'جاري المعالجة...'; studioRenderGrid(STUDIO.grid1, STUDIO.step1Files, () => { });
+        if (progBar) progBar.style.width = `${Math.round(((i) / total) * 100)}%`;
+        if (progText) progText.textContent = `${Math.round(((i) / total) * 100)}%`;
+
+        try {
+            const result = await chrome.runtime.sendMessage({ action: 'peel_banana', dataURL: item.dataURL });
+            if (result && result.success) {
+                item.status = '✅ تم';
+                STUDIO.step1Results.push({ name: item.name, dataURL: result.dataURL });
+            } else {
+                const errMsg = (result && result.error) ? `: ${result.error}` : '';
+                item.status = `❌ فشل${errMsg}`;
+            }
+        } catch (e) {
+            item.status = `❌ خطأ: ${e.message}`;
+        }
+        studioRenderGrid(STUDIO.grid1, STUDIO.step1Files, () => { });
+    }
+    if (progBar) progBar.style.width = '100%';
+    if (progText) progText.textContent = '100%';
+    setTimeout(() => { if (progWrap) progWrap.style.display = 'none'; }, 1000);
+
+    STUDIO.isProcessingPeel = false;
+    showToast(`✨ تمت معالجة ${STUDIO.step1Results.length} صورة بنجاح!`);
+
+    // Auto move to step 2 files
+    STUDIO.step2Files = STUDIO.step1Results.map(r => ({ name: r.name, dataURL: r.dataURL, status: '' }));
+    studioUpdateStep1UI();
+    studioUpdateCounts();
+    if (typeof studioTeemasterRefreshQueue === 'function') studioTeemasterRefreshQueue();
+    document.dispatchEvent(new CustomEvent('studio:peel-complete', {
+        detail: { total: STUDIO.step1Results.length }
+    }));
+
+    if (studioGetAutoPipelineSettingsFromUI().enabled) {
+        await studioRunAutoPipelineFromStep1();
+    }
+}
+
+function studioPeelDownloadAll() {
+    STUDIO.step1Results.forEach(res => {
+        const a = document.createElement('a');
+        a.href = res.dataURL;
+        a.download = `peeled_${res.name}`;
+        a.click();
+    });
+}
+
+async function studioApplyBulkName() {
+    const isImageAIActive = document.getElementById('rename-by-image-ai')?.checked;
+    const geminiKey = (STUDIO.geminiKey || '').trim();
+
+    const selectedFiles = STUDIO.step3Files.filter(f => f.selected);
+    if (selectedFiles.length === 0) {
+        showToast('⚠️ يرجى تحديد صورة واحدة على الأقل من القائمة');
+        return;
+    }
+
+    if (isImageAIActive) {
+        if (!geminiKey) {
+            showToast('⚠️ أدخل مفتاح Gemini في إعدادات TeeMaster ثم أعد المحاولة');
+            return;
+        }
+        if (!STUDIO.isProcessingRenamer) {
+            STUDIO.isProcessingRenamer = true;
+            document.getElementById('studio-apply-bulk-name').disabled = true;
+            document.getElementById('studio-apply-bulk-name').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحليل...';
+            
+            try {
+                for (let i = 0; i < STUDIO.step3Files.length; i++) {
+                    if (STUDIO.step3Files[i].selected) {
+                        showToast(`🤖 جاري تحليل الصورة ${i + 1} وتسميتها...`);
+                        const base64 = STUDIO.step3Files[i].dataURL;
+                        const generatedName = await generateFilenameFromImageAI(base64, geminiKey);
+                        
+                        if (generatedName) {
+                            STUDIO.step3Files[i].customName = `${generatedName}_${i + 1}`;
+                        } else {
+                            STUDIO.step3Files[i].customName = `design_ai_${Date.now()}_${i + 1}`;
+                        }
+                        
+                        // توقف بسيط لتجنب حظر الـ API (Rate Limit)
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        studioRenderFileList3();
+                    }
+                }
+                showToast('✅ تم الانتهاء من التسمية بالذكاء الاصطناعي');
+            } finally {
+                STUDIO.isProcessingRenamer = false;
+                document.getElementById('studio-apply-bulk-name').disabled = false;
+                document.getElementById('studio-apply-bulk-name').innerHTML = '<i class="fa-solid fa-check-double"></i> تطبيق على الكل';
+            }
+        }
+        return;
+    }
+
+    const val = STUDIO.bulkNameInput.value.trim();
+    if (!val) { showToast('⚠️ أدخل اسماً أولاً'); return; }
+
+    let appliedCount = 0;
+    STUDIO.step3Files.forEach((f) => {
+        if (f.selected) {
+            f.customName = selectedFiles.length > 1 ? `${val}_${appliedCount + 1}` : val;
+            appliedCount++;
+        }
+    });
+    
+    studioRenderFileList3();
+    showToast(`✅ تم تطبيق الاسم على ${appliedCount} صورة بنجاح`);
+}
+
+async function studioDownloadFinal() {
+    const JSZip = window.JSZip;
+    if (!JSZip) {
+        STUDIO.step3Files.forEach(f => {
+            const a = document.createElement('a'); a.href = f.dataURL; a.download = `${f.customName || f.name.split('.')[0]}.png`; a.click();
+        });
+        return;
+    }
+    const zip = new JSZip();
+    STUDIO.step3Files.forEach(f => {
+        const base64 = f.dataURL.split(',')[1];
+        zip.file(`${f.customName || f.name.split('.')[0]}.png`, base64, { base64: true });
+    });
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `NHP_Studio_Export_${Date.now()}.zip`; a.click();
+}
+
+async function studioDownloadSelected() {
+    const selected = STUDIO.step3Files.filter(f => f.selected);
+    if (!selected.length) return;
+    selected.forEach(f => {
+        const a = document.createElement('a');
+        a.href = f.dataURL;
+        a.download = `${f.customName || f.name.split('.')[0]}.png`;
+        a.click();
+    });
+}
+
+async function studioCommitToRepo() {
+    const toCommit = STUDIO.step3Files.filter(f => f.selected);
+    const finalCommit = toCommit.length > 0 ? toCommit : STUDIO.step3Files;
+    if (finalCommit.length === 0) return;
+
+    if (!getWorkspaceHandle()) {
+        showToast('⚠️ يجب اختيار مجلد العمل أولاً في قسم التحميلات');
+        // Keep the user's current section; Autopilot can be opened manually.
+        return;
+    }
+
+    showToast(`⏳ جاري حفظ ${finalCommit.length} تصميم في المستودع المحلي...`);
+    try {
+        const studioDir = await getWorkspaceHandle().getDirectoryHandle('studio_repo', { create: true });
+        for (const item of finalCommit) {
+            const fileName = `${item.customName || item.name.replace(/\.[^.]+$/, '')}.png`;
+            const fileHandle = await studioDir.getFileHandle(fileName, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(studioDataURLtoBlob(item.dataURL));
+            await writable.close();
+        }
+        showToast(`✅ تم حفظ التصاميم في المجلد: studio_repo`);
+        studioRefreshRepository();
+    } catch (e) { console.error(e); showToast('❌ فشل الحفظ في المستودع'); }
+}
+
+function studioResetPipeline() {
+    if (!confirm('هل أنت متأكد من مسح جميع بيانات Studio والبدء من جديد؟')) return;
+    STUDIO.step1Files = []; STUDIO.step1Results = [];
+    STUDIO.step2Files = []; STUDIO.step2Results = [];
+    STUDIO.step3Files = [];
+    studioRenderGrid(STUDIO.grid1, [], () => { });
+    studioRenderFileList3();
+    studioUpdateStep1UI();
+    studioUpdateCounts();
+    if (typeof studioTeemasterRefreshQueue === 'function') studioTeemasterRefreshQueue();
+    studioGoToStep(1);
+}
+
+/**
+ * Sending to other modules
+ */
+/**
+ * Sending to other modules
+ */
+async function studioSendToDestination(dest, sourceList = null) {
+    const list = Array.isArray(sourceList) && sourceList.length ? sourceList : STUDIO.step3Files;
+    if (list.length === 0) {
+        showToast('⚠️ لا توجد صور مختارة للإرسال');
+        return;
+    }
+
+    showToast(`⏳ جاري تحضير ${list.length} صورة للنقل...`);
+
+    // Prepare items with the structure expected by SEO/Autopilot
+    const preparedItems = [];
+    for (let index = 0; index < list.length; index += 1) {
+        const f = list[index];
+        const base64 = f.dataURL.split(',')[1];
+        const thumbnail = await studioCreateThumbnail(f.dataURL, 120);
+        const name = (f.customName || f.name.replace(/\.[^/.]+$/, "")) + '.png';
+
+        const meta = f.meta ? { ...f.meta } : null;
+        if (meta?.suggested_niche && !meta.main_tag) {
+            meta.main_tag = meta.suggested_niche;
+        }
+
+        preparedItems.push({
+            id: 'design_' + Math.random().toString(36).substr(2, 9),
+            file: { name: name, type: 'image/png' },
+            base64: base64,
+            thumbnail: thumbnail,
+            status: 'pending',
+            meta
+        });
+
+        if ((index + 1) % 4 === 0) {
+            await studioYieldToUi();
+        }
+    }
+
+    const currentQueue = getDesignQueue();
+    const nextQueue = [...currentQueue, ...preparedItems];
+
+    if (dest === 'seo' || dest === 'both') {
+        if (dest === 'seo' && STUDIO.seoClearFirstToggle?.checked) {
+            await studioClearSeoQueue();
+        }
+
+        if (dest === 'seo') {
+            setDesignQueue([...getDesignQueue(), ...preparedItems]);
+            showToast(`🚀 تم إرسال ${list.length} صورة إلى SEO AI!`);
+            // Keep the user's current section; SEO queue is updated in the background.
+            renderQueue();
+            await saveQueueToStorage(true);
+        }
+    }
+
+    if (dest === 'aut' || dest === 'both') {
+        if (dest === 'aut') {
+            setDesignQueue([...getDesignQueue(), ...preparedItems]);
+            showToast(`🚀 تم نقل ${list.length} تصميم إلى Autopilot!`);
+            // Keep the user's current section; Autopilot queue is updated in the background.
+            renderQueue();
+            await saveQueueToStorage(true);
+        }
+    }
+
+    if (dest === 'both') {
+        setDesignQueue(nextQueue);
+        showToast(`🚀 تم إرسال ${list.length} تصميم إلى الجميع!`);
+        // Keep the user's current section; queues are updated in the background.
+        renderQueue();
+        await saveQueueToStorage(true);
+    }
+}
+
+
+
+/**
+ * Helper to create thumbnails for the queue
+ */
+async function studioCreateThumbnail(dataURL, maxWidth = 100) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const scale = maxWidth / img.width;
+            canvas.width = maxWidth;
+            canvas.height = img.height * scale;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', 0.7));
+        };
+        img.onerror = () => resolve(null);
+        img.src = dataURL;
+    });
+}
+
+async function studioClearSeoQueue() {
+    const currentQueue = Array.isArray(getDesignQueue?.()) ? getDesignQueue() : [];
+    for (const item of currentQueue) {
+        try {
+            await window.NHPDatabase?.deleteImage(item.id);
+        } catch (error) {
+            console.warn('Failed to clear queued image before Studio SEO send:', error);
+        }
+    }
+
+    setDesignQueue([]);
+    renderQueue();
+    await saveQueueToStorage(true);
+}
+
+/**
+ * Repository Management
+ */
+async function studioRefreshRepository() {
+    if (!getWorkspaceHandle() || !STUDIO.repo.grid) return;
+    STUDIO.repo.grid.innerHTML = '<div style="width:100%; text-align:center; padding:10px; font-size:10px;">جاري المسح...</div>';
+    try {
+        const studioDir = await getWorkspaceHandle().getDirectoryHandle('studio_repo', { create: true });
+        STUDIO.repo.items = [];
+        for await (const entry of studioDir.values()) {
+            if (entry.kind === 'file' && entry.name.match(/\.(png|jpg|jpeg)$/i)) {
+                const file = await entry.getFile();
+                const dataURL = await studioReadFileAsDataURL(file);
+                const repoItem = { name: entry.name, dataURL, fileHandle: entry };
+                await studioEnsureThumbnail(repoItem, 120);
+                STUDIO.repo.items.push(repoItem);
+            }
+        }
+        const repoFp = `${STUDIO.repo.items.length}|${STUDIO.repo.items.slice(0, 8).map((i) => i.name).join('|')}`;
+        if (STUDIO.repo.grid._renderFp === repoFp) {
+            if (STUDIO.repo.count) STUDIO.repo.count.textContent = `Available Designs: ${STUDIO.repo.items.length}`;
+            return;
+        }
+        STUDIO.repo.grid._renderFp = repoFp;
+
+        STUDIO.repo.grid.innerHTML = '';
+        if (STUDIO.repo.items.length === 0) {
+            STUDIO.repo.grid.innerHTML = '<div style="width:100%; text-align:center; padding:10px; font-size:10px;">المستودع فارغ حالياً</div>';
+        } else {
+            const maxRepo = getStudioRepoMax();
+            STUDIO.repo.items.slice(0, maxRepo).forEach((item) => {
+                const div = document.createElement('div');
+                div.className = 'repo-item';
+                div.title = item.name;
+                div.onclick = () => showDesignPreview(item.dataURL, item.name);
+                const img = document.createElement('img');
+                img.src = studioGetDisplayImageSrc(item);
+                const check = document.createElement('input');
+                check.type = 'checkbox';
+                check.className = 'item-check repo-item-check';
+                check.onclick = (e) => e.stopPropagation();
+                div.appendChild(img); div.appendChild(check);
+                STUDIO.repo.grid.appendChild(div);
+            });
+            if (STUDIO.repo.items.length > maxRepo) {
+                const more = document.createElement('div');
+                more.style.cssText = 'width:100%;text-align:center;padding:6px;font-size:10px;opacity:0.75;';
+                more.textContent = `+${STUDIO.repo.items.length - maxRepo} في المستودع`;
+                STUDIO.repo.grid.appendChild(more);
+            }
+        }
+        if (STUDIO.repo.count) STUDIO.repo.count.textContent = `Available Designs: ${STUDIO.repo.items.length}`;
+    } catch (e) { console.error(e); }
+}
+
+async function studioTransferFromRepo(dest) {
+    const checks = Array.from(STUDIO.repo.grid.querySelectorAll('.repo-item-check'));
+    const selectedIndices = checks.map((cb, i) => cb.checked ? i : -1).filter(i => i !== -1);
+    let toTransfer = [];
+
+    if (selectedIndices.length > 0) {
+        toTransfer = selectedIndices.map(i => STUDIO.repo.items[i]);
+    } else {
+        const qty = parseInt(STUDIO.repo.qty.value) || 5;
+        toTransfer = STUDIO.repo.items.slice(0, qty);
+    }
+
+    if (toTransfer.length === 0) { showToast('⚠️ لا توجد تصاميم للنقل'); return; }
+
+    await studioSendToDestination(dest, toTransfer);
+}
+
+async function studioDeleteSelectedFromRepo() {
+    const checks = Array.from(STUDIO.repo.grid.querySelectorAll('.repo-item-check'));
+    const selectedIndices = checks.map((cb, i) => cb.checked ? i : -1).filter(i => i !== -1);
+    if (selectedIndices.length === 0) { showToast('⚠️ اختر التصاميم المراد حذفها أولاً'); return; }
+    if (!confirm(`هل أنت متأكد من حذف ${selectedIndices.length} تصميم نهائياً من المستودع؟`)) return;
+
+    try {
+        const studioDir = await getWorkspaceHandle().getDirectoryHandle('studio_repo');
+        for (const idx of selectedIndices) {
+            await studioDir.removeEntry(STUDIO.repo.items[idx].name);
+        }
+        showToast(`🗑️ تم حذف ${selectedIndices.length} تصميم بنجاح`);
+        studioRefreshRepository();
+    } catch (e) { showToast('❌ فشل الحذف من المستودع'); }
+}
+
+/**
+ * UI Utilities
+ */
+function studioSetupDragDrop(zoneId, inputId, onFiles) {
+    const zone = document.getElementById(zoneId);
+    if (!zone) return;
+    if (zone.dataset.studioDropInit === '1') return;
+    zone.dataset.studioDropInit = '1';
+    zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => { zone.classList.remove('dragover'); });
+    zone.addEventListener('drop', (e) => {
+        e.preventDefault(); zone.classList.remove('dragover');
+        if (e.dataTransfer.files) onFiles(e.dataTransfer.files);
+    });
+}
+
+/**
+ * إنشاء قائمة منسدلة لجلب النيتشات من الملاحظات ووضعها في حقل التسمية
+ */
+/**
+ * v16.2 — جلب النيتشات من موديول الملاحظات (Notes) لـ AI Designer و Repository
+ */
+function setupNicheImportForRepository() {
+    const bulkInput = document.getElementById('studio-bulk-name');
+    if (!bulkInput) return;
+
+    const parent = bulkInput.parentElement;
+    if (!parent || document.getElementById('studio-niche-repo-select')) return;
+
+    const select = document.createElement('select');
+    select.id = 'studio-niche-repo-select';
+    select.className = 'modern-input text-xs';
+    select.style.cssText = 'padding: 8px; border-radius: 6px; background: rgba(0,0,0,0.2); border: 1px solid #475569; color: #fff; margin-right: 8px; max-width: 180px; flex-shrink: 0;';
+    
+    const loadNiches = () => {
+        chrome.storage.local.get(['teepublic_manager_data'], (res) => {
+            const niches = res.teepublic_manager_data?.niches || [];
+            select.innerHTML = '<option value="">📥 جلب من الملاحظات...</option>';
+            niches.forEach(n => {
+                const opt = document.createElement('option');
+                opt.value = n.text;
+                opt.textContent = n.text.substring(0, 25) + (n.text.length > 25 ? '...' : '');
+                select.appendChild(opt);
+            });
+        });
+    };
+
+    loadNiches();
+    select.addEventListener('focus', loadNiches);
+    select.addEventListener('change', (e) => {
+        if (e.target.value) bulkInput.value = e.target.value;
+    });
+
+    parent.insertBefore(select, bulkInput);
+}
+
+/**
+ * TeeMaster Engine: Complex Image Processing Sub-module
+ */
+function initTeeMasterEngine() {
+    const TM = {
+        queue: [], history: [], results: [],
+        canvas: document.getElementById('tm-preview-canvas'),
+        overlay: document.getElementById('tm-preview-overlay'),
+        ctx: null, octx: null, originalImage: null,
+        zoom: 1.0, offsetX: 0, offsetY: 0,
+        undoStack: [], tool: 'color', bgColor: 'transparent',
+        isDragging: false, lastX: 0, lastY: 0,
+        cropRect: null, freeCropPath: [], currentIndex: 0,
+        isDirty: false,
+        get manualColor() { return document.getElementById('tm-manual-color'); },
+        get colorDisplay() { return document.getElementById('tm-color-display'); }
+    };
+
+    if (!TM.canvas || !TM.overlay) return;
+    TM.ctx = TM.canvas.getContext('2d', { willReadFrequently: true });
+    TM.octx = TM.overlay.getContext('2d');
+    window.STUDIO_TME = TM; // Global ref
+
+    // Tab Switching
+    document.getElementById('tm-tab-queue')?.addEventListener('click', () => studioTeemasterSwitchTab('queue'));
+    document.getElementById('tm-tab-history')?.addEventListener('click', () => studioTeemasterSwitchTab('history'));
+
+    // Tool switching
+    document.querySelectorAll('input[name="tm-preview-tool"]').forEach(input => {
+        input.addEventListener('change', (e) => {
+            TM.tool = e.target.value;
+            TM.cropRect = null; TM.freeCropPath = [];
+            studioTeemasterDraw();
+            const btn = document.getElementById('tm-add-crop-btn');
+            if (btn) btn.style.display = (TM.tool === 'crop' || TM.tool === 'crop-free') ? 'block' : 'none';
+            document.querySelectorAll('.tm-tool-label').forEach(l => {
+                l.style.borderColor = l.querySelector('input').checked ? 'var(--primary)' : 'var(--border)';
+                l.style.background = l.querySelector('input').checked ? 'rgba(108,99,255,0.1)' : 'rgba(0,0,0,0.2)';
+            });
+        });
+    });
+
+    // Zoom & Pan
+    document.getElementById('tm-zoom-in-btn')?.addEventListener('click', () => { TM.zoom *= 1.2; studioTeemasterDraw(); });
+    document.getElementById('tm-zoom-out-btn')?.addEventListener('click', () => { TM.zoom /= 1.2; studioTeemasterDraw(); });
+    document.getElementById('tm-zoom-reset-btn')?.addEventListener('click', () => { TM.zoom = 1.0; TM.offsetX = 0; TM.offsetY = 0; studioTeemasterDraw(); });
+
+    // BG Switch
+    document.getElementById('tm-bg-black-btn')?.addEventListener('click', () => { TM.bgColor = 'black'; studioTeemasterDraw(); });
+    document.getElementById('tm-bg-white-btn')?.addEventListener('click', () => { TM.bgColor = 'white'; studioTeemasterDraw(); });
+    document.getElementById('tm-bg-trans-btn')?.addEventListener('click', () => { TM.bgColor = 'transparent'; studioTeemasterDraw(); });
+
+    // Actions
+    document.getElementById('tm-undo-btn')?.addEventListener('click', () => {
+        if (TM.undoStack.length > 1) {
+            TM.undoStack.pop();
+            const last = TM.undoStack[TM.undoStack.length - 1];
+            TM.ctx.putImageData(last, 0, 0);
+            TM.isDirty = true;
+            studioTeemasterDraw();
+        }
+    });
+
+    document.getElementById('tm-add-crop-btn')?.addEventListener('click', studioTeemasterHandleCropAction);
+    document.getElementById('tm-auto-extract-btn')?.addEventListener('click', studioAutoExtractCurrentComposite);
+    document.getElementById('tm-bulk-global-magic-btn')?.addEventListener('click', studioApplyBulkGlobalMagicToQueue);
+    studioInitTeemasterProofreaderWindowToggle();
+    document.getElementById('tm-proofread-gemini-btn')?.addEventListener('click', studioTeemasterSendSelectedToProofreader);
+    document.getElementById('tm-proof-select-all')?.addEventListener('change', (e) => {
+        const checked = e.target.checked;
+        STUDIO.step2Files.forEach((item) => { item.selectedForProof = checked; });
+        studioTeemasterRefreshQueue();
+    });
+    document.getElementById('tm-skip-btn')?.addEventListener('click', () => {
+        studioTeemasterRemoveItem(TM.currentIndex);
+    });
+
+    // Canvas Events
+    TM.canvas.addEventListener('mousedown', studioTeemasterOnMouseDown);
+    window.addEventListener('mousemove', studioTeemasterOnMouseMove);
+    window.addEventListener('mouseup', studioTeemasterOnMouseUp);
+    studioInitWorkspaceDragPan();
+    TM.canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? 0.9 : 1.1;
+        TM.zoom *= delta; studioTeemasterDraw();
+    }, { passive: false });
+
+    // Queue & History Management
+    document.getElementById('tm-clear-queue-btn')?.addEventListener('click', () => {
+        STUDIO.step2Files = [];
+        TM.queue = STUDIO.step2Files;
+        TM.isDirty = false;
+        studioTeemasterRefreshQueue();
+    });
+    document.getElementById('tm-clear-history-btn')?.addEventListener('click', () => { TM.history = []; studioTeemasterRefreshHistory(); });
+
+    // Start Process
+    document.getElementById('tm-start-btn')?.addEventListener('click', studioTeemasterStartProcess);
+
+    // Export expose
+    window.studioTeemasterRefreshQueue = studioTeemasterRefreshQueue;
+}
+
+function studioInitWorkspaceDragPan() {
+    const workspace = document.querySelector('#studio-section-2 .tm-workspace');
+    if (!workspace) return;
+    if (workspace.dataset.tmDragPanInit === '1') return;
+    workspace.dataset.tmDragPanInit = '1';
+
+    let isDown = false;
+    let startX = 0;
+    let startY = 0;
+    let scrollLeft = 0;
+    let scrollTop = 0;
+
+    const interactiveSelector = 'button, input, select, textarea, label, a, [contenteditable="true"]';
+    const onPanEnd = () => {
+        isDown = false;
+        workspace.classList.remove('ctrl-panning');
+    };
+
+    if (workspace.dataset.tmCtrlPanKeybindInit !== '1') {
+        workspace.dataset.tmCtrlPanKeybindInit = '1';
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Control') return;
+            workspace.classList.add('ctrl-ready');
+        });
+        document.addEventListener('keyup', (e) => {
+            if (e.key !== 'Control') return;
+            workspace.classList.remove('ctrl-ready');
+            onPanEnd();
+        });
+    }
+
+    workspace.addEventListener('mousedown', (e) => {
+        if (e.button !== 0 || !e.ctrlKey) return;
+        if (e.target.closest(interactiveSelector)) return;
+
+        const previewContainer = document.getElementById('tm-preview-container');
+        if (previewContainer && !previewContainer.contains(e.target)) return;
+
+        const canScrollX = workspace.scrollWidth > workspace.clientWidth;
+        const canScrollY = workspace.scrollHeight > workspace.clientHeight;
+        if (!canScrollX && !canScrollY) return;
+
+        isDown = true;
+        workspace.classList.add('ctrl-ready');
+        workspace.classList.add('ctrl-panning');
+        startX = e.pageX;
+        startY = e.pageY;
+        scrollLeft = workspace.scrollLeft;
+        scrollTop = workspace.scrollTop;
+        e.preventDefault();
+    });
+
+    workspace.addEventListener('mouseleave', () => {
+        onPanEnd();
+    });
+
+    workspace.addEventListener('mouseup', () => {
+        onPanEnd();
+    });
+
+    workspace.addEventListener('mousemove', (e) => {
+        if (!isDown || !e.ctrlKey) {
+            if (isDown && !e.ctrlKey) onPanEnd();
+            return;
+        }
+        const walkX = e.pageX - startX;
+        const walkY = e.pageY - startY;
+        workspace.scrollLeft = scrollLeft - walkX;
+        workspace.scrollTop = scrollTop - walkY;
+        e.preventDefault();
+    });
+}
+
+/**
+ * TeeMaster Sub-functions
+ */
+function studioTeemasterSwitchTab(tab) {
+    const qS = document.getElementById('tm-queue-section');
+    const hS = document.getElementById('tm-history-section');
+    const qB = document.getElementById('tm-tab-queue');
+    const hB = document.getElementById('tm-tab-history');
+
+    if (qS) qS.style.display = (tab === 'queue' ? 'block' : 'none');
+    if (hS) hS.style.display = (tab === 'history' ? 'block' : 'none');
+
+    if (qB) {
+        qB.style.color = (tab === 'queue' ? '#10B981' : 'var(--text-muted)');
+        qB.style.borderBottomColor = (tab === 'queue' ? '#10B981' : 'transparent');
+    }
+    if (hB) {
+        hB.style.color = (tab === 'history' ? '#10B981' : 'var(--text-muted)');
+        hB.style.borderBottomColor = (tab === 'history' ? '#10B981' : 'transparent');
+    }
+
+    if (tab === 'queue') studioTeemasterRefreshQueue();
+    else studioTeemasterRefreshHistory();
+}
+
+function studioCreateThumbnailFromCanvas(canvas, maxWidth = 120) {
+    if (!canvas || !canvas.width || !canvas.height) return null;
+    const scale = Math.min(1, maxWidth / canvas.width);
+    const thumbCanvas = document.createElement('canvas');
+    thumbCanvas.width = Math.max(1, Math.round(canvas.width * scale));
+    thumbCanvas.height = Math.max(1, Math.round(canvas.height * scale));
+    const thumbCtx = thumbCanvas.getContext('2d');
+    thumbCtx.drawImage(canvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
+    return thumbCanvas.toDataURL('image/jpeg', 0.72);
+}
+
+function studioTeemasterCommitCurrentImage() {
+    const TM = window.STUDIO_TME; if (!TM || !TM.canvas || !TM.isDirty) return;
+    const target = STUDIO.step2Files[TM.currentIndex];
+    if (!target) {
+        TM.isDirty = false;
+        return;
+    }
+    target.dataURL = TM.canvas.toDataURL('image/png');
+    target.thumbnail = studioCreateThumbnailFromCanvas(TM.canvas, 120);
+    TM.isDirty = false;
+}
+
+function studioTeemasterRefreshQueue() {
+    const TM = window.STUDIO_TME; if (!TM) return;
+    TM.queue = STUDIO.step2Files;
+    const grid = document.getElementById('tm-queue-grid');
+    const qInfo = document.getElementById('tm-queue-info');
+    const qCount = document.getElementById('tm-queue-count');
+    const startBtn = document.getElementById('tm-start-btn');
+    const autoExtractBtn = document.getElementById('tm-auto-extract-btn');
+    const bulkGlobalMagicBtn = document.getElementById('tm-bulk-global-magic-btn');
+    const proofreadBtn = document.getElementById('tm-proofread-gemini-btn');
+    const proofSelectAll = document.getElementById('tm-proof-select-all');
+    const proofStatus = document.getElementById('tm-proofread-status');
+    const previewSec = document.getElementById('tm-preview-section');
+    const queueSection = document.getElementById('tm-queue-section');
+    const tmSection = document.getElementById('studio-section-2');
+
+    if (grid) {
+        grid.innerHTML = '';
+        TM.queue.forEach((item, idx) => {
+            if (typeof item.selectedForProof !== 'boolean') item.selectedForProof = true;
+            const div = document.createElement('div');
+            div.className = 'studio-img-card' + (TM.currentIndex === idx ? ' active' : '');
+            div.style.height = '60px';
+            div.style.cursor = 'pointer';
+            div.style.position = 'relative';
+            div.onclick = () => studioTeemasterSelectItem(idx);
+
+            const img = document.createElement('img');
+            img.src = studioGetDisplayImageSrc(item);
+
+            const proofCheck = document.createElement('input');
+            proofCheck.type = 'checkbox';
+            proofCheck.checked = item.selectedForProof !== false;
+            proofCheck.title = 'إرسال هذه الصورة إلى مدقق Gemini';
+            proofCheck.disabled = STUDIO.isProcessingTeemaster;
+            proofCheck.style.cssText = 'position:absolute;top:2px;right:2px;width:16px;height:16px;accent-color:#0EA5E9;z-index:3;cursor:pointer;';
+            proofCheck.onclick = (e) => {
+                e.stopPropagation();
+                item.selectedForProof = proofCheck.checked;
+                studioTeemasterRefreshQueue();
+            };
+
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.innerHTML = '&times;';
+            removeBtn.title = 'Remove from queue';
+            removeBtn.disabled = STUDIO.isProcessingTeemaster;
+            removeBtn.style.cssText = 'position:absolute;top:2px;left:2px;width:18px;height:18px;border:none;border-radius:6px;background:rgba(239,68,68,0.92);color:#fff;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;opacity:0.95;';
+            removeBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                studioTeemasterRemoveItem(idx);
+            };
+
+            div.appendChild(img);
+            div.appendChild(proofCheck);
+            div.appendChild(removeBtn);
+            grid.appendChild(div);
+        });
+    }
+
+    const selectedProofCount = TM.queue.filter((item) => item.selectedForProof !== false).length;
+    if (proofreadBtn) {
+        proofreadBtn.disabled = TM.queue.length === 0 || selectedProofCount === 0 || STUDIO.isProcessingTeemaster;
+        proofreadBtn.style.opacity = proofreadBtn.disabled ? '0.55' : '1';
+        proofreadBtn.style.cursor = proofreadBtn.disabled ? 'not-allowed' : 'pointer';
+        proofreadBtn.innerHTML = `<i class="fa-solid fa-spell-check"></i> فحص المختار في Gemini (${selectedProofCount})`;
+    }
+    if (proofSelectAll) {
+        proofSelectAll.checked = TM.queue.length > 0 && selectedProofCount === TM.queue.length;
+        proofSelectAll.indeterminate = selectedProofCount > 0 && selectedProofCount < TM.queue.length;
+        proofSelectAll.disabled = TM.queue.length === 0 || STUDIO.isProcessingTeemaster;
+    }
+    if (proofStatus && TM.queue.length === 0) {
+        proofStatus.style.display = 'none';
+        proofStatus.textContent = '';
+    }
+
+    if (qCount) qCount.textContent = TM.queue.length;
+    if (qInfo) qInfo.style.display = TM.queue.length > 0 ? 'block' : 'none';
+    if (startBtn) {
+        startBtn.disabled = TM.queue.length === 0 || STUDIO.isProcessingTeemaster;
+        startBtn.style.opacity = startBtn.disabled ? '0.5' : '1';
+        startBtn.innerHTML = TM.queue.length > 0 ? `🚀 بدء معالجة ${TM.queue.length} صور في الطابور` : '🚀 يجب عليك رفع الصور أولاً لبدء المعالجة';
+    }
+    if (autoExtractBtn) {
+        autoExtractBtn.disabled = TM.queue.length === 0 || STUDIO.isProcessingTeemaster || STUDIO.isAutoPipelineRunning;
+        autoExtractBtn.style.opacity = autoExtractBtn.disabled ? '0.6' : '1';
+        autoExtractBtn.style.cursor = autoExtractBtn.disabled ? 'not-allowed' : 'pointer';
+    }
+    if (bulkGlobalMagicBtn) {
+        bulkGlobalMagicBtn.disabled = TM.queue.length === 0 || STUDIO.isProcessingTeemaster || STUDIO.isAutoPipelineRunning;
+        bulkGlobalMagicBtn.style.opacity = bulkGlobalMagicBtn.disabled ? '0.6' : '1';
+        bulkGlobalMagicBtn.style.cursor = bulkGlobalMagicBtn.disabled ? 'not-allowed' : 'pointer';
+    }
+
+    if (previewSec) previewSec.style.display = (TM.queue.length > 0 && TM.currentIndex < TM.queue.length) ? 'block' : 'none';
+    if (queueSection) queueSection.style.display = TM.queue.length > 0 ? 'block' : 'none';
+    if (tmSection) tmSection.classList.toggle('tm-has-image', TM.queue.length > 0);
+
+    // Auto-select latest if current is out of bounds
+    if (TM.currentIndex >= TM.queue.length) TM.currentIndex = Math.max(0, TM.queue.length - 1);
+
+    if (TM.queue.length > 0 && (!TM.originalImage || TM.originalImage.src !== TM.queue[TM.currentIndex].dataURL)) {
+        studioTeemasterLoadImage(TM.queue[TM.currentIndex].dataURL);
+    } else if (TM.queue.length === 0) {
+        TM.originalImage = null;
+        TM.ctx.clearRect(0, 0, TM.canvas.width, TM.canvas.height);
+    }
+    studioUpdateCounts();
+}
+
+function studioTeemasterSelectItem(idx) {
+    const TM = window.STUDIO_TME; if (!TM) return;
+    if (TM.currentIndex !== idx) {
+        studioTeemasterCommitCurrentImage();
+    }
+    TM.currentIndex = idx;
+    studioTeemasterRefreshQueue();
+}
+
+function studioTeemasterRemoveItem(idx) {
+    const TM = window.STUDIO_TME; if (!TM) return;
+    if (idx !== TM.currentIndex) {
+        studioTeemasterCommitCurrentImage();
+    }
+    STUDIO.step2Files.splice(idx, 1);
+    // If we removed the current image, adjust index
+    if (TM.currentIndex >= idx && TM.currentIndex > 0) TM.currentIndex--;
+    if (STUDIO.step2Files.length === 0) TM.isDirty = false;
+    studioTeemasterRefreshQueue();
+}
+
+function studioTeemasterLoadImage(dataURL) {
+    const TM = window.STUDIO_TME;
+    const img = new Image();
+    img.onload = () => {
+        TM.originalImage = img;
+        TM.canvas.width = img.width;
+        TM.canvas.height = img.height;
+        TM.overlay.width = img.width;
+        TM.overlay.height = img.height;
+        TM.overlay.style.display = 'block';
+
+        TM.ctx.drawImage(img, 0, 0);
+        TM.undoStack = [TM.ctx.getImageData(0, 0, img.width, img.height)];
+        TM.isDirty = false;
+
+        // Auto-fit logic
+        const container = document.getElementById('tm-preview-container');
+        if (container) {
+            const containerW = container.clientWidth || 400;
+            const containerH = container.clientHeight || 420;
+            const scaleW = (containerW - 20) / img.width;
+            const scaleH = (containerH - 20) / img.height;
+            TM.zoom = Math.min(1.0, scaleW, scaleH);
+        } else {
+            TM.zoom = 1.0;
+        }
+
+        TM.offsetX = 0; TM.offsetY = 0;
+        studioTeemasterDraw();
+    };
+    img.src = dataURL;
+}
+
+function studioTeemasterDraw() {
+    const TM = window.STUDIO_TME; if (!TM || !TM.originalImage) return;
+    const { canvas, overlay, octx } = TM;
+
+    // Main image size & zoom
+    const w = (canvas.width * TM.zoom) + 'px';
+    const h = (canvas.height * TM.zoom) + 'px';
+    canvas.style.width = w; canvas.style.height = h;
+    overlay.style.width = w; overlay.style.height = h;
+
+    const container = document.getElementById('tm-preview-container');
+    if (container) {
+        if (TM.bgColor === 'transparent') container.style.background = 'repeating-conic-gradient(#222 0% 25%, #111 0% 50%) 50% / 20px 20px';
+        else container.style.background = TM.bgColor;
+    }
+
+    const level = document.getElementById('tm-zoom-level');
+    if (level) level.textContent = Math.round(TM.zoom * 100) + '%';
+
+    // Update overlay canvas
+    octx.clearRect(0, 0, overlay.width, overlay.height);
+    if (TM.tool === 'crop' && TM.cropRect) {
+        octx.strokeStyle = '#10B981'; octx.lineWidth = 4 / TM.zoom;
+        octx.strokeRect(TM.cropRect.x, TM.cropRect.y, TM.cropRect.w, TM.cropRect.h);
+        octx.fillStyle = 'rgba(16, 185, 129, 0.2)';
+        octx.fillRect(TM.cropRect.x, TM.cropRect.y, TM.cropRect.w, TM.cropRect.h);
+    } else if (TM.tool === 'crop-free' && TM.freeCropPath.length > 1) {
+        octx.strokeStyle = '#10B981'; octx.lineWidth = 4 / TM.zoom;
+        octx.beginPath();
+        octx.moveTo(TM.freeCropPath[0].x, TM.freeCropPath[0].y);
+        for (let i = 1; i < TM.freeCropPath.length; i++) octx.lineTo(TM.freeCropPath[i].x, TM.freeCropPath[i].y);
+        octx.stroke();
+    }
+}
+
+function studioTeemasterOnMouseDown(e) {
+    const TM = window.STUDIO_TME; if (!TM || !TM.originalImage) return;
+    const rect = TM.canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / TM.zoom;
+    const y = (e.clientY - rect.top) / TM.zoom;
+
+    if (TM.tool === 'color') {
+        studioTeemasterPickColor(x, y);
+    } else if (TM.tool === 'crop') {
+        TM.cropRect = { x, y, w: 0, h: 0 };
+    } else if (TM.tool === 'crop-free') {
+        TM.freeCropPath = [{ x, y }];
+    } else if (TM.tool === 'eraser') {
+        TM.isDragging = true;
+        studioTeemasterEraserAction(x, y);
+    } else if (TM.tool === 'magic-wand' || TM.tool === 'magic-global') {
+        studioTeemasterMagicWandAction(x, y, TM.tool === 'magic-global');
+    }
+    if (TM.tool !== 'eraser') studioTeemasterDraw();
+}
+
+function studioTeemasterOnMouseMove(e) {
+    const TM = window.STUDIO_TME; if (!TM || !TM.originalImage) return;
+    const rect = TM.canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / TM.zoom;
+    const y = (e.clientY - rect.top) / TM.zoom;
+
+    if (TM.tool === 'crop' && TM.cropRect && e.buttons === 1) {
+        TM.cropRect.w = x - TM.cropRect.x;
+        TM.cropRect.h = y - TM.cropRect.y;
+        studioTeemasterDraw();
+    } else if (TM.tool === 'crop-free' && TM.freeCropPath.length > 0 && e.buttons === 1) {
+        TM.freeCropPath.push({ x, y });
+        studioTeemasterDraw();
+    } else if (TM.tool === 'eraser' && TM.isDragging) {
+        studioTeemasterEraserAction(x, y);
+        // We skip studioTeemasterDraw() here so the eraser strokes stay on the canvas 
+        // until we capture them in PushUndo on MouseUp.
+    }
+}
+
+function studioTeemasterOnMouseUp() {
+    const TM = window.STUDIO_TME; if (!TM) return;
+    TM.isDragging = false;
+    if (TM.tool === 'eraser') studioTeemasterPushUndo();
+    studioTeemasterDraw();
+}
+
+function studioTeemasterPushUndo() {
+    const TM = window.STUDIO_TME; if (!TM) return;
+    TM.undoStack.push(TM.ctx.getImageData(0, 0, TM.canvas.width, TM.canvas.height));
+    const maxUndoStates = (TM.canvas.width * TM.canvas.height) > 4000000 ? 6 : 12;
+    if (TM.undoStack.length > maxUndoStates) TM.undoStack.shift();
+    TM.isDirty = true;
+}
+
+function studioTeemasterPickColor(x, y) {
+    const TM = window.STUDIO_TME; if (!TM) return;
+    const data = TM.ctx.getImageData(x, y, 1, 1).data;
+    const hex = '#' + Array.from(data.slice(0, 3)).map(b => b.toString(16).padStart(2, '0')).join('');
+    if (TM.manualColor) TM.manualColor.value = hex;
+    if (TM.colorDisplay) {
+        TM.colorDisplay.textContent = hex.toUpperCase();
+        TM.colorDisplay.style.color = hex;
+    }
+}
+
+function studioTeemasterEraserAction(x, y) {
+    const TM = window.STUDIO_TME; if (!TM) return;
+    TM.ctx.globalCompositeOperation = 'destination-out';
+    TM.ctx.beginPath();
+    TM.ctx.arc(x, y, 15 / TM.zoom, 0, Math.PI * 2);
+    TM.ctx.fill();
+    TM.ctx.globalCompositeOperation = 'source-over';
+}
+
+function studioTeemasterMagicWandAction(startX, startY, isGlobal) {
+    const TM = window.STUDIO_TME; if (!TM) return;
+    const imageData = TM.ctx.getImageData(0, 0, TM.canvas.width, TM.canvas.height);
+    const data = imageData.data;
+    const width = imageData.width;
+    const height = imageData.height;
+
+    const idx = (Math.floor(startY) * width + Math.floor(startX)) * 4;
+    const targetR = data[idx], targetG = data[idx + 1], targetB = data[idx + 2], targetA = data[idx + 3];
+
+    const tolerance = parseInt(document.getElementById('tm-tolerance').value) || 30;
+    const toleranceSq = tolerance * tolerance;
+
+    const match = (r, g, b, a) => {
+        const dr = r - targetR;
+        const dg = g - targetG;
+        const db = b - targetB;
+        return (dr * dr) + (dg * dg) + (db * db) <= toleranceSq &&
+            Math.abs(a - targetA) <= tolerance;
+    };
+
+    if (isGlobal) {
+        for (let i = 0; i < data.length; i += 4) {
+            if (match(data[i], data[i + 1], data[i + 2], data[i + 3])) {
+                data[i + 3] = 0;
+            }
+        }
+    } else {
+        // Flood fill algorithm
+        const stack = [[Math.floor(startX), Math.floor(startY)]];
+        const visited = new Uint8Array(width * height);
+        while (stack.length > 0) {
+            const [x, y] = stack.pop();
+            if (x < 0 || x >= width || y < 0 || y >= height) continue;
+            const pIdx = (y * width + x);
+            if (visited[pIdx]) continue;
+            visited[pIdx] = 1;
+
+            const dIdx = pIdx * 4;
+            if (match(data[dIdx], data[dIdx + 1], data[dIdx + 2], data[dIdx + 3])) {
+                data[dIdx + 3] = 0;
+                stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+            }
+        }
+    }
+    TM.ctx.putImageData(imageData, 0, 0);
+    studioTeemasterPushUndo();
+}
+
+async function studioTeemasterHandleCropAction() {
+    const TM = window.STUDIO_TME; if (!TM) return;
+    let croppedDataURL = null;
+
+    if (TM.tool === 'crop' && TM.cropRect) {
+        const temp = document.createElement('canvas');
+        temp.width = Math.abs(TM.cropRect.w); temp.height = Math.abs(TM.cropRect.h);
+        const tctx = temp.getContext('2d');
+        const x = TM.cropRect.w > 0 ? TM.cropRect.x : TM.cropRect.x + TM.cropRect.w;
+        const y = TM.cropRect.h > 0 ? TM.cropRect.y : TM.cropRect.y + TM.cropRect.h;
+        // Since overlays are now separate, TM.canvas is clean!
+        tctx.drawImage(TM.canvas, x, y, temp.width, temp.height, 0, 0, temp.width, temp.height);
+        croppedDataURL = temp.toDataURL();
+    } else if (TM.tool === 'crop-free' && TM.freeCropPath.length > 2) {
+        const temp = document.createElement('canvas');
+        temp.width = TM.canvas.width; temp.height = TM.canvas.height;
+        const tctx = temp.getContext('2d');
+        tctx.beginPath();
+        tctx.moveTo(TM.freeCropPath[0].x, TM.freeCropPath[0].y);
+        for (let i = 1; i < TM.freeCropPath.length; i++) tctx.lineTo(TM.freeCropPath[i].x, TM.freeCropPath[i].y);
+        tctx.closePath();
+        tctx.clip();
+        tctx.drawImage(TM.canvas, 0, 0);
+        croppedDataURL = temp.toDataURL();
+    }
+
+    if (croppedDataURL) {
+        const newName = `extracted_${Date.now()}.png`;
+        STUDIO.step2Files.push({
+            name: newName,
+            dataURL: croppedDataURL,
+            status: '⏳ جاهز للمعالجة'
+        });
+        showToast('🎯 تمت إضافة الجزء المقتطع للطابور بنجاح');
+
+        // Reset tool state but KEEP CURRENT INDEX to allow more crops from the same image
+        TM.cropRect = null;
+        TM.freeCropPath = [];
+        studioTeemasterRefreshQueue();
+    }
+}
+
+function studioTeemasterBuildProofreaderPrompt(item, index, total) {
+    const fileName = item?.name || `design_${index + 1}.png`;
+    return `TASK_ID: TEEMASTER_PROOFREAD_IMAGE_${index + 1}_OF_${total}
+SOURCE_FILE: ${fileName}
+MODE: IMAGE_PROOFREAD_AND_REGENERATE
+
+افحص هذه الصورة كتصميم Print-on-Demand.
+اقرأ النصوص بدقة، واكتشف أي أخطاء OCR أو إملاء أو كلمات مشوهة أو اقتباس غير صحيح.
+
+إذا كانت الصورة سليمة تماماً:
+STATUS: OK
+اكتب سطراً عربياً قصيراً فقط: لا تحتاج تعديل.
+لا تولد صورة جديدة.
+
+إذا وجدت أي خطأ:
+STATUS: NEEDS_FIX
+يجب أن تولد صورة مصححة جديدة، وليس نصائح أو تعليمات.
+الصورة الجديدة يجب أن تحافظ على نفس الستايل، التكوين، الألوان، مواضع النصوص، ونوع الخط قدر الإمكان.
+صحح النص الخطأ فقط، واترك باقي التصميم كما هو.
+النص داخل الصورة يجب أن يكون باللغة الأصلية للتصميم وبدقة 100%.
+
+بعد توليد الصورة المصححة، اكتب سطراً عربياً قصيراً جداً يلخص ما تم تعديله فقط.
+لا تقدم شرحاً طويلاً، ولا تقدم خطوات، ولا تكتف بالنص بدون صورة.`;
+}
+
+function studioEstimateDataUrlMb(dataURL) {
+    if (!dataURL || typeof dataURL !== 'string') return 0;
+    const payload = dataURL.includes(',') ? dataURL.split(',')[1] : dataURL;
+    return (payload.length * 0.75) / (1024 * 1024);
+}
+
+async function studioTeemasterPrepareImageForGemini(dataURL, maxSide = 1200) {
+    if (!dataURL || typeof dataURL !== 'string' || !dataURL.startsWith('data:image/')) {
+        return { dataURL, originalMb: 0, sentMb: 0, resized: false };
+    }
+
+    const originalMb = studioEstimateDataUrlMb(dataURL);
+    const img = await studioLoadImageElement(dataURL);
+    const longestSide = Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height);
+    if (longestSide <= maxSide && originalMb < 0.9) {
+        console.log('[NHP-IMG] resized', `${Math.round(originalMb * 1024)}KB`, `${Math.round(originalMb * 1024)}KB`);
+        return { dataURL, originalMb, sentMb: originalMb, resized: false };
+    }
+
+    const scale = Math.min(1, maxSide / longestSide);
+    const width = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
+    const height = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d', { alpha: false });
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+    ctx.drawImage(img, 0, 0, width, height);
+
+    let optimized = canvas.toDataURL('image/jpeg', 0.82);
+    if (studioEstimateDataUrlMb(optimized) > 1.2) {
+        optimized = canvas.toDataURL('image/jpeg', 0.68);
+    }
+
+    const sentMb = studioEstimateDataUrlMb(optimized);
+    console.log('[NHP-IMG] resized', `${Math.round(originalMb * 1024)}KB`, `${Math.round(sentMb * 1024)}KB`);
+    return {
+        dataURL: optimized,
+        originalMb,
+        sentMb,
+        resized: optimized !== dataURL
+    };
+}
+
+function studioGetStoredBoolean(key, fallback = true) {
+    return new Promise((resolve) => {
+        try {
+            if (typeof chrome === 'undefined' || !chrome.storage?.local) {
+                resolve(fallback);
+                return;
+            }
+            chrome.storage.local.get([key], (res) => {
+                if (chrome.runtime?.lastError) {
+                    resolve(fallback);
+                    return;
+                }
+                resolve(res?.[key] === undefined ? fallback : res[key] !== false);
+            });
+        } catch (_) {
+            resolve(fallback);
+        }
+    });
+}
+
+// Picks the most recently selected Studio image across step3/step2/step1.
+// Returns { dataURL, name } or null if no image is currently loaded.
+function studioGetActiveImageDataURL() {
+    const candidates = [STUDIO.step3Files, STUDIO.step2Files, STUDIO.step1Files];
+    for (const arr of candidates) {
+        if (Array.isArray(arr) && arr.length) {
+            const last = arr[arr.length - 1];
+            if (last?.dataURL) {
+                return { dataURL: last.dataURL, name: last.name || 'image.png' };
+            }
+        }
+    }
+    return null;
+}
+
+async function studioTeemasterProofreaderWindowsEnabled() {
+    return await studioGetStoredBoolean(STUDIO_TEEMASTER_PROOFREADER_WINDOWS_KEY, true);
+}
+
+function studioRefreshTeemasterProofreaderWindowToggle(enabled) {
+    const btn = document.getElementById('tm-proofread-window-toggle');
+    if (!btn) return;
+    btn.dataset.enabled = enabled ? 'true' : 'false';
+    btn.innerHTML = enabled
+        ? '<i class="fa-solid fa-window-restore"></i> نوافذ المدقق: مفعلة'
+        : '<i class="fa-solid fa-ban"></i> نوافذ المدقق: معطلة';
+    btn.style.background = enabled ? 'rgba(14,165,233,0.12)' : 'rgba(239,68,68,0.12)';
+    btn.style.color = enabled ? '#7DD3FC' : '#FCA5A5';
+    btn.style.borderColor = enabled ? 'rgba(14,165,233,0.28)' : 'rgba(239,68,68,0.28)';
+}
+
+function studioInitTeemasterProofreaderWindowToggle() {
+    const btn = document.getElementById('tm-proofread-window-toggle');
+    if (!btn || btn.dataset.bound === 'true') return;
+    btn.dataset.bound = 'true';
+    chrome.storage.local.get([STUDIO_TEEMASTER_PROOFREADER_WINDOWS_KEY], (res) => {
+        studioRefreshTeemasterProofreaderWindowToggle(res?.[STUDIO_TEEMASTER_PROOFREADER_WINDOWS_KEY] !== false);
+    });
+    btn.addEventListener('click', () => {
+        chrome.storage.local.get([STUDIO_TEEMASTER_PROOFREADER_WINDOWS_KEY], (res) => {
+            const current = res?.[STUDIO_TEEMASTER_PROOFREADER_WINDOWS_KEY] !== false;
+            const next = !current;
+            chrome.storage.local.set({ [STUDIO_TEEMASTER_PROOFREADER_WINDOWS_KEY]: next }, () => {
+                studioRefreshTeemasterProofreaderWindowToggle(next);
+                showToast(next
+                    ? '✅ تم تفعيل نوافذ مدقق TeeMaster'
+                    : '⏸ تم تعطيل نوافذ مدقق TeeMaster');
+            });
+        });
+    });
+}
+
+function studioRefreshGeminiHubWindowToggle(enabled) {
+    const btn = document.getElementById('studio-gemini-window-toggle');
+    if (!btn) return;
+    btn.dataset.enabled = enabled ? 'true' : 'false';
+    btn.innerHTML = enabled
+        ? '<i class="fa-solid fa-window-restore"></i> نوافذ Studio: مفعلة'
+        : '<i class="fa-solid fa-ban"></i> نوافذ Studio: معطلة';
+    btn.style.background = enabled ? 'rgba(79,70,229,0.16)' : 'rgba(239,68,68,0.12)';
+    btn.style.color = enabled ? '#c7d2fe' : '#FCA5A5';
+    btn.style.borderColor = enabled ? 'rgba(129,140,248,0.32)' : 'rgba(239,68,68,0.28)';
+}
+
+function studioInitGeminiHubWindowToggle() {
+    const btn = document.getElementById('studio-gemini-window-toggle');
+    if (!btn || btn.dataset.bound === 'true') return;
+    btn.dataset.bound = 'true';
+    chrome.storage.local.get([STUDIO_GEMINI_HUB_WINDOWS_KEY], (res) => {
+        studioRefreshGeminiHubWindowToggle(res?.[STUDIO_GEMINI_HUB_WINDOWS_KEY] !== false);
+    });
+    btn.addEventListener('click', () => {
+        chrome.storage.local.get([STUDIO_GEMINI_HUB_WINDOWS_KEY], (res) => {
+            const current = res?.[STUDIO_GEMINI_HUB_WINDOWS_KEY] !== false;
+            const next = !current;
+            chrome.storage.local.set({ [STUDIO_GEMINI_HUB_WINDOWS_KEY]: next }, () => {
+                studioRefreshGeminiHubWindowToggle(next);
+                showToast(next
+                    ? '✅ تم تفعيل نوافذ Gemini في Studio'
+                    : '⏸ تم تعطيل نوافذ Gemini في Studio');
+            });
+        });
+    });
+}
+
+async function studioTeemasterSendSelectedToProofreader() {
+    const TM = window.STUDIO_TME;
+    if (!TM || !TM.queue.length) {
+        showToast('⚠️ لا توجد صور في طابور TeeMaster للفحص');
+        return;
+    }
+
+    if (!(await studioTeemasterProofreaderWindowsEnabled())) {
+        const status = document.getElementById('tm-proofread-status');
+        if (status) {
+            status.style.display = 'block';
+            status.textContent = 'نوافذ مدقق TeeMaster معطلة من الزر الخاص بهذا القسم. فعّلها قبل الإرسال إلى Gemini.';
+        }
+        showToast('⏸ نوافذ مدقق TeeMaster معطلة');
+        return;
+    }
+
+    studioTeemasterCommitCurrentImage();
+    const selected = TM.queue.filter((item) => item.selectedForProof !== false);
+    if (!selected.length) {
+        showToast('⚠️ اختر صورة واحدة على الأقل قبل الإرسال إلى Gemini');
+        return;
+    }
+
+    const btn = document.getElementById('tm-proofread-gemini-btn');
+    const status = document.getElementById('tm-proofread-status');
+    if (btn) btn.disabled = true;
+    if (status) {
+        status.style.display = 'block';
+        status.textContent = `جاري فتح ${selected.length} نافذة Gemini. كل صورة ستذهب لنافذة مستقلة.`;
+    }
+
+    await chrome.storage.local.set({
+        [STUDIO_TEEMASTER_PROOFREADER_CAPTURE_KEY]: {
+            activeUntil: Date.now() + STUDIO_TEEMASTER_PROOFREADER_CAPTURE_TTL,
+            createdAt: Date.now(),
+            count: selected.length
+        }
+    });
+
+    let sent = 0;
+    for (let i = 0; i < selected.length; i += 1) {
+        const item = selected[i];
+        try {
+            if (status) status.textContent = `جاري تجهيز ${item.name || 'الصورة'} للإرسال الخفيف إلى Gemini...`;
+            const preparedImage = await studioTeemasterPrepareImageForGemini(item.dataURL);
+            const response = await chrome.runtime.sendMessage({
+                action: 'SEND_AI_IMAGE_TO_TARGET',
+                dataUrl: preparedImage.dataURL,
+                nicheName: item.name || 'TeeMaster cropped design',
+                targetUrl: STUDIO_TEEMASTER_PROOFREADER_URL,
+                promptText: studioTeemasterBuildProofreaderPrompt(item, i, selected.length)
+            });
+            if (!response || response.success === false) {
+                throw new Error(response?.error || 'Gemini window was not opened.');
+            }
+            const originalMb = Number(response.originalBytes || 0) / (1024 * 1024);
+            const optimizedMb = Number(response.optimizedBytes || 0) / (1024 * 1024);
+            item.selectedForProof = false;
+            item.status = preparedImage.sentMb > 0
+                ? `🔎 أرسل إلى Gemini (${preparedImage.originalMb.toFixed(1)}MB -> ${preparedImage.sentMb.toFixed(1)}MB)`
+                : optimizedMb > 0
+                ? `🔎 أرسل إلى Gemini (${originalMb.toFixed(1)}MB -> ${optimizedMb.toFixed(1)}MB)`
+                : '🔎 أرسل إلى مدقق Gemini';
+            sent += 1;
+            if (status) status.textContent = `تم إرسال ${sent} / ${selected.length} إلى Gemini. الصور السليمة ستبقى كما هي، والمصححة ستعود للطابور.`;
+            studioTeemasterRefreshQueue();
+            await new Promise((resolve) => setTimeout(resolve, 900));
+        } catch (error) {
+            console.error('TeeMaster proofreader send failed:', error);
+            showToast(`❌ فشل إرسال ${item.name || 'صورة'} إلى Gemini`);
+        }
+    }
+
+    if (btn) btn.disabled = false;
+    studioTeemasterRefreshQueue();
+    showToast(`✅ تم إرسال ${sent} صورة إلى مدقق Gemini`);
+}
+
+async function studioTeemasterStartProcess() {
+    const TM = window.STUDIO_TME; if (!TM || TM.queue.length === 0) return;
+    const startBtn = document.getElementById('tm-start-btn');
+    const progCont = document.getElementById('tm-progress-container');
+    const progText = document.getElementById('tm-progress-text');
+    const progFill = document.getElementById('tm-progress-fill');
+    const progPct = document.getElementById('tm-progress-pct');
+
+    if (startBtn) startBtn.disabled = true;
+    if (progCont) progCont.style.display = 'block';
+    STUDIO.isProcessingTeemaster = true;
+    studioTeemasterCommitCurrentImage();
+
+    const total = TM.queue.length;
+    const settings = {
+        useAi: STUDIO.useAi,
+        geminiKey: STUDIO.geminiKey,
+        useManual: STUDIO.useManual,
+        manualColorHex: STUDIO.manualColorHex,
+        removalMode: document.getElementById('tm-removal-mode')?.value || 'flood',
+        tolerance: STUDIO.tolerance
+    };
+
+    for (let i = 0; i < total; i++) {
+        const item = TM.queue[0];
+        const pct = Math.round(((i + 1) / total) * 100);
+        if (progText) progText.textContent = `جاري المعالجة والتحسين 5K: ${i + 1} / ${total}`;
+        if (progFill) progFill.style.width = pct + '%';
+        if (progPct) progPct.textContent = pct + '%';
+
+        try {
+            // Processing step (BG Removal + 5K Resize)
+            const processedDataURL = await studioTeemasterPerformHeavyProcess(item, settings);
+            const processedThumbnail = await studioCreateThumbnail(processedDataURL, 160);
+
+            // Move to final step
+            STUDIO.step3Files.push({
+                name: item.name.replace(/\.[^/.]+$/, "") + "_POD_5K.png",
+                dataURL: processedDataURL,
+                thumbnail: processedThumbnail,
+                selected: true,
+                meta: item.meta ? { ...item.meta } : {}
+            });
+
+            // Add to history
+            TM.history.unshift({
+                name: item.name,
+                dataURL: processedDataURL,
+                thumbnail: processedThumbnail,
+                timestamp: new Date().toLocaleString()
+            });
+            studioUpdateCounts();
+            studioUpdateStep3SelectionUI();
+
+            // NO LONG AUTO-DOWNLOADING HERE (As per user request)
+        } catch (err) {
+            console.error(`Error processing ${item.name}:`, err);
+            showToast(`❌ فشل معالجة ${item.name}`);
+        }
+
+        TM.queue.shift();
+        await new Promise(r => setTimeout(r, 200)); // Delay for smooth UI
+
+        studioTeemasterRefreshQueue();
+    }
+
+    if (progCont) progCont.style.display = 'none';
+    STUDIO.isProcessingTeemaster = false;
+    if (startBtn) startBtn.disabled = false;
+    studioTeemasterRefreshQueue();
+    studioRenderFileList3();
+
+    // Show download button
+    if (STUDIO.teemasterDownloadBtn) {
+        STUDIO.teemasterDownloadBtn.style.display = 'flex';
+        STUDIO.teemasterDownloadBtn.textContent = `📥 تحميل ${total} صور مُعالجة (ZIP/Bulk)`;
+    }
+
+    showToast(`✅ تم تحويل ${total} صور بدقة 5K ونقلهم للمرحلة النهائية.`);
+    studioTeemasterRefreshHistory();
+}
+
+/**
+ * Heavy processing: BG Removal + 5K Resize
+ */
+/**
+ * Heavy processing: BG Removal + 5K Resize + DPI Injection
+ */
+async function studioTeemasterPerformHeavyProcess(item, settings) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = async () => {
+            try {
+                // 1. Detect background color (Average of 4 corners)
+                const tc = document.createElement('canvas');
+                tc.width = img.width; tc.height = img.height;
+                const tx = tc.getContext('2d');
+                tx.drawImage(img, 0, 0);
+
+                let bgR, bgG, bgB;
+                if (settings.useManual) {
+                    const hex = settings.manualColorHex || '#ffffff';
+                    bgR = parseInt(hex.substring(1, 3), 16);
+                    bgG = parseInt(hex.substring(3, 5), 16);
+                    bgB = parseInt(hex.substring(5, 7), 16);
+                } else {
+                    const corners = [
+                        tx.getImageData(5, 5, 1, 1).data,
+                        tx.getImageData(img.width - 5, 5, 1, 1).data,
+                        tx.getImageData(5, img.height - 5, 1, 1).data,
+                        tx.getImageData(img.width - 5, img.height - 5, 1, 1).data
+                    ];
+                    let rNum = 0, gNum = 0, bNum = 0, cNum = 0;
+                    corners.forEach(p => {
+                        if (p[3] > 10) { // Only count if not transparent
+                            rNum += p[0]; gNum += p[1]; bNum += p[2]; cNum++;
+                        }
+                    });
+                    if (cNum > 0) {
+                        bgR = Math.round(rNum / cNum);
+                        bgG = Math.round(gNum / cNum);
+                        bgB = Math.round(bNum / cNum);
+                    } else {
+                        bgR = 0; bgG = 0; bgB = 0;
+                    }
+                }
+
+                // 2. Perform background removal first to find content boundaries
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = img.width;
+                tempCanvas.height = img.height;
+                const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+                tempCtx.drawImage(img, 0, 0);
+                const tempData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                const tol = settings.tolerance || 30;
+
+                if (settings.removalMode === 'global') {
+                    studioTeemasterApplyGlobalRemoval(tempData, bgR, bgG, bgB, tol);
+                } else {
+                    studioTeemasterApplyFloodFill(tempData, tempCanvas.width, tempCanvas.height, bgR, bgG, bgB, tol);
+                }
+                tempCtx.putImageData(tempData, 0, 0);
+
+                // 3. Trim outer transparent pixels
+                const trimmed = studioTrimTransparent(tempCanvas);
+                
+                // 4. Setup High-Res Canvas (5000x5500 for all products)
+                const targetW = 5000;
+                const targetH = 5500;
+                const finalCanvas = document.createElement('canvas');
+                finalCanvas.width = targetW;
+                finalCanvas.height = targetH;
+                const finalCtx = finalCanvas.getContext('2d', { willReadFrequently: true });
+
+                finalCtx.imageSmoothingEnabled = true;
+                finalCtx.imageSmoothingQuality = 'high';
+
+                // Ensure content is at least 1500x1995 if scaled
+                // We'll scale to fit the 5000x5500 box (with some padding)
+                const padding = 200;
+                const innerW = targetW - (padding * 2);
+                const innerH = targetH - (padding * 2);
+                
+                const scale = Math.min(innerW / trimmed.width, innerH / trimmed.height);
+                const sw = trimmed.width * scale;
+                const sh = trimmed.height * scale;
+                const ox = (targetW - sw) / 2;
+                const oy = (targetH - sh) / 2;
+
+                finalCtx.drawImage(trimmed, 0, 0, trimmed.width, trimmed.height, ox, oy, sw, sh);
+
+                // 5. Inject 160 DPI pHYs Chunk
+                const dataURL = finalCanvas.toDataURL('image/png');
+                const highDpiDataURL = studioInjectPNGDPI(dataURL, 160);
+                
+                resolve(highDpiDataURL);
+            } catch (pErr) { reject(pErr); }
+        };
+        img.onerror = () => reject(new Error('Failed to load image for processing'));
+        img.src = item.dataURL;
+    });
+}
+
+/**
+ * Trims transparent pixels from edges
+ */
+function studioTrimTransparent(canvas) {
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imgData.data;
+    let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
+
+    for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
+            const alpha = data[(y * canvas.width + x) * 4 + 3];
+            if (alpha > 0) {
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+            }
+        }
+    }
+
+    if (maxX < minX || maxY < minY) return canvas; // Empty image
+
+    const trimmedW = maxX - minX + 1;
+    const trimmedH = maxY - minY + 1;
+    const temp = document.createElement('canvas');
+    temp.width = trimmedW;
+    temp.height = trimmedH;
+    temp.getContext('2d').drawImage(canvas, minX, minY, trimmedW, trimmedH, 0, 0, trimmedW, trimmedH);
+    return temp;
+}
+
+/**
+ * Injects pHYs chunk into PNG to set DPI
+ */
+function studioInjectPNGDPI(dataURL, dpi) {
+    const base64 = dataURL.split(',')[1];
+    const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+    
+    // Pixels per meter = dpi * 39.3701
+    const ppm = Math.round(dpi * 39.3701);
+    
+    // Create pHYs chunk
+    const ppmHex = ppm.toString(16).padStart(8, '0');
+    const xHex = ppmHex;
+    const yHex = ppmHex;
+    const unit = '01'; // meter
+    
+    const chunkData = Uint8Array.from(
+        (xHex + yHex + unit).match(/.{1,2}/g).map(byte => parseInt(byte, 16))
+    );
+    
+    const type = new Uint8Array([112, 72, 89, 115]); // "pHYs"
+    const length = new Uint8Array([0, 0, 0, 9]);
+    
+    // Compute CRC
+    function crc32(buf) {
+        let crc = -1;
+        const table = new Int32Array(256);
+        for (let i = 0; i < 256; i++) {
+            let c = i;
+            for (let j = 0; j < 8; j++) c = c & 1 ? -306674912 ^ (c >>> 1) : c >>> 1;
+            table[i] = c;
+        }
+        for (let i = 0; i < buf.length; i++) crc = (crc >>> 8) ^ table[(crc ^ buf[i]) & 255];
+        return (crc ^ -1) >>> 0;
+    }
+    
+    const crcBuf = new Uint8Array(type.length + chunkData.length);
+    crcBuf.set(type);
+    crcBuf.set(chunkData, type.length);
+    const crc = crc32(crcBuf);
+    const crcArr = new Uint8Array(4);
+    new DataView(crcArr.buffer).setUint32(0, crc);
+    
+    // Final chunk
+    const fullChunk = new Uint8Array(length.length + type.length + chunkData.length + crcArr.length);
+    fullChunk.set(length);
+    fullChunk.set(type, 4);
+    fullChunk.set(chunkData, 8);
+    fullChunk.set(crcArr, 17);
+    
+    // Insert after IHDR (IHDR starts at offset 8 and has length 13 + 4 + 4 + 4 = 25)
+    // Actually IHDR starts after 8-byte signature. IHDR tag is 4 bytes, length 4, data 13, CRC 4.
+    // So 8 + 4 + 4 + 13 + 4 = 33.
+    const newBytes = new Uint8Array(bytes.length + fullChunk.length);
+    newBytes.set(bytes.subarray(0, 33));
+    newBytes.set(fullChunk, 33);
+    newBytes.set(bytes.subarray(33), 33 + fullChunk.length);
+    
+    let binary = '';
+    for (let i = 0; i < newBytes.length; i++) binary += String.fromCharCode(newBytes[i]);
+    return `data:image/png;base64,${btoa(binary)}`;
+}
+
+
+/**
+ * High-performance Flood Fill for Background Removal
+ */
+function studioTeemasterApplyFloodFill(imgData, width, height, targetR, targetG, targetB, tolerance) {
+    const data = imgData.data;
+    const stack = new Int32Array(width * height);
+    let stackPtr = 0;
+    const visited = new Uint8Array(width * height);
+    const toleranceSq = tolerance * tolerance;
+
+    function pushIfMatch(x, y) {
+        if (x < 0 || x >= width || y < 0 || y >= height) return;
+        const idx = y * width + x;
+        if (visited[idx]) return;
+
+        const px = idx * 4;
+        if (data[px + 3] === 0) { visited[idx] = 1; return; }
+
+        const dr = data[px] - targetR;
+        const dg = data[px + 1] - targetG;
+        const db = data[px + 2] - targetB;
+        const distSq = (dr * dr) + (dg * dg) + (db * db);
+
+        if (distSq <= toleranceSq) {
+            visited[idx] = 1;
+            data[px + 3] = 0; // Transparent
+            stack[stackPtr++] = idx;
+        }
+    }
+
+    // Edge triggers
+    for (let x = 0; x < width; x++) { pushIfMatch(x, 0); pushIfMatch(x, height - 1); }
+    for (let y = 0; y < height; y++) { pushIfMatch(0, y); pushIfMatch(width - 1, y); }
+
+    while (stackPtr > 0) {
+        const idx = stack[--stackPtr];
+        const x = idx % width;
+        const y = Math.floor(idx / width);
+        pushIfMatch(x + 1, y);
+        pushIfMatch(x - 1, y);
+        pushIfMatch(x, y + 1);
+        pushIfMatch(x, y - 1);
+    }
+}
+
+/**
+ * Global Removal for Background
+ */
+function studioTeemasterApplyGlobalRemoval(imgData, targetR, targetG, targetB, tolerance) {
+    const data = imgData.data;
+    const toleranceSq = tolerance * tolerance;
+    for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] === 0) continue;
+        const dr = data[i] - targetR;
+        const dg = data[i + 1] - targetG;
+        const db = data[i + 2] - targetB;
+        const distSq = (dr * dr) + (dg * dg) + (db * db);
+        if (distSq <= toleranceSq) {
+            data[i + 3] = 0;
+        }
+    }
+}
+
+function studioGetStoredNiches(limit = 60) {
+    return new Promise((resolve) => {
+        chrome.storage.local.get(['teepublic_manager_data'], (res) => {
+            const raw = res.teepublic_manager_data?.niches || [];
+            const unique = [];
+            const seen = new Set();
+            raw.forEach((entry) => {
+                const text = String(entry?.text || '').trim();
+                if (!text) return;
+                const key = text.toLowerCase();
+                if (seen.has(key)) return;
+                seen.add(key);
+                unique.push(text);
+            });
+            resolve(unique.slice(0, limit));
+        });
+    });
+}
+
+async function studioRunAutoPipelineFromStep1() {
+    const settings = studioGetAutoPipelineSettingsFromUI();
+    if (!settings.enabled || STUDIO.isAutoPipelineRunning) return;
+
+    STUDIO.isAutoPipelineRunning = true;
+    const originalStep2Files = [...STUDIO.step2Files];
+    const manualFallbackQueue = [];
+    const extractedQueue = [];
+    const step3StartIndex = STUDIO.step3Files.length;
+    let detectedImages = 0;
+
+    try {
+        studioGoToStep(2);
+        studioUpdateAutoPipelineStatus('بدء Auto Pipeline من Peel Banana...');
+
+        if (settings.detectFour) {
+            for (const item of originalStep2Files) {
+                const result = await studioExtractDesignsFromCompositeItem(item, {
+                    useAiCrop: settings.useAiCrop
+                });
+                if (result.success && result.extractedItems.length === 4) {
+                    extractedQueue.push(...result.extractedItems);
+                    detectedImages++;
+                } else {
+                    manualFallbackQueue.push(item);
+                }
+            }
+        } else {
+            extractedQueue.push(...originalStep2Files);
+        }
+
+        if (!extractedQueue.length) {
+            STUDIO.step2Files = manualFallbackQueue;
+            studioTeemasterRefreshQueue();
+            studioUpdateAutoPipelineStatus('لم يتم استخراج عناصر كافية تلقائيا، تم إبقاء الصور للمعالجة اليدوية.');
+            return;
+        }
+
+        if (settings.pauseAfterCrop) {
+            STUDIO.step2Files = [...manualFallbackQueue, ...extractedQueue];
+            studioTeemasterRefreshQueue();
+            studioGoToStep(2);
+            studioUpdateAutoPipelineStatus(`تم إدراج ${extractedQueue.length} عنصر في الطابور للمراجعة والقص اليدوي قبل أي مرحلة لاحقة.`);
+            showToast(`✅ تم تجهيز ${extractedQueue.length} عنصر داخل الطابور لتكمل عليها يدويًا`);
+            return;
+        }
+
+        if (settings.autoBgRemove) {
+            STUDIO.step2Files = extractedQueue;
+            studioTeemasterRefreshQueue();
+            studioUpdateAutoPipelineStatus(`تم استخراج ${extractedQueue.length} عنصر. جاري تنظيف الخلفية تلقائيا...`);
+            await studioTeemasterStartProcess();
+
+            const newStep3Files = STUDIO.step3Files.slice(step3StartIndex);
+            if (settings.suggestNiche && newStep3Files.length > 0) {
+                studioUpdateAutoPipelineStatus('جاري اقتراح النيتشات المناسبة من الملاحظات...');
+                const suggested = await studioApplyAutoNicheSuggestions(newStep3Files);
+                if (suggested > 0) {
+                    showToast(`🎯 تم اقتراح ${suggested} نيتش للصورة/الصور الجديدة`);
+                }
+            }
+
+            STUDIO.step2Files = manualFallbackQueue;
+            studioTeemasterRefreshQueue();
+
+            if (settings.autoSendToSeo && newStep3Files.length > 0) {
+                studioUpdateAutoPipelineStatus('جاري إرسال النتائج الجديدة إلى SEO...');
+                await studioSendToDestination('seo', newStep3Files);
+                return;
+            }
+
+            if (manualFallbackQueue.length > 0) {
+                studioGoToStep(2);
+                studioUpdateAutoPipelineStatus(`اكتمل التلقائي للناجح، وبقي ${manualFallbackQueue.length} صورة للمراجعة اليدوية.`);
+            } else {
+                studioGoToStep(3);
+                studioUpdateAutoPipelineStatus('اكتمل Auto Pipeline بنجاح، والنتائج وصلت إلى المرحلة الثالثة.');
+            }
+            return;
+        }
+
+        STUDIO.step2Files = [...manualFallbackQueue, ...extractedQueue];
+        studioTeemasterRefreshQueue();
+        studioUpdateAutoPipelineStatus(`تم استخراج ${extractedQueue.length} عنصر تلقائيا. بانتظار المعالجة اليدوية في المرحلة الثانية.`);
+    } catch (error) {
+        console.error('Auto Pipeline Error:', error);
+        STUDIO.step2Files = originalStep2Files;
+        studioTeemasterRefreshQueue();
+        studioUpdateAutoPipelineStatus('حدث خطأ أثناء المسار التلقائي، وتم الرجوع للطابور اليدوي.');
+        showToast('❌ فشل جزء من Auto Pipeline وتم الحفاظ على الطابور اليدوي');
+    } finally {
+        STUDIO.isAutoPipelineRunning = false;
+        if (detectedImages > 0 && !settings.autoBgRemove) {
+            showToast(`✅ تم استخراج ${detectedImages * 4} عناصر تلقائيا من ${detectedImages} صورة`);
+        }
+    }
+}
+
+function studioGuessNicheFromFilename(file, candidates = []) {
+    const source = `${file?.customName || ''} ${file?.name || ''}`.toLowerCase();
+    const sourceTokens = new Set(source.split(/[^a-z0-9]+/).filter((token) => token.length > 2));
+    let best = null;
+    let bestScore = 0;
+    candidates.forEach((candidate) => {
+        const tokens = candidate.toLowerCase().split(/[^a-z0-9]+/).filter((token) => token.length > 2);
+        const score = tokens.reduce((sum, token) => sum + (sourceTokens.has(token) ? 1 : 0), 0);
+        if (score > bestScore) {
+            bestScore = score;
+            best = candidate;
+        }
+    });
+    return bestScore > 0 ? best : null;
+}
+
+async function studioSuggestNicheForImageAI(base64Data, candidates, apiKey) {
+    if (!apiKey || !Array.isArray(candidates) || candidates.length === 0) return null;
+
+    const cleanBase64 = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
+    const limitedCandidates = candidates.slice(0, 50);
+    const candidateList = limitedCandidates.map((item, index) => `${index + 1}. ${item}`).join('\n');
+    const prompt = `You are selecting the best print-on-demand niche for an image.\nChoose exactly one niche from the candidate list that best matches the image.\nIf nothing is clearly suitable, answer exactly: NO_MATCH\nReturn only the exact niche text from the list or NO_MATCH.\n\nCandidates:\n${candidateList}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+    try {
+        console.log('[NHP-IMG] sending', {
+            host: 'generativelanguage.googleapis.com',
+            hasInlineData: true,
+            mimeType: 'image/png',
+            base64Length: cleanBase64.length,
+            hasKey: !!apiKey
+        });
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{
+                    role: 'user',
+                    parts: [
+                        { text: prompt },
+                        { inlineData: { mimeType: 'image/png', data: cleanBase64 } }
+                    ]
+                }]
+            })
+        });
+        console.log('[NHP-IMG] response', response.status);
+        if (!response.ok) {
+            console.warn('[NHP-IMG] error body', await response.text());
+            return null;
+        }
+        const data = await response.json();
+        if (data.error) throw new Error(data.error.message);
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (!text || /^no_match$/i.test(text)) return null;
+
+        const normalized = text.toLowerCase();
+        return limitedCandidates.find((candidate) => candidate.toLowerCase() === normalized) || null;
+    } catch (error) {
+        console.warn('[NHP-IMG] error', error?.message, error?.stack?.split('\n')[0]);
+        console.error('Auto Niche Suggestion Error:', error);
+        return null;
+    }
+}
+
+async function studioApplyAutoNicheSuggestions(files = []) {
+    const targets = (files || []).filter(Boolean);
+    if (!targets.length) return 0;
+
+    const nicheCandidates = await studioGetStoredNiches(60);
+    if (!nicheCandidates.length) return 0;
+
+    let applied = 0;
+    for (const file of targets) {
+        if (file?.meta?.suggested_niche) continue;
+
+        let suggested = studioGuessNicheFromFilename(file, nicheCandidates);
+        if (!suggested) {
+            suggested = await studioSuggestNicheForImageAI(file.dataURL || '', nicheCandidates, STUDIO.geminiKey);
+        }
+        if (!suggested) continue;
+
+        file.meta = {
+            ...(file.meta || {}),
+            suggested_niche: suggested
+        };
+
+        const existingName = file.customName || file.name || '';
+        const isGeneric = /^(extracted_|design_ai_|.*_pod_5k$)/i.test(existingName.replace(/\.[^/.]+$/, ''));
+        if (!file.customName || isGeneric) {
+            const sanitized = studioSanitizeFilenameSegment(suggested);
+            if (sanitized) file.customName = sanitized;
+        }
+        applied++;
+    }
+
+    if (applied > 0) studioRenderFileList3();
+    return applied;
+}
+
+function studioTeemasterRefreshHistory() {
+    const TM = window.STUDIO_TME; if (!TM) return;
+    const list = document.getElementById('tm-history-list');
+    if (!list) return;
+    if (TM.history.length === 0) {
+        list.innerHTML = 'لا يوجد سجل حالياً';
+        return;
+    }
+    list.innerHTML = '';
+    TM.history.forEach(item => {
+        const div = document.createElement('div');
+        div.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:6px; background:rgba(255,255,255,0.05); border-radius:8px;';
+        div.innerHTML = `
+            <div style="display:flex; align-items:center; gap:8px;">
+                <img src="${studioGetDisplayImageSrc(item)}" style="width:30px;height:30px;object-fit:cover;border-radius:4px;">
+                <div style="text-align:left;">
+                    <div style="font-weight:bold; color:white; font-size:10px;">${item.name}</div>
+                    <div style="font-size:8px; color:var(--text-muted);">${item.timestamp}</div>
+                </div>
+            </div>
+            <button class="studio-btn-secondary" style="padding:4px 8px; font-size:9px;">📂 فتح</button>
+        `;
+        div.querySelector('button').onclick = () => showDesignPreview(item.dataURL, item.name);
+        list.appendChild(div);
+    });
+}
+
+/**
+ * Bulk Download Stage 2 Results
+ */
+async function studioTeemasterBulkDownload() {
+    const files = STUDIO.step3Files;
+    if (files.length === 0) return showToast('⚠️ لا توجد صور للتحميل');
+
+    showToast(`📥 جاري تحميل ${files.length} صورة...`);
+
+    for (const f of files) {
+        await chrome.runtime.sendMessage({
+            type: 'DOWNLOAD_IMAGE',
+            dataUrl: f.dataURL,
+            filename: f.name
+        });
+        await new Promise(r => setTimeout(r, 200)); // To avoid browser block
+    }
+    showToast('✅ اكتمل التحميل الجماعي');
+}

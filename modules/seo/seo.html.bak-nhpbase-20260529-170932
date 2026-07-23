@@ -1,0 +1,522 @@
+<style>
+    .seo-module-root.seo-ui-shell {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        width: 100%;
+        min-height: 0;
+        box-sizing: border-box;
+    }
+
+    .seo-module-root .seo-main-split {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 6px;
+        min-height: 0;
+    }
+
+    .seo-module-root .seo-col {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+        min-height: 0;
+    }
+
+    .seo-compact-card {
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 7px;
+        background: rgba(15, 23, 42, 0.35);
+        padding: 6px;
+        margin: 0;
+        box-shadow: none;
+    }
+
+    .seo-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 7px;
+        padding: 6px 8px;
+        margin: 0;
+    }
+
+    .seo-title-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+        flex-wrap: nowrap;
+    }
+
+    .seo-title-text h2 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .seo-compact-badges {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        flex-wrap: wrap;
+        margin-inline-start: 6px;
+    }
+
+    .seo-mini-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 999px;
+        padding: 2px 6px;
+        font-size: 11px;
+        line-height: 1.2;
+    }
+
+    .seo-mini-badge .stat-value {
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .seo-mini-badge .stat-label {
+        font-size: 11px;
+        color: var(--text-muted);
+    }
+
+    .seo-top-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        flex-wrap: wrap;
+    }
+
+    .seo-top-actions .btn {
+        height: 28px;
+        padding: 0 10px;
+        font-size: 11px;
+        border-radius: 6px;
+        box-shadow: none;
+    }
+
+    .seo-input-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-wrap: nowrap;
+        min-height: 34px;
+    }
+
+    .seo-upload-main-btn {
+        height: 34px;
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 6px;
+        background: rgba(108, 99, 255, 0.16);
+        font-size: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 10px;
+        box-shadow: none;
+    }
+
+    .seo-upload-main-btn-icon {
+        font-size: 13px;
+    }
+
+    #seo-cloud-sync-toggle {
+        height: 34px;
+        font-size: 11px;
+        border-radius: 6px;
+        min-width: 90px;
+        padding: 0 8px;
+        box-shadow: none;
+    }
+
+    #seo-upload-msg {
+        font-size: 11px;
+        color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .seo-inline-options {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        font-size: 11px;
+    }
+
+    .seo-inline-options > * {
+        margin: 0;
+    }
+
+    .seo-inline-options label {
+        font-size: 11px !important;
+        line-height: 1.2;
+        font-weight: 600;
+    }
+
+    .seo-queue-scroll {
+        max-height: 112px;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .seo-col-output-inner {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .seo-field-row {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .seo-field-row .field-label {
+        margin: 0;
+        font-size: 11px;
+        line-height: 1.2;
+    }
+
+    .seo-field-row .modern-input {
+        min-height: 32px;
+        max-height: 35px;
+        height: 35px;
+        overflow-y: auto;
+        font-size: 12px;
+        line-height: 1.2;
+        padding: 4px 28px 4px 8px;
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 6px;
+        box-shadow: none;
+    }
+
+    .seo-field-row textarea.modern-input {
+        resize: none;
+    }
+
+    .seo-copy-inline {
+        position: absolute;
+        inset-inline-end: 6px;
+        top: 22px;
+        width: 18px;
+        height: 18px;
+        border: none;
+        background: transparent;
+        box-shadow: none;
+        font-size: 14px;
+        padding: 0;
+        color: var(--text-muted);
+    }
+
+    .seo-aesthetic-compact {
+        padding: 6px !important;
+        margin: 0 !important;
+        border-radius: 6px !important;
+    }
+
+    .seo-automation-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        font-size: 11px;
+        padding: 6px;
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 7px;
+    }
+
+    .seo-automation-row label,
+    .seo-automation-row span {
+        font-size: 11px;
+    }
+
+    .seo-automation-row input[type="radio"],
+    .seo-automation-row input[type="checkbox"] {
+        width: 14px;
+        height: 14px;
+    }
+
+    .seo-action-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .seo-action-row .action-btn,
+    .seo-action-row .btn {
+        height: 30px;
+        min-height: 30px;
+        padding: 0 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        box-shadow: none;
+        text-shadow: none;
+    }
+
+    .seo-action-row #seo-stop-btn {
+        width: 30px;
+        min-width: 30px;
+        padding: 0;
+    }
+
+    .seo-loading-inline {
+        padding: 6px;
+        margin: 0;
+    }
+
+    .seo-provider-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4px;
+    }
+
+    .seo-provider-btn {
+        min-height: 28px;
+        padding: 4px 6px;
+        border-radius: 6px;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        background: rgba(15, 23, 42, 0.55);
+        color: #cbd5e1;
+        font-size: 10px;
+        font-weight: 700;
+        cursor: pointer;
+        line-height: 1.2;
+        pointer-events: auto;
+        position: relative;
+        z-index: 2;
+    }
+
+    .seo-provider-btn.active {
+        border-color: rgba(108, 99, 255, 0.55);
+        background: rgba(108, 99, 255, 0.22);
+        color: #ede9fe;
+        box-shadow: 0 0 0 1px rgba(108, 99, 255, 0.18);
+    }
+
+    .seo-provider-note {
+        display: block;
+        margin-top: 5px;
+        font-size: 10px;
+        color: var(--text-muted);
+        line-height: 1.35;
+    }
+
+    @media (max-width: 960px) {
+        .seo-module-root .seo-main-split {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="seo-module-root seo-ui-shell">
+    <div class="seo-header">
+        <div class="seo-title-group">
+            <div class="seo-icon"><i class="fa-solid fa-brain"></i></div>
+            <div class="seo-title-text">
+                <h2>محرك الـ SEO الذكي</h2>
+            </div>
+            <div class="seo-compact-badges">
+                <span class="seo-mini-badge"><span class="stat-label">قوة</span><span class="stat-value" id="seo-score">0</span></span>
+                <span class="seo-mini-badge"><span class="stat-label">مخاطر</span><span class="stat-value" id="seo-risk" style="color: var(--safe);">Low</span></span>
+            </div>
+        </div>
+        <div class="seo-top-actions">
+            <button type="button" id="seo-ai-audit" class="btn"><i class="fa-solid fa-palette"></i> تدقيق</button>
+            <button type="button" id="seo-apply-all" class="btn"><i class="fa-solid fa-copy"></i> للكل</button>
+            <button type="button" id="seo-goto-autopilot" class="btn" title="الانتقال إلى Autopilot"><i class="fa-solid fa-rocket"></i> AUT <i class="fa-solid fa-arrow-left" style="font-size:10px; opacity:0.7;"></i></button>
+        </div>
+    </div>
+
+    <div class="seo-main-split">
+        <div class="seo-col seo-col-output">
+            <div class="seo-compact-card seo-col-output-inner">
+                <div id="seo-aesthetic-report" class="glass-card hidden seo-aesthetic-compact" style="border: 1px dashed rgba(236, 72, 153, 0.45);">
+                    <h4 style="color: #ec4899; display: flex; align-items: center; gap: 4px; font-weight: 800; margin: 0 0 4px 0;">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> جماليات سريعة
+                    </h4>
+                    <div id="seo-aesthetic-text"></div>
+                </div>
+
+                <div class="seo-field-row">
+                    <label class="field-label" for="seo-title"><i class="fa-solid fa-heading"></i> العنوان (Title)</label>
+                    <input type="text" id="seo-title" class="modern-input" placeholder="العنوان المقترح سيظهر هنا...">
+                    <button type="button" class="seo-copy-inline" id="seo-copy-title" title="نسخ العنوان"><i class="fa-regular fa-copy"></i></button>
+                </div>
+
+                <div class="seo-field-row">
+                    <label class="field-label" for="seo-main-tag"><i class="fa-solid fa-tag"></i> الطاك الرئيسي (Main Tag)</label>
+                    <input type="text" id="seo-main-tag" class="modern-input" placeholder="الكلمة المفتاحية الأساسية...">
+                    <button type="button" class="seo-copy-inline" id="seo-copy-main-tag" title="نسخ الطاك"><i class="fa-regular fa-copy"></i></button>
+                </div>
+
+                <div class="seo-field-row">
+                    <label class="field-label" for="seo-tags">
+                        <i class="fa-solid fa-tags"></i> التاجات (Tags)
+                        <span><span id="seo-label-tags-count">0</span> / 15</span>
+                        <span id="seo-verify-pct" class="verify-pct-badge">0%</span>
+                    </label>
+                    <textarea id="seo-tags" class="modern-input" placeholder="تاجات ذكية مفصولة بفواصل..."></textarea>
+                    <button type="button" class="seo-copy-inline" id="seo-copy-tags" title="نسخ التاجات"><i class="fa-regular fa-copy"></i></button>
+                </div>
+
+                <div class="seo-field-row">
+                    <label class="field-label" for="seo-desc"><i class="fa-solid fa-quote-left"></i> الوصف (Description)</label>
+                    <textarea id="seo-desc" class="modern-input" placeholder="وصف تذكاري جذاب مخصص للنيتش..."></textarea>
+                    <button type="button" class="seo-copy-inline" id="seo-copy-desc" title="نسخ الوصف"><i class="fa-regular fa-copy"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="seo-col seo-col-source">
+            <div class="seo-compact-card">
+                <div class="field-label" style="margin: 0 0 6px 0; display: flex; justify-content: space-between; gap: 6px; align-items: center;">
+                    <span>إعداد الإدخال</span>
+                    <span style="display: inline-flex; gap: 4px;">
+                        <button class="btn" id="seo-import-uspto" style="height: 24px; font-size: 10px; padding: 0 8px;">USPTO</button>
+                        <button class="btn" id="seo-import-tp" style="height: 24px; font-size: 10px; padding: 0 8px;">TeePublic</button>
+                    </span>
+                </div>
+
+                <select id="seo-niche-select" class="modern-input modern-select" style="min-height: 30px; height: 30px; padding: 0 8px; font-size: 12px; margin-bottom: 6px;">
+                    <option value="">-- اختر نيتش من النتائج السابقة --</option>
+                </select>
+
+                <input type="file" id="seo-image-upload" accept="image/*" class="hidden" multiple>
+                <div class="seo-input-toolbar">
+                    <button type="button" id="seo-upload-trigger" class="seo-upload-main-btn">
+                        <i class="fa-solid fa-upload"></i> رفع
+                    </button>
+                    <button id="seo-cloud-sync-toggle" class="btn">فحص الحالة...</button>
+                    <span id="seo-upload-msg">PNG، JPG · رفع جماعي</span>
+                </div>
+
+                <div id="seo-queue-container" class="hidden seo-compact-card" style="margin-top: 6px; padding: 6px;">
+                    <div class="flex justify-between items-center" style="margin-bottom: 4px;">
+                        <span class="text-[10px] font-bold text-primary/80">قائمة التصاميم</span>
+                        <span class="flex items-center gap-1">
+                            <span class="text-[10px] text-slate-500" id="seo-queue-count">0 ملفات</span>
+                            <button id="seo-recover-queue" class="btn btn-icon" title="استعادة تصاميم محفوظة محلياً بعد تعطل الرفع" style="height: 22px; width: 22px; padding: 0;">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                            <button id="seo-clear-queue" class="btn btn-icon" title="حذف القائمة بالكامل" style="height: 22px; width: 22px; padding: 0;">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </span>
+                    </div>
+                    <div class="seo-queue-scroll">
+                        <div id="seo-queue" class="queue-grid"></div>
+                    </div>
+                </div>
+
+                <div id="seo-option-row" class="seo-inline-options" style="margin-top: 6px;">
+                    <span class="flex items-center gap-1">
+                        <input type="checkbox" id="seo-force-niche" class="accent-primary" checked>
+                        <label for="seo-force-niche">تضمين الكلمة المفتاحية</label>
+                    </span>
+                </div>
+
+                <div class="seo-compact-card" id="seo-api-keys-card" style="margin-top: 6px; padding: 6px;">
+                    <div class="field-label" style="margin: 0 0 6px 0; display: flex; justify-content: space-between; align-items: center; gap: 6px;">
+                        <span><i class="fa-solid fa-key"></i> مفاتيح API (SEO)</span>
+                        <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; cursor: pointer;">
+                            <input type="checkbox" id="seo-api-keys-show" style="width: 13px; height: 13px; accent-color: var(--primary);">
+                            إظهار
+                        </label>
+                    </div>
+                    <div class="seo-api-keys-fields" style="display: flex; flex-direction: column; gap: 5px;">
+                        <input type="password" id="seo-api-key-gemini" class="modern-input" style="min-height: 28px; height: 28px; font-size: 11px;" placeholder="Gemini API Key" autocomplete="off">
+                        <input type="password" id="seo-api-key-cursor" class="modern-input" style="min-height: 28px; height: 28px; font-size: 11px;" placeholder="Cursor API Key (crsr_...)" autocomplete="off">
+                        <input type="password" id="seo-api-key-gpt" class="modern-input" style="min-height: 28px; height: 28px; font-size: 11px;" placeholder="GPT / OpenAI API Key (اختياري)" autocomplete="off">
+                    </div>
+                    <button type="button" id="seo-api-keys-save" class="btn" style="width: 100%; margin-top: 6px; height: 28px; font-size: 11px; background: rgba(108, 99, 255, 0.2); border: 1px solid rgba(108, 99, 255, 0.35); color: #c4b5fd;">
+                        <i class="fa-solid fa-floppy-disk"></i> حفظ مفاتيح SEO
+                    </button>
+                </div>
+
+                <div class="seo-compact-card" id="seo-provider-card" style="margin-top: 6px; padding: 6px;">
+                    <div class="field-label" style="margin: 0 0 6px 0;">
+                        <i class="fa-solid fa-sliders"></i> طريقة توليد SEO
+                    </div>
+                    <div class="seo-provider-row" id="seo-provider-row">
+                        <button type="button" class="seo-provider-btn active" data-provider="gemini-api" title="Gemini API Key">Gemini API</button>
+                        <button type="button" class="seo-provider-btn" data-provider="gpt-api" title="OpenAI / GPT API Key">GPT API</button>
+                        <button type="button" class="seo-provider-btn" data-provider="cursor-api" title="Cursor API Key">Cursor API</button>
+                        <button type="button" class="seo-provider-btn" data-provider="gemini-web" title="نافذة Gem / ChatGPT">Gemini Web</button>
+                        <button type="button" class="seo-provider-btn" data-provider="local-library" title="مولّد تاجات BubbleSpider (Redbubble) — 15 تاجاً الأكثر شيوعاً">مكتبة محلية</button>
+                    </div>
+                    <label style="display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 10px; font-weight: 600; cursor: pointer;">
+                        <input type="checkbox" id="seo-ai-window-mode-toggle" style="width: 13px; height: 13px; accent-color: var(--primary);" checked>
+                        نوافذ احتياطية عند فشل المفتاح/API
+                    </label>
+                    <span id="seo-ai-window-mode-note" class="seo-provider-note">الافتراضي: المفتاح أولاً، ثم فتح Gem/ChatGPT تلقائياً عند الفشل.</span>
+                </div>
+            </div>
+
+            <div id="seo-loading" class="hidden seo-loading-inline seo-compact-card text-center">
+                <div class="spinner-small" style="width: 14px; height: 14px; margin: 0 auto 4px;"></div>
+                <span style="font-size: 11px; color: var(--text-muted);">جاري التحليل الشامل عبر Gemini AI...</span>
+            </div>
+
+            <div id="seo-preview-wrap" class="hidden seo-compact-card" style="padding: 6px;">
+                <div class="flex items-center gap-2">
+                    <img id="seo-img-preview" src="#" style="width: 32px; height: 32px; object-fit: cover; border-radius: 6px; border: 1px solid var(--primary);">
+                    <div class="flex-1 overflow-hidden min-w-0">
+                        <div class="text-[10px] text-primary font-bold uppercase">معاينة التصميم الحالي</div>
+                        <div class="text-[11px] text-white truncate font-medium" id="seo-current-filename">design.png</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="seo-automation-row">
+        <span class="flex items-center gap-1">
+            <input type="checkbox" id="seo-auto-submit" class="accent-primary">
+            <label for="seo-auto-submit">موافقة تلقائية</label>
+        </span>
+        <span>اللون الافتراضي:</span>
+        <label style="display:flex; align-items:center; gap:3px;">
+            <input type="radio" name="seo-default-color" value="Black" class="accent-primary" checked>
+            <span>أسود</span>
+        </label>
+        <label style="display:flex; align-items:center; gap:3px;">
+            <input type="radio" name="seo-default-color" value="White" class="accent-primary">
+            <span>أبيض</span>
+        </label>
+    </div>
+
+    <div id="seo-action-row" class="seo-action-row">
+        <button class="action-btn action-btn-primary" id="seo-genBtn" style="background: #6c63ff; border: 1px solid rgba(148, 163, 184, 0.15);">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> بدء التحليل
+        </button>
+        <button class="action-btn action-btn-primary" id="seo-teepublicBtn" style="background: #10b981; border: 1px solid rgba(148, 163, 184, 0.15);">
+            <i class="fa-solid fa-play"></i> تشغيل الأتمتة
+        </button>
+        <button class="btn hidden" id="seo-stop-btn" style="border: 1px solid #ef4444; color: #ef4444; background: transparent;">
+            <i class="fa-solid fa-stop-circle"></i>
+        </button>
+    </div>
+
+    <div id="seo-batch-progress" class="hidden seo-compact-card" style="padding: 8px;">
+        <div class="flex justify-between items-center" style="margin-bottom: 4px;">
+            <span style="font-size: 10px; font-weight: 700; color: var(--primary);">جاري توليد SEO لجميع التصاميم...</span>
+            <span id="seo-batch-status" style="font-size: 10px; color: var(--text-muted);">0 / 0</span>
+        </div>
+        <div style="width: 100%; height: 5px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden;">
+            <div id="seo-batch-fill" style="width: 0%; height: 100%; background: #6c63ff; transition: width 0.1s ease;"></div>
+        </div>
+    </div>
+
+    <div class="alert" id="seo-alert"></div>
+</div>

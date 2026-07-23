@@ -1,0 +1,29 @@
+{
+   "action": {
+      "default_icon": {
+         "128": "icons/icon128.png",
+         "16": "icons/icon16.png",
+         "32": "icons/icon32.png",
+         "48": "icons/icon48.png"
+      },
+      "default_popup": "src/popup/popup.html",
+      "default_title": "Peel Banana - Remove Watermarks"
+   },
+   "background": {
+      "service_worker": "src/background/service-worker.js",
+      "type": "module"
+   },
+   "description": "Remove Gemini AI watermarks from images. Privacy safe - 100% local, images never uploaded.",
+   "icons": {
+      "128": "icons/icon128.png",
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png"
+   },
+   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnumiHZcHK+jPbR85Wiuec3yivOYYpWDWFxIrbsNxGUL47jFc7wvs2BX2Cmq3pSsts13p5M7VuYV6pb5oc4999iXX/HHxRvm8Vqfdp0yUf8jTbf/sonPDX65AmPwmSqLvdLKY3LUXszrDP4yumT/TINc7EczWXFUH0sFDnZtKqICf52bpayCRoYJxtQ2QZ19dWLzjWtGhgIKd1kDRcwFv8zHIanbhYRM7lu3KGJ496VXZmIE4nJpJ8CUuViGJtn/qqdFuyebhFed5x4RfyrNlIZnwA2weIwllSEycMhCi/y1Ypnd1/OTMm0SPK207a0oJA0hycptbxRfuNdeR0/LUWwIDAQAB",
+   "manifest_version": 3,
+   "name": "Peel Banana",
+   "permissions": [ "downloads" ],
+   "update_url": "https://clients2.google.com/service/update2/crx",
+   "version": "1.1.0"
+}

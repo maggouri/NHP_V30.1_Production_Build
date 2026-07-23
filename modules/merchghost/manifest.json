@@ -1,0 +1,120 @@
+{
+   "action": {
+      "default_icon": {
+         "128": "icon128.plasmo.3c1ed2d2.png",
+         "16": "icon16.plasmo.6c567d50.png",
+         "32": "icon32.plasmo.76b92899.png",
+         "48": "icon48.plasmo.aced7582.png",
+         "64": "icon64.plasmo.8bb5e6e0.png"
+      },
+      "default_popup": "popup_new.html"
+   },
+   "author": "MerchGhost",
+   "background": {
+      "service_worker": "background.js"
+   },
+   "content_scripts": [ {
+      "css": [  ],
+      "js": [ "amazonImageDownloader.106e7664.js" ],
+      "matches": [ "\u003Call_urls>" ]
+   }, {
+      "css": [  ],
+      "js": [ "amazonNormal.0e955fb3.js" ],
+      "matches": [ "*://merch.amazon.com/*" ],
+      "run_at": "document_end"
+   }, {
+      "css": [  ],
+      "js": [ "amazonPro.288ae36a.js" ],
+      "matches": [ "*://merch.amazon.com/*" ],
+      "run_at": "document_end"
+   }, {
+      "css": [  ],
+      "js": [ "amazonProductFilters.89fc476f.js" ],
+      "matches": [ "https://www.amazon.com/*", "https://www.amazon.ca/*", "https://www.amazon.co.uk/*", "https://www.amazon.de/*", "https://www.amazon.fr/*", "https://www.amazon.it/*", "https://www.amazon.es/*", "https://www.amazon.in/*", "https://www.amazon.com.au/*", "https://www.amazon.com.br/*", "https://www.amazon.com.mx/*", "https://www.amazon.nl/*", "https://www.amazon.se/*", "https://www.amazon.pl/*", "https://www.amazon.ae/*", "https://www.amazon.sg/*", "https://www.amazon.co.jp/*" ],
+      "run_at": "document_idle"
+   }, {
+      "css": [  ],
+      "js": [ "amazonSuggestions.2a300a23.js" ],
+      "matches": [ "https://www.amazon.com/*", "https://www.amazon.ca/*", "https://www.amazon.co.uk/*", "https://www.amazon.de/*", "https://www.amazon.fr/*", "https://www.amazon.it/*", "https://www.amazon.es/*", "https://www.amazon.in/*", "https://www.amazon.com.au/*", "https://www.amazon.com.br/*", "https://www.amazon.com.mx/*", "https://www.amazon.nl/*", "https://www.amazon.se/*", "https://www.amazon.pl/*", "https://www.amazon.ae/*", "https://www.amazon.sg/*", "https://www.amazon.co.jp/*" ],
+      "run_at": "document_idle"
+   }, {
+      "css": [  ],
+      "js": [ "averageBSR.547bdf65.js" ],
+      "matches": [ "https://www.amazon.com/*", "https://www.amazon.ca/*", "https://www.amazon.co.uk/*", "https://www.amazon.de/*", "https://www.amazon.fr/*", "https://www.amazon.it/*", "https://www.amazon.es/*", "https://www.amazon.in/*", "https://www.amazon.com.au/*", "https://www.amazon.com.br/*", "https://www.amazon.com.mx/*", "https://www.amazon.nl/*", "https://www.amazon.se/*", "https://www.amazon.pl/*", "https://www.amazon.ae/*", "https://www.amazon.sg/*", "https://www.amazon.co.jp/*" ],
+      "run_at": "document_idle"
+   }, {
+      "css": [  ],
+      "js": [ "cardBSRFetcher.bbe8fc4a.js" ],
+      "matches": [ "\u003Call_urls>" ]
+   }, {
+      "css": [  ],
+      "js": [ "cardUtils.e3217f0f.js" ],
+      "matches": [ "\u003Call_urls>" ]
+   }, {
+      "css": [  ],
+      "js": [ "amazonScraper.bb141551.js" ],
+      "matches": [ "https://www.amazon.com/*", "https://www.amazon.ca/*", "https://www.amazon.co.uk/*", "https://www.amazon.de/*", "https://www.amazon.fr/*", "https://www.amazon.it/*", "https://www.amazon.es/*", "https://www.amazon.in/*", "https://www.amazon.com.au/*", "https://www.amazon.com.br/*", "https://www.amazon.com.mx/*", "https://www.amazon.nl/*", "https://www.amazon.se/*", "https://www.amazon.pl/*", "https://www.amazon.ae/*", "https://www.amazon.sg/*", "https://www.amazon.co.jp/*" ],
+      "run_at": "document_idle"
+   }, {
+      "css": [  ],
+      "js": [ "content.40ff0a94.js" ],
+      "matches": [ "*://merch.amazon.com/*", "*://*.teepublic.com/*" ],
+      "run_at": "document_end"
+   }, {
+      "css": [  ],
+      "js": [ "level-system.b74844a5.js" ],
+      "matches": [ "\u003Call_urls>" ]
+   }, {
+      "css": [  ],
+      "js": [ "productCounter.c9a05130.js" ],
+      "matches": [ "https://www.amazon.com/*", "https://www.amazon.ca/*", "https://www.amazon.co.uk/*", "https://www.amazon.de/*", "https://www.amazon.fr/*", "https://www.amazon.it/*", "https://www.amazon.es/*", "https://www.amazon.in/*", "https://www.amazon.com.au/*", "https://www.amazon.com.br/*", "https://www.amazon.com.mx/*", "https://www.amazon.nl/*", "https://www.amazon.se/*", "https://www.amazon.pl/*", "https://www.amazon.ae/*", "https://www.amazon.sg/*", "https://www.amazon.co.jp/*" ],
+      "run_at": "document_idle"
+   }, {
+      "css": [  ],
+      "js": [ "productPageBSR.7d8d3b92.js" ],
+      "matches": [ "https://www.amazon.com/*", "https://www.amazon.ca/*", "https://www.amazon.co.uk/*", "https://www.amazon.de/*", "https://www.amazon.fr/*", "https://www.amazon.it/*", "https://www.amazon.es/*", "https://www.amazon.in/*", "https://www.amazon.com.au/*", "https://www.amazon.com.br/*", "https://www.amazon.com.mx/*", "https://www.amazon.nl/*", "https://www.amazon.se/*", "https://www.amazon.pl/*", "https://www.amazon.ae/*", "https://www.amazon.sg/*", "https://www.amazon.co.jp/*" ],
+      "run_at": "document_idle"
+   }, {
+      "css": [  ],
+      "js": [ "quickSearch.f1d93f79.js" ],
+      "matches": [ "\u003Call_urls>" ],
+      "run_at": "document_end"
+   }, {
+      "css": [  ],
+      "js": [ "redbubble-profile-menu.5030faa3.js" ],
+      "matches": [ "*://*.redbubble.com/*" ],
+      "run_at": "document_end"
+   }, {
+      "css": [  ],
+      "js": [ "redbubble.9b402b2d.js" ],
+      "matches": [ "*://*.redbubble.com/*", "*://*.redbubble.com/studio/promote/*", "*://*.redbubble.com/portfolio/images/*" ],
+      "run_at": "document_end"
+   }, {
+      "css": [  ],
+      "js": [ "merchghost-dashboard-content.a1576c2c.js" ],
+      "matches": [ "\u003Call_urls>" ]
+   }, {
+      "css": [  ],
+      "js": [ "teepublic.d58a32d8.js" ],
+      "matches": [ "*://*.teepublic.com/*" ],
+      "run_at": "document_end"
+   } ],
+   "description": "Automate design uploads across Amazon Merch, TeePublic, and Redbubble. Includes Amazon BSR & ASIN scraper for market research.",
+   "host_permissions": [ "*://*.amazon.com/*", "*://*.amazon.ca/*", "*://*.amazon.co.uk/*", "*://*.amazon.de/*", "*://*.amazon.fr/*", "*://*.amazon.it/*", "*://*.amazon.es/*", "*://*.amazon.in/*", "*://*.amazon.com.au/*", "*://*.amazon.com.br/*", "*://*.amazon.com.mx/*", "*://*.amazon.nl/*", "*://*.amazon.se/*", "*://*.amazon.pl/*", "*://*.amazon.ae/*", "*://*.amazon.sg/*", "*://*.amazon.co.jp/*", "*://*.merch.amazon.com/*", "*://*.teepublic.com/*", "*://*.redbubble.com/*" ],
+   "icons": {
+      "128": "icon128.plasmo.3c1ed2d2.png",
+      "16": "icon16.plasmo.6c567d50.png",
+      "32": "icon32.plasmo.76b92899.png",
+      "48": "icon48.plasmo.aced7582.png",
+      "64": "icon64.plasmo.8bb5e6e0.png"
+   },
+   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAp43RIkQevPXhZ8zb4FpmsVGMmgyezOq8/OdOFbPd8FEIn4V3TBg4YXRqjjyuzGRLHpSYuX5GKkpCylNwd5bsRrWZldGe2xlP0eq3rNzU0uTU/zFPnpemOn/WzWpb0VatD1nBcoY7gRVJSxCXi8ZVx8NSiaXo3HYBo3pxKdkJu6hYKqmN8iLQX2EnjlcY88cNgNXbCAkagLyzev0AKk+awd1NT9vDMJunHDhxT6NjdGz409pCTON257fiaHm9xSNIMAmkaSX8liZs934PzTf/TehYogzdVkTDiMX3LcGBoUuPP/2FjzQ2Bo1AVBOGOveanYG/aE7xP8JZJIixHeM2BQIDAQAB",
+   "manifest_version": 3,
+   "name": "MerchGhost For Merch By Amazon, Redbubble, TeePublic",
+   "permissions": [ "storage", "activeTab", "tabs", "downloads", "contextMenus", "alarms", "offscreen", "scripting", "notifications" ],
+   "version": "1.5.4",
+   "web_accessible_resources": [ {
+      "matches": [ "\u003Call_urls>" ],
+      "resources": [ "assets/icon.png", "assets/building.gif", "assets/sounds/cha-ching.mp3", "assets/sounds/cha-ching.mpeg", "assets/sounds/cha-ching-sale.mp3", "assets/sounds/cash-register-purchase-87313.mp3", "assets/sounds/coin-drops-and-spins-272429.mp3", "assets/amazonImageDownloader.svg", "assets/new_sale_1_small.png", "assets/headerLogoContainer.svg", "assets/Darklogo-footer@2x.png", "assets/Lightogo-footer@2x.png", "assets/big-red-button.png", "assets/hand-cursor.png", "assets/Darklink-building.png", "assets/Lightlink-building.png", "assets/Darkchart.png", "assets/Lightchart.png", "assets/Darkdashboard.png", "assets/Lightdashboard.png", "assets/Uploadnew.png", "assets/Group.png", "assets/celebration.gif", "assets/confetti.js", "assets/level/10.png", "assets/level/30.png", "assets/level/100.png", "assets/level/150.png", "assets/level/200.png", "assets/level/300.png", "assets/level/500.png", "assets/level/800.png", "assets/level/1000.png", "assets/level/1400.png", "assets/level/1800.png", "assets/level/2200.png", "assets/level/3000.png", "assets/level/4000.png", "assets/level/5000.png", "assets/level/7000.png", "assets/level/8000.png", "assets/level/10000.png", "assets/level/15000.png", "assets/level/20000.png", "assets/level/50000.png", "assets/icons/Amazon Scraper dark.svg", "assets/icons/Amazon Scraper light.svg", "assets/icons/Normal Upload dark.svg", "assets/icons/Normal Upload light.svg", "assets/icons/pro upload dark.svg", "assets/icons/pro upload light.svg", "assets/icons/redbubble upload dark.svg", "assets/icons/redbubble upload light.svg", "assets/icons/teepublic upload dark.svg", "assets/icons/teepublic upload light.svg", "offscreen.js" ]
+   } ]
+}

@@ -1,0 +1,871 @@
+<style>
+    .admin-setup-root {
+        --wiz-green: #34d399;
+        --wiz-amber: #fbbf24;
+        --wiz-red: #fb7185;
+        --wiz-indigo: #818cf8;
+        --wiz-surface: rgba(15, 23, 42, 0.82);
+        --wiz-border: rgba(148, 163, 184, 0.18);
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        width: 100%;
+        max-width: 1000px;
+        margin: 0 auto;
+        min-height: 560px;
+        box-sizing: border-box;
+        padding: 0.25rem 0 1rem;
+    }
+
+    .wizard-topbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .wizard-brand h2 {
+        margin: 0;
+        font-size: 1.125rem;
+        font-weight: 800;
+        color: var(--text, #e2e8f0);
+        line-height: 1.3;
+    }
+
+    .wizard-brand p {
+        margin: 0.25rem 0 0;
+        font-size: 0.6875rem;
+        color: var(--text-muted, #94a3b8);
+        line-height: 1.45;
+        max-width: 28rem;
+    }
+
+    .wizard-top-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        flex-wrap: wrap;
+    }
+
+    .wizard-top-actions button {
+        font-size: 0.625rem;
+        font-weight: 700;
+        padding: 0.4375rem 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid var(--wiz-border);
+        background: rgba(51, 65, 85, 0.45);
+        color: #cbd5e1;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s;
+    }
+
+    .wizard-top-actions button:hover {
+        background: rgba(71, 85, 105, 0.55);
+        border-color: rgba(148, 163, 184, 0.35);
+    }
+
+    .wizard-step-counter {
+        font-size: 0.625rem;
+        font-weight: 700;
+        color: #94a3b8;
+        white-space: nowrap;
+        padding: 0.375rem 0.625rem;
+        border-radius: 999px;
+        border: 1px solid var(--wiz-border);
+        background: rgba(2, 6, 23, 0.45);
+    }
+
+    /* Stepper */
+    .wizard-stepper-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 0.25rem;
+    }
+
+    .wizard-stepper {
+        display: flex;
+        align-items: stretch;
+        gap: 0;
+        min-width: min(100%, 36rem);
+    }
+
+    .admin-setup-root[dir="rtl"] .wizard-stepper {
+        flex-direction: row;
+    }
+
+    .admin-setup-root[dir="ltr"] .wizard-stepper {
+        flex-direction: row;
+    }
+
+    .wizard-stepper-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.375rem;
+        min-width: 4.5rem;
+        position: relative;
+        padding: 0 0.25rem;
+        border: none;
+        background: transparent;
+        cursor: default;
+        font: inherit;
+        color: inherit;
+    }
+
+    .wizard-stepper-item.clickable {
+        cursor: pointer;
+    }
+
+    .wizard-stepper-item.clickable:hover .wizard-stepper-dot {
+        transform: scale(1.08);
+    }
+
+    .wizard-stepper-item::after {
+        content: '';
+        position: absolute;
+        top: 0.875rem;
+        height: 2px;
+        background: rgba(148, 163, 184, 0.2);
+        width: 50%;
+    }
+
+    .admin-setup-root[dir="rtl"] .wizard-stepper-item::after {
+        left: 0;
+    }
+
+    .admin-setup-root[dir="ltr"] .wizard-stepper-item::after {
+        right: 0;
+    }
+
+    .admin-setup-root[dir="rtl"] .wizard-stepper-item:first-child::after,
+    .admin-setup-root[dir="ltr"] .wizard-stepper-item:last-child::after {
+        display: none;
+    }
+
+    .wizard-stepper-dot {
+        width: 1.75rem;
+        height: 1.75rem;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.6875rem;
+        font-weight: 800;
+        border: 2px solid rgba(148, 163, 184, 0.35);
+        background: rgba(15, 23, 42, 0.9);
+        color: #64748b;
+        transition: transform 0.15s, border-color 0.15s, background 0.15s;
+        z-index: 1;
+    }
+
+    .wizard-stepper-item.is-complete .wizard-stepper-dot {
+        border-color: rgba(52, 211, 153, 0.55);
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--wiz-green);
+    }
+
+    .wizard-stepper-item.is-current .wizard-stepper-dot {
+        border-color: rgba(99, 102, 241, 0.65);
+        background: rgba(99, 102, 241, 0.22);
+        color: #c7d2fe;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+    }
+
+    .wizard-stepper-item.is-warn .wizard-stepper-dot {
+        border-color: rgba(251, 191, 36, 0.55);
+        color: var(--wiz-amber);
+    }
+
+    .wizard-stepper-item.is-fail .wizard-stepper-dot {
+        border-color: rgba(251, 113, 133, 0.55);
+        color: var(--wiz-red);
+    }
+
+    .wizard-stepper-label {
+        font-size: 0.5625rem;
+        font-weight: 700;
+        color: #64748b;
+        text-align: center;
+        line-height: 1.25;
+        max-width: 5.5rem;
+    }
+
+    .wizard-stepper-item.is-current .wizard-stepper-label {
+        color: #c7d2fe;
+    }
+
+    .wizard-stepper-item.is-complete .wizard-stepper-label {
+        color: #6ee7b7;
+    }
+
+    .wizard-stepper-mobile {
+        display: none;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        color: #94a3b8;
+        text-align: center;
+        padding: 0.375rem;
+    }
+
+    /* Card viewport */
+    .wizard-viewport {
+        position: relative;
+        flex: 1;
+        min-height: 420px;
+    }
+
+    .wizard-card {
+        border-radius: 0.875rem;
+        border: 1px solid var(--wiz-border);
+        background: var(--wiz-surface);
+        padding: 1.5rem 1.75rem;
+        min-height: 400px;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+        opacity: 1;
+        transform: translateX(0);
+        transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .wizard-card.is-exiting {
+        opacity: 0;
+        transform: translateX(var(--wiz-exit-x, 12px));
+        pointer-events: none;
+    }
+
+    .wizard-card.is-entering {
+        opacity: 0;
+        transform: translateX(var(--wiz-enter-x, -12px));
+    }
+
+    .admin-setup-root[dir="rtl"] .wizard-card.is-exiting { --wiz-exit-x: -12px; }
+    .admin-setup-root[dir="rtl"] .wizard-card.is-entering { --wiz-enter-x: 12px; }
+
+    .wizard-card h3 {
+        margin: 0;
+        font-size: 0.9375rem;
+        font-weight: 800;
+        color: #e2e8f0;
+    }
+
+    .wizard-card .wizard-lead {
+        margin: 0;
+        font-size: 0.6875rem;
+        color: #94a3b8;
+        line-height: 1.55;
+    }
+
+    .wizard-status-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+        gap: 0.75rem;
+    }
+
+    .wizard-status-card {
+        border-radius: 0.75rem;
+        border: 1px solid var(--wiz-border);
+        background: rgba(2, 6, 23, 0.5);
+        padding: 1rem 1.125rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .wizard-status-card .icon-row {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+    }
+
+    .wizard-status-card .icon-row i {
+        font-size: 1.375rem;
+    }
+
+    .wizard-status-card .name {
+        font-size: 0.8125rem;
+        font-weight: 800;
+        color: #e2e8f0;
+    }
+
+    .wizard-status-card .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.625rem;
+        font-weight: 700;
+        padding: 0.25rem 0.625rem;
+        border-radius: 999px;
+        width: fit-content;
+    }
+
+    .wizard-status-card .status-pill.ok {
+        color: #6ee7b7;
+        background: rgba(16, 185, 129, 0.12);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .wizard-status-card .status-pill.bad {
+        color: #fda4af;
+        background: rgba(244, 63, 94, 0.12);
+        border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+
+    .wizard-status-card .status-pill.warn {
+        color: #fcd34d;
+        background: rgba(245, 158, 11, 0.12);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .wizard-status-card .hint {
+        font-size: 0.5625rem;
+        color: #64748b;
+    }
+
+    .wizard-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: auto;
+    }
+
+    .wizard-actions button {
+        font-size: 0.6875rem;
+        font-weight: 700;
+        padding: 0.5625rem 0.875rem;
+        border-radius: 0.5rem;
+        border: 1px solid var(--wiz-border);
+        background: rgba(51, 65, 85, 0.5);
+        color: #e2e8f0;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+
+    .wizard-actions button:hover:not(:disabled) {
+        background: rgba(71, 85, 105, 0.65);
+    }
+
+    .wizard-actions button.primary {
+        background: rgba(79, 70, 229, 0.4);
+        border-color: rgba(99, 102, 241, 0.5);
+        color: #e0e7ff;
+    }
+
+    .wizard-actions button.success {
+        background: rgba(16, 185, 129, 0.25);
+        border-color: rgba(52, 211, 153, 0.45);
+        color: #a7f3d0;
+    }
+
+    .wizard-actions button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+
+    .wizard-mini-steps {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .wizard-mini-step {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.625rem;
+        padding: 0.625rem 0.75rem;
+        border-radius: 0.5625rem;
+        border: 1px solid var(--wiz-border);
+        background: rgba(2, 6, 23, 0.4);
+        font-size: 0.625rem;
+        color: #cbd5e1;
+        line-height: 1.45;
+    }
+
+    .wizard-mini-step .num {
+        width: 1.375rem;
+        height: 1.375rem;
+        border-radius: 999px;
+        background: rgba(99, 102, 241, 0.2);
+        color: #c7d2fe;
+        font-weight: 800;
+        font-size: 0.625rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .wizard-tech-details {
+        margin-top: 0.5rem;
+    }
+
+    .wizard-tech-details summary {
+        font-size: 0.625rem;
+        font-weight: 700;
+        color: #64748b;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .wizard-tech-details .tech-body {
+        margin-top: 0.5rem;
+        font-family: ui-monospace, monospace;
+        font-size: 0.5625rem;
+        color: #94a3b8;
+        word-break: break-all;
+        direction: ltr;
+        text-align: left;
+        padding: 0.5rem 0.625rem;
+        border-radius: 0.4375rem;
+        border: 1px solid var(--wiz-border);
+        background: rgba(2, 6, 23, 0.65);
+    }
+
+    .wizard-progress-bar {
+        height: 0.375rem;
+        border-radius: 999px;
+        background: rgba(148, 163, 184, 0.15);
+        overflow: hidden;
+    }
+
+    .wizard-progress-bar .fill {
+        height: 100%;
+        background: linear-gradient(90deg, #6366f1, #34d399);
+        border-radius: 999px;
+        transition: width 0.35s ease;
+    }
+
+    .wizard-progress-label {
+        font-size: 0.6875rem;
+        font-weight: 700;
+        color: #94a3b8;
+    }
+
+    .wizard-services-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.375rem;
+    }
+
+    .wizard-service-chip {
+        font-size: 0.5625rem;
+        font-weight: 700;
+        padding: 0.3125rem 0.5rem;
+        border-radius: 0.375rem;
+        border: 1px solid var(--wiz-border);
+        background: rgba(15, 23, 42, 0.55);
+        color: #cbd5e1;
+    }
+
+    .wizard-service-chip.on { border-color: rgba(52, 211, 153, 0.35); color: #6ee7b7; }
+    .wizard-service-chip.off { border-color: rgba(251, 113, 133, 0.25); color: #fda4af; }
+
+    .wizard-checklist {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4375rem;
+    }
+
+    .wizard-checklist-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.6875rem;
+        color: #cbd5e1;
+    }
+
+    /* Completed summary */
+    .wizard-completed-card {
+        border-radius: 0.875rem;
+        border: 1px solid rgba(52, 211, 153, 0.35);
+        background: rgba(16, 185, 129, 0.08);
+        padding: 1.75rem;
+        text-align: center;
+        min-height: 400px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .wizard-completed-card .emoji {
+        font-size: 2.5rem;
+    }
+
+    .wizard-completed-card h3 {
+        margin: 0;
+        font-size: 1.125rem;
+        font-weight: 800;
+        color: #6ee7b7;
+    }
+
+    /* Bottom nav */
+    .wizard-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--wiz-border);
+    }
+
+    .wizard-nav-group {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .wizard-nav button {
+        font-size: 0.75rem;
+        font-weight: 800;
+        padding: 0.625rem 1.125rem;
+        border-radius: 0.5625rem;
+        border: 1px solid var(--wiz-border);
+        background: rgba(51, 65, 85, 0.5);
+        color: #e2e8f0;
+        cursor: pointer;
+    }
+
+    .wizard-nav button.primary {
+        background: rgba(79, 70, 229, 0.45);
+        border-color: rgba(99, 102, 241, 0.55);
+        color: #e0e7ff;
+    }
+
+    .wizard-nav button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    /* Modal & drawer */
+    .wizard-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(2, 6, 23, 0.72);
+        z-index: 2147483000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+
+    .wizard-overlay.is-open { display: flex; }
+
+    .wizard-modal {
+        width: min(100%, 36rem);
+        max-height: min(85vh, 32rem);
+        overflow: auto;
+        border-radius: 0.875rem;
+        border: 1px solid var(--wiz-border);
+        background: rgba(15, 23, 42, 0.96);
+        padding: 1.25rem;
+    }
+
+    .wizard-modal-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .wizard-modal-head h4 {
+        margin: 0;
+        font-size: 0.875rem;
+        font-weight: 800;
+        color: #e2e8f0;
+    }
+
+    .wizard-files-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+        gap: 0.5rem;
+    }
+
+    .wizard-file-card {
+        border-radius: 0.5625rem;
+        border: 1px solid var(--wiz-border);
+        background: rgba(2, 6, 23, 0.5);
+        padding: 0.625rem;
+    }
+
+    .wizard-file-card .fname {
+        font-size: 0.6875rem;
+        font-weight: 800;
+        color: #e2e8f0;
+    }
+
+    .wizard-file-card .fsub {
+        font-size: 0.5rem;
+        color: #64748b;
+        margin: 0.125rem 0 0.375rem;
+    }
+
+    .wizard-drawer {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        width: min(100%, 22rem);
+        background: rgba(15, 23, 42, 0.98);
+        border: 1px solid var(--wiz-border);
+        z-index: 2147483001;
+        display: none;
+        flex-direction: column;
+        padding: 1rem;
+        box-shadow: -8px 0 32px rgba(0, 0, 0, 0.4);
+        transition: transform 0.25s ease;
+    }
+
+    .admin-setup-root[dir="rtl"] .wizard-drawer,
+    .wizard-drawer[dir="rtl"] {
+        left: 0;
+        transform: translateX(-100%);
+        border-right: none;
+    }
+
+    .admin-setup-root[dir="ltr"] .wizard-drawer,
+    .wizard-drawer[dir="ltr"] {
+        right: 0;
+        transform: translateX(100%);
+        border-left: none;
+    }
+
+    .wizard-drawer.is-open {
+        display: flex;
+        transform: translateX(0);
+    }
+
+    .wizard-log-preview {
+        flex: 1;
+        min-height: 12rem;
+        overflow: auto;
+        font-family: ui-monospace, monospace;
+        font-size: 0.5625rem;
+        line-height: 1.45;
+        color: #94a3b8;
+        padding: 0.625rem;
+        border-radius: 0.4375rem;
+        border: 1px solid var(--wiz-border);
+        background: rgba(2, 6, 23, 0.65);
+        white-space: pre-wrap;
+        word-break: break-word;
+        direction: ltr;
+        text-align: left;
+        margin-top: 0.5rem;
+    }
+
+    .wizard-hidden { display: none !important; }
+
+    @media (max-width: 640px) {
+        .wizard-stepper-wrap { display: none; }
+        .wizard-stepper-mobile { display: block; }
+        .wizard-card { padding: 1.125rem; min-height: 360px; }
+        .wizard-status-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="admin-setup-root dir-rtl" id="admin-setup-root" data-admin-view="setup" dir="rtl">
+    <div class="wizard-topbar">
+        <div class="wizard-brand">
+            <h2 id="wizard-title">⚙️ التهيئة</h2>
+            <p id="wizard-subtitle">معالج خطوة بخطوة لتجهيز NHP على هذا الجهاز</p>
+        </div>
+        <div class="wizard-top-actions">
+            <button type="button" id="btn-setup-advanced"><i class="fa-solid fa-toolbox"></i> <span data-i18n="advancedTools">أدوات متقدمة</span></button>
+            <button type="button" id="btn-setup-log-drawer"><i class="fa-solid fa-scroll"></i> <span data-i18n="setupLog">سجل التهيئة</span></button>
+            <button type="button" id="btn-setup-refresh" title="Refresh"><i class="fa-solid fa-rotate"></i></button>
+        </div>
+        <div class="wizard-step-counter" id="wizard-step-counter">الخطوة 1 من 6</div>
+    </div>
+
+    <div class="wizard-stepper-wrap">
+        <nav class="wizard-stepper" id="wizard-stepper" aria-label="Setup steps"></nav>
+    </div>
+    <div class="wizard-stepper-mobile" id="wizard-stepper-mobile"></div>
+
+    <div class="wizard-viewport" id="wizard-viewport">
+        <div class="wizard-completed-card wizard-hidden" id="wizard-completed-view">
+            <div class="emoji">✅</div>
+            <h3 id="wizard-completed-title">هذا الجهاز جاهز</h3>
+            <p class="wizard-lead" id="wizard-completed-lead"></p>
+            <div class="wizard-checklist" id="wizard-completed-checklist"></div>
+            <div class="wizard-actions" style="justify-content:center;margin-top:1rem">
+                <button type="button" class="primary" id="btn-completed-admin" data-i18n="goAdmin">مركز الإدارة</button>
+                <button type="button" id="btn-completed-restart" data-i18n="restartWizard">إعادة المعالج</button>
+                <button type="button" id="btn-completed-report" data-i18n="copyReport">نسخ التقرير</button>
+            </div>
+        </div>
+
+        <div class="wizard-card" id="wizard-step-panel">
+            <!-- Step 1: Requirements -->
+            <div class="wizard-step-content" data-step="1">
+                <h3 data-i18n="step1Title">المتطلبات</h3>
+                <p class="wizard-lead" data-i18n="step1Lead">تأكد من تثبيت Chrome و Node.js قبل المتابعة.</p>
+                <div class="wizard-status-grid">
+                    <div class="wizard-status-card" id="wiz-req-chrome">
+                        <div class="icon-row"><i class="fa-brands fa-chrome" style="color:#fbbf24"></i><span class="name">Google Chrome</span></div>
+                        <span class="status-pill warn" id="wiz-chrome-pill">…</span>
+                        <span class="hint" data-i18n="chromeHint">متصفح Chrome مطلوب لتحميل الإضافة</span>
+                    </div>
+                    <div class="wizard-status-card" id="wiz-req-node">
+                        <div class="icon-row"><i class="fa-brands fa-node-js" style="color:#34d399"></i><span class="name">Node.js</span></div>
+                        <span class="status-pill warn" id="wiz-node-pill">…</span>
+                        <span class="hint" data-i18n="nodeHint">مطلوب لتشغيل السيرفرات المحلية</span>
+                    </div>
+                </div>
+                <div class="wizard-actions">
+                    <button type="button" id="btn-setup-download-chrome"><i class="fa-brands fa-chrome"></i> <span data-i18n="downloadChrome">تحميل Chrome</span></button>
+                    <button type="button" id="btn-setup-download-node"><i class="fa-brands fa-node-js"></i> <span data-i18n="downloadNode">تحميل Node.js</span></button>
+                </div>
+            </div>
+
+            <!-- Step 2: NHP_DATA -->
+            <div class="wizard-step-content wizard-hidden" data-step="2">
+                <h3 data-i18n="step2Title">مجلد NHP_DATA</h3>
+                <p class="wizard-lead" data-i18n="step2Lead">أنشئ مجلد البيانات بجانب App Root لتخزين السجلات والإعدادات.</p>
+                <div class="wizard-status-card" id="wiz-data-status-card">
+                    <span class="status-pill warn" id="wiz-data-pill">…</span>
+                    <p class="wizard-lead" id="wiz-data-message" style="margin:0"></p>
+                </div>
+                <details class="wizard-tech-details">
+                    <summary data-i18n="techDetails">تفاصيل تقنية</summary>
+                    <div class="tech-body" id="setup-data-path">—</div>
+                </details>
+                <div class="wizard-actions">
+                    <button type="button" id="btn-setup-init-data" class="primary success"><span data-i18n="createData">إنشاء NHP_DATA</span></button>
+                    <button type="button" id="btn-setup-open-data"><span data-i18n="openFolder">فتح المجلد</span></button>
+                </div>
+            </div>
+
+            <!-- Step 3: Extension -->
+            <div class="wizard-step-content wizard-hidden" data-step="3">
+                <h3 data-i18n="step3Title">تحميل الإضافة</h3>
+                <p class="wizard-lead" id="wiz-ext-step-lead" data-i18n="step3Lead">حمّل الإضافة غير المعبأة في Chrome من مجلد App Root.</p>
+                <div class="wizard-status-card wizard-hidden" id="wiz-ext-loaded-banner">
+                    <span class="status-pill ok" id="wiz-ext-pill" data-i18n="extLoadedOk">✅ الإضافة محمّلة في Chrome</span>
+                    <p class="wizard-lead" style="margin:0.375rem 0 0">
+                        <span data-i18n="extIdLabel">معرّف الإضافة</span>:
+                        <code id="wiz-ext-id" style="font-family:ui-monospace,monospace;font-size:0.625rem;direction:ltr">—</code>
+                    </p>
+                </div>
+                <div id="wiz-ext-manual-section">
+                    <div class="wizard-mini-steps">
+                        <div class="wizard-mini-step"><span class="num">1</span><span data-i18n="extStep1">افتح chrome://extensions</span></div>
+                        <div class="wizard-mini-step"><span class="num">2</span><span data-i18n="extStep2">فعّل Developer mode</span></div>
+                        <div class="wizard-mini-step"><span class="num">3</span><span data-i18n="extStep3">Load unpacked → اختر App Root</span></div>
+                    </div>
+                </div>
+                <details class="wizard-tech-details">
+                    <summary data-i18n="techDetails">تفاصيل تقنية</summary>
+                    <div class="tech-body" id="setup-app-root-path">—</div>
+                </details>
+                <div class="wizard-actions">
+                    <button type="button" id="btn-setup-open-extensions" class="primary"><i class="fa-brands fa-chrome"></i> chrome://extensions</button>
+                    <button type="button" id="btn-setup-copy-app-root"><i class="fa-regular fa-copy"></i> <span data-i18n="copyPath">نسخ المسار</span></button>
+                    <button type="button" id="btn-setup-confirm-ext" class="success"><i class="fa-solid fa-check"></i> <span data-i18n="confirmExt">تم تحميل الإضافة</span></button>
+                </div>
+            </div>
+
+            <!-- Step 4: Native -->
+            <div class="wizard-step-content wizard-hidden" data-step="4">
+                <h3 data-i18n="step4Title">Native Messaging</h3>
+                <p class="wizard-lead" data-i18n="step4Lead">سجّل المضيف المحلي للتواصل بين الإضافة والسيرفرات.</p>
+                <div class="wizard-status-card" id="wiz-native-status-card">
+                    <span class="status-pill warn" id="wiz-native-pill">…</span>
+                    <p class="wizard-lead" id="wiz-native-message" style="margin:0"></p>
+                </div>
+                <details class="wizard-tech-details">
+                    <summary data-i18n="techDetails">تفاصيل تقنية</summary>
+                    <div class="tech-body" id="setup-native-detail"></div>
+                </details>
+                <div class="wizard-actions">
+                    <button type="button" id="btn-setup-register-native" class="primary"><span data-i18n="registerNative">تسجيل Native</span></button>
+                    <button type="button" id="btn-setup-verify-native"><span data-i18n="verifyNative">تحقق</span></button>
+                    <button type="button" id="btn-setup-open-native-manifest"><span data-i18n="openManifest">موقع الملف</span></button>
+                </div>
+            </div>
+
+            <!-- Step 5: Services -->
+            <div class="wizard-step-content wizard-hidden" data-step="5">
+                <h3 data-i18n="step5Title">الخدمات</h3>
+                <p class="wizard-lead" data-i18n="step5Lead">شغّل السيرفرات المحلية (8 خدمات).</p>
+                <div class="wizard-progress-label" id="wiz-services-progress-label">0 / 8</div>
+                <div class="wizard-progress-bar"><div class="fill" id="wiz-services-progress-fill" style="width:0%"></div></div>
+                <div class="wizard-services-summary" id="wiz-services-summary"></div>
+                <details class="wizard-tech-details" id="wiz-services-details">
+                    <summary data-i18n="showAllServices">عرض كل الخدمات</summary>
+                    <div class="wizard-services-summary" id="setup-services-list" style="margin-top:0.5rem;flex-direction:column"></div>
+                </details>
+                <div class="wizard-actions">
+                    <button type="button" id="btn-setup-start-all" class="primary success"><i class="fa-solid fa-play"></i> <span data-i18n="startAll">تشغيل الكل</span></button>
+                    <button type="button" id="btn-setup-stop-all"><i class="fa-solid fa-stop"></i> <span data-i18n="stopAll">إيقاف الكل</span></button>
+                    <button type="button" id="btn-setup-restart-all"><i class="fa-solid fa-rotate"></i> <span data-i18n="restartAll">إعادة التشغيل</span></button>
+                    <button type="button" id="btn-setup-check-ports"><i class="fa-solid fa-network-wired"></i> <span data-i18n="checkPorts">فحص المنافذ</span></button>
+                    <button type="button" id="btn-setup-open-launcher"><span data-i18n="openLauncher">مجلد launcher</span></button>
+                </div>
+            </div>
+
+            <!-- Step 6: Success -->
+            <div class="wizard-step-content wizard-hidden" data-step="6">
+                <div style="text-align:center;padding:1rem 0">
+                    <div style="font-size:2.5rem;margin-bottom:0.5rem">🎉</div>
+                    <h3 data-i18n="step6Title">اكتملت التهيئة!</h3>
+                    <p class="wizard-lead" data-i18n="step6Lead">جهازك جاهز للعمل مع NHP.</p>
+                </div>
+                <div class="wizard-checklist" id="wizard-success-checklist"></div>
+                <div class="wizard-actions" style="justify-content:center">
+                    <button type="button" class="primary" id="btn-success-home" data-i18n="goHome">الصفحة الرئيسية</button>
+                    <button type="button" id="btn-success-admin" data-i18n="goAdmin">مركز الإدارة</button>
+                    <button type="button" id="btn-success-report" data-i18n="copyReport">نسخ التقرير</button>
+                    <button type="button" id="btn-success-restart" data-i18n="restartWizard">إعادة المعالج</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="wizard-nav">
+        <div class="wizard-nav-group">
+            <button type="button" id="btn-wizard-prev" data-i18n="prev">السابق</button>
+        </div>
+        <div class="wizard-nav-group">
+            <button type="button" id="btn-wizard-skip" class="wizard-hidden" data-i18n="skipNow">تخطي الآن</button>
+            <button type="button" id="btn-wizard-next" class="primary" data-i18n="next">متابعة</button>
+        </div>
+    </footer>
+
+    <!-- Advanced Tools Modal -->
+    <div class="wizard-overlay" id="wizard-advanced-overlay" aria-hidden="true">
+        <div class="wizard-modal" role="dialog" aria-labelledby="wizard-advanced-title">
+            <div class="wizard-modal-head">
+                <h4 id="wizard-advanced-title" data-i18n="advancedTools">أدوات متقدمة</h4>
+                <button type="button" id="btn-advanced-close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="wizard-lead" data-i18n="advancedLead">تشغيل ملفات launcher مباشرة (FIRST_RUN، START_ALL، …)</p>
+            <div class="wizard-files-grid" id="setup-launcher-files"></div>
+            <div class="wizard-actions" style="margin-top:1rem">
+                <button type="button" id="btn-setup-first-run" class="primary"><i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="firstRun">التشغيل الأول</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Setup Log Drawer -->
+    <div class="wizard-overlay" id="wizard-log-overlay" aria-hidden="true"></div>
+    <aside class="wizard-drawer" id="wizard-log-drawer" aria-hidden="true">
+        <div class="wizard-modal-head">
+            <h4 data-i18n="setupLog">سجل التهيئة</h4>
+            <button type="button" id="btn-log-close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <details class="wizard-tech-details">
+            <summary data-i18n="techDetails">تفاصيل تقنية</summary>
+            <div class="tech-body" id="setup-log-path">—</div>
+        </details>
+        <div class="wizard-actions">
+            <button type="button" id="btn-setup-copy-report"><i class="fa-regular fa-copy"></i> <span data-i18n="copyReport">نسخ التقرير</span></button>
+            <button type="button" id="btn-setup-open-log"><span data-i18n="openLog">فتح السجل</span></button>
+            <button type="button" id="btn-setup-clear-log-view"><span data-i18n="clearView">مسح العرض</span></button>
+        </div>
+        <div class="wizard-log-preview" id="setup-log-preview"></div>
+    </aside>
+</div>

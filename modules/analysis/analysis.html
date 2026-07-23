@@ -1,0 +1,194 @@
+<link rel="stylesheet" href="modules/analysis/analysis.css">
+<div class="analysis-module-root" dir="rtl">
+    <!-- Mesh Container -->
+    <div class="mesh-container">
+        <div class="mesh-ball ball-1"></div>
+        <div class="mesh-ball ball-2"></div>
+    </div>
+
+    <!-- Luxury Layout -->
+    <div class="analysis-layout">
+
+        <!-- Left Side: Controls & States -->
+        <div class="glass-panel">
+            <div class="luxury-title"
+                style="display: flex; align-items: center; gap: 0.625rem; font-size: 1rem; font-weight: 900; margin-bottom: 0.35rem; color: #fff;">
+                <i class="fa-solid fa-chart-line" style="color: var(--ana-excellent);"></i>
+                تحليل نيشات TeePublic
+            </div>
+            <p id="tp-emailcore-sync" style="font-size:0.65rem;color:#94a3b8;margin:0 0 1rem;">مزامنة EmailCore: —</p>
+
+            <div class="luxury-stats-row">
+                <div class="ana-stat-card"><span class="ana-stat-value" id="tp-excel"
+                        style="color: var(--ana-excellent);">0</span><span class="ana-stat-label">ممتاز</span></div>
+                <div class="ana-stat-card"><span class="ana-stat-value" id="tp-med"
+                        style="color: var(--ana-medium);">0</span><span class="ana-stat-label">متوسط</span></div>
+                <div class="ana-stat-card"><span class="ana-stat-value" id="tp-sat"
+                        style="color: var(--ana-saturated);">0</span><span class="ana-stat-label">مشبع</span></div>
+                <div class="ana-stat-card"><span class="ana-stat-value" id="tp-emp"
+                        style="color: var(--ana-empty);">0</span><span class="ana-stat-label">غير معروف</span></div>
+            </div>
+
+            <!-- Legend: TeePublic page-count saturation (NOT USPTO) -->
+            <div class="luxury-legend">
+                <div class="leg-item">
+                    <div class="leg-dot" style="background:var(--ana-excellent)"></div> ≤3 صفحات = ممتاز
+                </div>
+                <div class="leg-item">
+                    <div class="leg-dot" style="background:var(--ana-medium)"></div> 4-6 صفحات = متوسط
+                </div>
+                <div class="leg-item">
+                    <div class="leg-dot" style="background:var(--ana-saturated)"></div> ≥7 صفحات = مشبع
+                </div>
+            </div>
+
+            <div class="ana-status-bar">
+                <div class="lux-status-dot" id="tp-statusDot"></div>
+                <span id="tp-statusText" style="font-size: 0.6875rem; font-weight: 700; color: #fff;">في انتظار بدء
+                    التحليل...</span>
+                <span id="tp-currentBadge" class="hidden"
+                    style="margin-right: auto; background: var(--ana-primary); color: #fff; padding: 0.125rem 0.5rem; border-radius: 1.25rem; font-size: 0.5625rem; font-weight: 800;"></span>
+            </div>
+
+            <div class="ana-progress-wrap">
+                <div class="lux-progress-header"
+                    style="display: flex; justify-content: space-between; font-size: 0.6875rem; color: var(--ana-text-dim); margin-bottom: 0.375rem;">
+                    <span>التقدم</span><b id="tp-pct">0%</b>
+                </div>
+                <div class="ana-progress-bg">
+                    <div class="ana-progress-fill" id="tp-bar"></div>
+                </div>
+            </div>
+
+            <div id="tp-alert" class="alert"></div>
+
+            <div class="luxury-title" style="font-size: 0.875rem; margin-bottom: 0.625rem;">
+                <i class="fa-solid fa-list-ul" style="color: var(--ana-secondary);"></i>
+                النيتشات للتحليل
+            </div>
+            <textarea id="tp-niches" class="luxury-input luxury-scroll" placeholder="أدخل النيتشات هنا..."
+                style="height: 6.25rem; margin-bottom: 0.9375rem; resize: none;"></textarea>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                <span style="font-size: 0.6875rem; font-weight: 700; color: var(--ana-text-dim);">إجمالي: <b
+                        id="tp-inputCount" style="color: #fff;">0</b></span>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button id="tp-formatBtn" class="luxury-btn btn-secondary"
+                        style="padding: 0.375rem 0.75rem; font-size: 0.625rem;"><i class="fa-solid fa-wand-magic-sparkles"></i>
+                        تنظيم</button>
+                    <button id="tp-clearBtn" class="luxury-btn btn-secondary"
+                        style="padding: 0.375rem 0.75rem; font-size: 0.625rem;"><i class="fa-solid fa-trash-can"></i> مسح</button>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 0.625rem;">
+                <button id="tp-startBtn" class="luxury-btn btn-primary" style="flex: 1;">📊 بدء التحليل</button>
+                <button id="tp-stopBtn" class="luxury-btn btn-secondary hidden" style="flex: 1;">⏸ إيقاف</button>
+            </div>
+
+            <div style="display: flex; gap: 0.625rem; margin-top: 0.625rem;">
+                <button id="tp-resetBtn" class="luxury-btn btn-secondary" style="flex: 1;" title="إعادة تعيين"><i
+                        class="fa-solid fa-rotate-left"></i> إعادة تعيين</button>
+            </div>
+        </div>
+
+        <!-- Right Side: Results -->
+        <div class="glass-panel ana-results-column">
+            <div class="luxury-title"
+                style="display: flex; align-items: center; gap: 0.625rem; font-size: 0.875rem; font-weight: 900; margin-bottom: 0.9375rem; color: #fff;">
+                <i class="fa-solid fa-square-poll-vertical" style="color: var(--ana-secondary);"></i>
+                النتائج المكتشفة
+            </div>
+
+            <div class="ana-results-grid">
+                <div class="ana-res-card">
+                    <div class="ana-res-header">
+                        <div class="ana-res-title" style="color: var(--ana-excellent);">⭐ ممتاز <span id="tp-excelCount"
+                                style="opacity: 0.5; margin-left: 0.3125rem;">0</span></div>
+                        <button id="tp-copyExcel" class="luxury-btn btn-secondary"
+                            style="padding: 0.25rem 0.5rem; font-size: 0.625rem;"><i class="fa-solid fa-copy"></i></button>
+                    </div>
+                    <div id="tp-excelList" class="ana-res-list luxury-scroll"></div>
+                    <button type="button" class="tp-col-reanalyze" id="tp-reanalyzeExcel" data-bucket="excel"
+                        title="إعادة تحليل نيتشات هذا العمود فقط">
+                        <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> إعادة تحليل
+                    </button>
+                </div>
+
+                <div class="ana-res-card">
+                    <div class="ana-res-header">
+                        <div class="ana-res-title" style="color: var(--ana-medium);">📊 متوسط <span id="tp-medCount"
+                                style="opacity: 0.5; margin-left: 0.3125rem;">0</span></div>
+                        <button id="tp-copyMed" class="luxury-btn btn-secondary"
+                            style="padding: 0.25rem 0.5rem; font-size: 0.625rem;"><i class="fa-solid fa-copy"></i></button>
+                    </div>
+                    <div id="tp-medList" class="ana-res-list luxury-scroll"></div>
+                    <button type="button" class="tp-col-reanalyze" id="tp-reanalyzeMed" data-bucket="med"
+                        title="إعادة تحليل نيتشات هذا العمود فقط">
+                        <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> إعادة تحليل
+                    </button>
+                </div>
+
+                <div class="ana-res-card">
+                    <div class="ana-res-header">
+                        <div class="ana-res-title" style="color: var(--ana-saturated);">🔥 مشبع <span id="tp-satCount"
+                                style="opacity: 0.5; margin-left: 0.3125rem;">0</span></div>
+                        <button id="tp-copySat" class="luxury-btn btn-secondary"
+                            style="padding: 0.25rem 0.5rem; font-size: 0.625rem;"><i class="fa-solid fa-copy"></i></button>
+                    </div>
+                    <div id="tp-satList" class="ana-res-list luxury-scroll"></div>
+                    <button type="button" class="tp-col-reanalyze" id="tp-reanalyzeSat" data-bucket="sat"
+                        title="إعادة تحليل نيتشات هذا العمود فقط">
+                        <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> إعادة تحليل
+                    </button>
+                </div>
+
+                <div class="ana-res-card">
+                    <div class="ana-res-header">
+                        <div class="ana-res-title" style="color: var(--ana-empty);">❓ غير معروف <span id="tp-empCount"
+                                style="opacity: 0.5; margin-left: 0.3125rem;">0</span></div>
+                        <button id="tp-copyEmp" class="luxury-btn btn-secondary"
+                            style="padding: 0.25rem 0.5rem; font-size: 0.625rem;"><i class="fa-solid fa-copy"></i></button>
+                    </div>
+                    <div id="tp-empList" class="ana-res-list luxury-scroll"></div>
+                    <button type="button" class="tp-col-reanalyze" id="tp-reanalyzeEmp" data-bucket="emp"
+                        title="إعادة تحليل نيتشات هذا العمود فقط">
+                        <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> إعادة تحليل
+                    </button>
+                </div>
+            </div>
+
+            <div class="luxury-title" style="font-size: 0.8125rem; margin-top: 1.5625rem; margin-bottom: 0.75rem; color: #fff;">
+                <i class="fa-solid fa-file-export" style="color: var(--ana-primary);"></i>
+                تحميل التقارير
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                <button id="tp-expExcel" class="luxury-btn btn-secondary" style="font-size: 0.625rem;"><i
+                        class="fa-solid fa-download"></i> الممتازة</button>
+                <button id="tp-expMed" class="luxury-btn btn-secondary" style="font-size: 0.625rem;"><i
+                        class="fa-solid fa-download"></i> المتوسطة</button>
+            </div>
+            <button id="tp-expAll" class="luxury-btn btn-primary"
+                style="width: 100%; margin-top: 0.5rem; font-size: 0.6875rem;"><i class="fa-solid fa-file-invoice"></i> تصدير
+                التقرير التحليلي الكامل</button>
+        </div>
+
+        <section class="ana-bottom-panel glass-panel" aria-label="ملخص وبحث النتائج">
+            <div class="ana-bottom-toolbar">
+                <div class="ana-bottom-title">
+                    <i class="fa-solid fa-magnifying-glass-chart" aria-hidden="true"></i>
+                    <span>بحث وملخص النتائج</span>
+                </div>
+                <button type="button" id="tp-copyDetailVisible" class="luxury-btn btn-secondary ana-bottom-copy-btn"
+                    title="نسخ الأسطر الظاهرة بعد التصفية"><i class="fa-solid fa-copy"></i> نسخ الظاهر</button>
+            </div>
+            <p class="ana-bottom-meta" id="tp-bottomMeta"></p>
+            <p class="ana-bottom-time" id="tp-bottomTime"></p>
+            <label class="visually-hidden" for="tp-detailSearch">تصفية النتائج</label>
+            <input type="search" id="tp-detailSearch" class="luxury-input ana-detail-search luxury-scroll"
+                placeholder="ابحث في كل النتائج..." autocomplete="off" />
+            <ul id="tp-detailList" class="ana-detail-list tp-detail-list luxury-scroll" role="list"></ul>
+            <p class="ana-bottom-hint" id="tp-bottomHint">شغّل التحليل لعرض قائمة موحّدة قابلة للبحث والنسخ هنا.</p>
+        </section>
+    </div>
+</div>

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NHP Prompt Bag</title>
+  <style>
+    :root {
+      font-size: 100%;
+      --bg: #090b12;
+      --panel: #151820;
+      --panel-2: #1b2030;
+      --panel-3: #10141f;
+      --border: rgba(148, 163, 184, 0.22);
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --primary: #818cf8;
+      --safe: #10b981;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      font-size: 0.8125rem;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: grid;
+      grid-template-columns: auto minmax(18rem, 1fr) auto;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.625rem 0.875rem;
+      border-bottom: 1px solid var(--border);
+      background: #0f131d;
+    }
+    h1 { margin: 0; font-size: 1rem; }
+    main { padding: 0.75rem; min-height: calc(100vh - 3rem); }
+    section {
+      min-width: 0;
+      min-height: 0;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      background: var(--panel);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .images-section { min-height: calc(100vh - 4.5rem); }
+    .prompts-section { display: none; }
+    .top-actions, .btn-row, .pb-conn-row, .image-card-actions, .image-niche-group-actions, .promptbag-counts {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      flex-wrap: wrap;
+    }
+    .top-actions { justify-content: center; }
+    .pb-conn-row { justify-content: flex-end; }
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      padding: 0.625rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel-2);
+    }
+    .section-title { font-weight: 800; color: #fff; }
+    .promptbag-toolbar {
+      position: static;
+      z-index: 6;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      padding: 0.5rem 0.625rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(15, 19, 29, 0.96);
+      backdrop-filter: blur(10px);
+    }
+    .promptbag-toolbar input[type="search"] {
+      flex: 1 1 14rem;
+      min-width: 0;
+    }
+    .promptbag-toolbar select {
+      flex: 0 1 11rem;
+      min-width: 8rem;
+    }
+    input, textarea, select {
+      width: 100%;
+      color: var(--text);
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 0.4375rem;
+      padding: 0.5rem;
+      font: inherit;
+      outline: none;
+    }
+    textarea {
+      min-height: 6.875rem;
+      resize: vertical;
+      line-height: 1.5;
+      direction: auto;
+    }
+    button {
+      border: 1px solid var(--border);
+      border-radius: 0.4375rem;
+      background: #111827;
+      color: var(--text);
+      padding: 0.4375rem 0.625rem;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button:hover { border-color: var(--primary); color: #fff; }
+    .primary { background: rgba(129, 140, 248, 0.18); border-color: rgba(129, 140, 248, 0.48); }
+    .safe { background: rgba(16, 185, 129, 0.14); border-color: rgba(16, 185, 129, 0.42); }
+    .danger { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.38); }
+    .generate-btn {
+      background: rgba(168, 85, 247, 0.18);
+      border-color: rgba(168, 85, 247, 0.48);
+      color: #e9d5ff;
+    }
+    .image-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.625rem;
+      padding: 0.625rem;
+      overflow: auto;
+      align-content: start;
+    }
+    .image-tools { display: flex; justify-content: flex-end; gap: 0.5rem; }
+    .promptbag-pill {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.35rem 0.55rem;
+      color: #cbd5e1;
+      background: #0f172a;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .image-empty {
+      padding: 2rem;
+      border: 1px dashed rgba(148, 163, 184, 0.24);
+      border-radius: 0.5rem;
+      text-align: center;
+      white-space: normal;
+      background: #0f172a;
+      line-height: 1.6;
+    }
+    .image-niche-group {
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      overflow: hidden;
+      background: var(--panel-3);
+    }
+    .image-niche-group-title {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 0.5rem;
+      align-items: center;
+      width: 100%;
+      border: 0;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 0;
+      background: #111827;
+      padding: 0.7rem 0.8rem;
+      text-align: start;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .image-niche-group-title:hover { background: #151b2a; }
+    .image-niche-group-title .chevron {
+      width: 1.25rem;
+      color: #a78bfa;
+      text-align: center;
+    }
+    .image-niche-group-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 900;
+      color: #f8fafc;
+    }
+    .image-niche-group-actions { justify-content: flex-end; }
+    .image-niche-group-actions button { font-size: 0.75rem; padding: 0.35rem 0.5rem; }
+    .image-niche-group-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(9.375rem, 1fr));
+      gap: 0.5rem;
+      padding: 0.625rem;
+    }
+    .image-niche-group.is-collapsed .image-niche-group-grid { display: none; }
+    .image-card, .prompt-settings-card {
+      position: relative;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      background: #10141f;
+      padding: 0.5625rem;
+      display: grid;
+      gap: 0.5rem;
+      min-width: 0;
+      align-content: start;
+    }
+    .delete-image-corner-btn {
+      position: absolute;
+      top: 0.85rem;
+      right: 0.85rem;
+      width: 1.35rem;
+      height: 1.35rem;
+      border: 1px solid rgba(239, 68, 68, 0.45);
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.95);
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 900;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      z-index: 5;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+      transition: background-color 0.15s, transform 0.15s;
+    }
+    .delete-image-corner-btn:hover {
+      background: #ef4444;
+      transform: scale(1.15);
+    }
+    .image-card img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: contain;
+      background: #0b1020;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 0.4375rem;
+      cursor: pointer;
+    }
+    .image-card img:hover { border-color: rgba(16, 185, 129, 0.72); }
+    .image-card-actions .generate-btn { flex: 1; min-width: 0; }
+    details.image-card-menu { position: relative; flex-shrink: 0; }
+    details.image-card-menu > summary {
+      list-style: none;
+      cursor: pointer;
+      min-width: 2rem;
+      padding: 0.4375rem 0.5rem;
+      text-align: center;
+      font-weight: 900;
+      user-select: none;
+      border: 1px solid var(--border);
+      border-radius: 0.4375rem;
+      background: #111827;
+    }
+    details.image-card-menu > summary::-webkit-details-marker { display: none; }
+    .image-card-menu-panel {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      z-index: 8;
+      min-width: 7.5rem;
+      margin-top: 0.25rem;
+      padding: 0.25rem;
+      border: 1px solid var(--border);
+      border-radius: 0.4375rem;
+      background: #0f131d;
+      display: grid;
+      gap: 0.125rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+    }
+    .image-card-menu-panel button { width: 100%; text-align: start; font-size: 0.6875rem; padding: 0.35rem 0.5rem; }
+    details.image-prompt-expand {
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 0.4375rem;
+      padding: 0.375rem 0.5rem;
+      background: #0c0f18;
+    }
+    details.image-prompt-expand summary {
+      cursor: pointer;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      color: var(--muted);
+      user-select: none;
+    }
+    label.image-prompt-label {
+      display: grid;
+      gap: 0.25rem;
+      margin-top: 0.5rem;
+      white-space: normal;
+      font-size: 0.625rem;
+    }
+    label.image-prompt-label textarea { min-height: 3.25rem; font-size: 0.6875rem; line-height: 1.45; }
+    .meta {
+      color: var(--muted);
+      font-size: 0.6875rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .status { color: var(--muted); min-height: 1.125rem; font-size: 0.75rem; text-align: end; }
+    .pb-conn-badge {
+      font-size: 0.6875rem;
+      font-weight: 800;
+      padding: 0.25rem 0.5rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .pb-conn-badge.is-online { color: #34d399; border-color: rgba(16, 185, 129, 0.42); background: rgba(16, 185, 129, 0.12); }
+    .pb-conn-badge.is-offline { color: #f87171; border-color: rgba(239, 68, 68, 0.38); background: rgba(239, 68, 68, 0.1); }
+    .pb-reconnect-btn { font-size: 0.6875rem; padding: 0.25rem 0.5rem; }
+    .editor {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.5rem;
+    }
+    .editor textarea, .editor .btn-row { grid-column: 1 / -1; }
+    .settings-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      align-items: stretch;
+      justify-content: flex-end;
+      background: rgba(0, 0, 0, 0.55);
+    }
+    .settings-modal.is-open { display: flex; }
+    .settings-panel {
+      width: min(34rem, 100%);
+      height: 100%;
+      border-right: 1px solid var(--border);
+      background: var(--panel);
+      display: flex;
+      flex-direction: column;
+      box-shadow: -12px 0 30px rgba(0, 0, 0, 0.35);
+    }
+    .settings-body {
+      overflow: auto;
+      display: grid;
+      gap: 0.75rem;
+      padding: 0.75rem;
+    }
+    .prompt-settings-list { display: grid; gap: 0.5rem; }
+    .prompt-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 0.5rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    .prompt-title > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+    .prompt-text {
+      color: var(--muted);
+      line-height: 1.45;
+      max-height: 5.75rem;
+      overflow: auto;
+      white-space: pre-wrap;
+      direction: auto;
+    }
+    .prompt-settings-card .btn-row { justify-content: flex-end; }
+    @media (max-width: 60rem) {
+      header { grid-template-columns: 1fr; }
+      .top-actions { justify-content: flex-start; }
+      .promptbag-toolbar { align-items: stretch; }
+      .promptbag-toolbar input[type="search"],
+      .promptbag-toolbar select,
+      .promptbag-toolbar button {
+        flex: 1 1 100%;
+      }
+      .promptbag-counts { width: 100%; }
+      .editor { grid-template-columns: 1fr; }
+      .image-niche-group-title { grid-template-columns: auto minmax(0, 1fr); }
+      .image-niche-group-actions { grid-column: 1 / -1; justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>NHP Prompt Bag</h1>
+    <div class="top-actions" aria-label="Prompt Bag shortcuts">
+      <button id="top-reload-btn">Refresh</button>
+      <button data-action="jump-images">Images</button>
+      <button data-action="open-settings">Settings</button>
+      <button class="danger" data-action="clear-images">تفريغ الصور</button>
+      <button class="safe" data-action="open-gem">GEM</button>
+      <button class="primary" data-action="open-gpt">GPT</button>
+    </div>
+    <div class="pb-conn-row">
+      <span class="pb-conn-badge is-offline" id="pb-conn-badge" title="Ghost Server status">Offline</span>
+      <button type="button" class="pb-reconnect-btn" id="pb-reconnect-btn" title="Reconnect and reload Prompt Bag">Reconnect</button>
+      <div class="status" id="status">Ready</div>
+    </div>
+  </header>
+  <main>
+    <section class="images-section">
+      <div class="section-head">
+        <div class="section-title">Image Prompt Bag</div>
+        <div class="meta" id="image-count">0 images</div>
+      </div>
+      <div class="image-grid" id="images-list"></div>
+    </section>
+
+    <section class="prompts-section" aria-hidden="true"></section>
+  </main>
+
+  <div class="settings-modal" id="settings-modal" aria-hidden="true">
+    <aside class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <div class="section-head">
+        <div>
+          <div class="section-title" id="settings-title">Settings</div>
+          <div class="meta">Manage personal prompts</div>
+        </div>
+        <button type="button" data-action="close-settings">Close</button>
+      </div>
+      <div class="settings-body">
+        <div class="editor">
+          <input id="prompt-title" placeholder="Prompt name">
+          <input id="prompt-tag" placeholder="Optional tag: Gemini / GPT / SEO">
+          <textarea id="prompt-text" placeholder="Write the prompt here..."></textarea>
+          <div class="btn-row">
+            <button class="primary" id="add-prompt-btn">Save Prompt</button>
+            <button id="clear-editor-btn">Clear</button>
+            <button class="danger" data-action="clear-prompts">Clear All</button>
+          </div>
+        </div>
+        <div class="prompt-settings-list" id="prompts-list"></div>
+      </div>
+    </aside>
+  </div>
+
+  <script src="utils/niche-file-naming.js"></script>
+  <script src="prompt_bag_image_prompts.js"></script>
+  <script src="prompt_bag.js"></script>
+</body>
+</html>

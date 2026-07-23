@@ -1,0 +1,36 @@
+{
+  "devDependencies": {
+    "tailwindcss": "^4.2.2"
+  },
+  "dependencies": {
+    "archiver": "^8.0.0",
+    "axios": "^1.14.0",
+    "cheerio": "^1.2.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "multer": "^2.1.1",
+    "puppeteer": "^24.40.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "sharp": "^0.34.5",
+    "socket.io": "^4.8.3"
+  },
+  "name": "nhp_v30.1_production_build",
+  "version": "1.0.0",
+  "description": "",
+  "main": "ai-bridge-server.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "smoke": "node scripts/smoke-check.js"
+  },
+  "optionalDependencies": {
+    "ghost-cursor": "^1.4.1",
+    "puppeteer-real-browser": "^1.4.4"
+  },
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

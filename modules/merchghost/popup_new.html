@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MerchGhost Dashboard</title>
+  <style>
+    :root {
+      font-size: 100%; /* NHP: 1rem = 16px default */
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --primary: #10b981;
+      --primary-hover: #059669;
+      --text-main: #f8fafc;
+      --text-dim: #94a3b8;
+      --border-color: #334155;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      width: 28.125rem;
+      min-height: 31.25rem;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+    }
+
+    /* تأثير الغشاوة لوضع لقطة الشاشة */
+    body.blur-mode .sensitive-data {
+      filter: blur(6px);
+      user-select: none;
+      pointer-events: none;
+      opacity: 0.8;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.9375rem 1.25rem;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .logo {
+      font-size: 1.125rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .logo img {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    /* Tabs Styles */
+    .tabs {
+      display: flex;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 0.75rem 0;
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border-bottom: 0.125rem solid transparent;
+      transition: all 0.3s;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+    }
+
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    /* Content Area */
+    .tab-content {
+      display: none;
+      padding: 1.25rem;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.9375rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      padding: 0.9375rem;
+      border-radius: 0.625rem;
+      border: 1px solid var(--border-color);
+      text-align: center;
+    }
+
+    .stat-card span {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-bottom: 0.3125rem;
+    }
+
+    .stat-card strong {
+      font-size: 1.25rem;
+      color: var(--primary);
+    }
+
+    /* Recent Sales */
+    .section-title {
+      font-size: 0.875rem;
+      color: var(--text-dim);
+      margin-bottom: 0.625rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.3125rem;
+    }
+
+    .sale-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.625rem;
+      background: var(--card-bg);
+      border-radius: 0.5rem;
+      margin-bottom: 0.625rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .sale-thumb {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 0.375rem;
+      object-fit: cover;
+      background: #333;
+    }
+
+    .sale-details {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .sale-title {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 0.25rem;
+    }
+
+    .sale-meta {
+      font-size: 0.6875rem;
+      color: var(--text-dim);
+    }
+
+    .sale-profit {
+      font-size: 0.875rem;
+      font-weight: bold;
+      color: var(--primary);
+    }
+
+    /* Settings & Controls */
+    .control-group {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.9375rem;
+      background: var(--card-bg);
+      border-radius: 0.5rem;
+      margin-bottom: 0.625rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 0.5rem 0.9375rem;
+      border-radius: 0.375rem;
+      cursor: pointer;
+      font-size: 0.8125rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+    }
+
+    .btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+    }
+
+    .btn-secondary:hover {
+      background: var(--border-color);
+    }
+
+    /* Toggle Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 2.5rem;
+      height: 1.25rem;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--border-color);
+      transition: .4s;
+      border-radius: 1.25rem;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 0.875rem;
+      width: 0.875rem;
+      left: 0.1875rem;
+      bottom: 0.1875rem;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked+.slider {
+      background-color: var(--primary);
+    }
+
+    input:checked+.slider:before {
+      transform: translateX(1.25rem);
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(0.3125rem);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-spin {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="header">
+    <div class="logo">
+      <img src="assets/icon.png" alt="Logo" onerror="this.style.display='none'">
+      MerchGhost
+    </div>
+    <div class="level-badge sensitive-data" id="account-tier"
+      style="font-size: 0.75rem; background: var(--primary); padding: 0.1875rem 0.5rem; border-radius: 0.75rem; font-weight: bold;">
+      Standard
+    </div>
+  </div>
+
+  <!-- Tabs Navigation -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="tab-dashboard">📊 الإحصائيات</button>
+    <button class="tab-btn" data-tab="tab-upload">🚀 الرفع</button>
+    <button class="tab-btn" data-tab="tab-research">🛒 البحث</button>
+    <button class="tab-btn" data-tab="tab-radar">🎯 الرادار</button>
+    <button class="tab-btn" data-tab="tab-settings">⚙️ الإعدادات</button>
+  </div>
+
+  <!-- Tab 1: Dashboard -->
+  <div id="tab-dashboard" class="tab-content active">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span>إجمالي المبيعات</span>
+        <strong id="total-sales" class="sensitive-data">0</strong>
+      </div>
+      <div class="stat-card">
+        <span>صافي الأرباح</span>
+        <strong id="net-profit" class="sensitive-data">$0.00</strong>
+      </div>
+      <div class="stat-card">
+        <span>التصاميم المرفوعة</span>
+        <strong id="total-designs">0</strong>
+      </div>
+      <div class="stat-card">
+        <span>المتابعين</span>
+        <strong id="total-followers">0</strong>
+      </div>
+    </div>
+
+    <div class="section-title">أحدث المبيعات</div>
+    <div id="recent-sales-list">
+      <!-- يتم حقن المبيعات هنا عبر الجافاسكربت -->
+    </div>
+  </div>
+
+  <!-- Tab 2: Uploader Placeholder -->
+  <div id="tab-upload" class="tab-content">
+    <div style="text-align: center; color: var(--text-dim); padding: 2.5rem 0;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.625rem;">🚀</div>
+      <h3>مدير الرفع التلقائي</h3>
+      <p style="font-size: 0.75rem; line-height: 1.5;">تحكم في عمليات الرفع على Amazon و Redbubble و TeePublic من هنا.</p>
+      <button id="manage-uploads-btn" class="btn" style="margin: 1.25rem auto 0;">إدارة تصاميم الرفع</button>
+    </div>
+  </div>
+
+  <!-- Tab 3: Research Tools Placeholder -->
+  <div id="tab-research" class="tab-content">
+    <div class="control-group">
+      <div>
+        <div style="font-size: 0.875rem; font-weight: bold; margin-bottom: 0.25rem;">أدوات أمازون (Amazon)</div>
+        <div style="font-size: 0.6875rem; color: var(--text-dim);">إظهار BSR واستخراج الكلمات المفتاحية</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="amazon-tools-toggle" checked><span class="slider"></span></label>
+    </div>
+    <div class="control-group">
+      <div>
+        <div style="font-size: 0.875rem; font-weight: bold; margin-bottom: 0.25rem;">أدوات TeePublic</div>
+        <div style="font-size: 0.6875rem; color: var(--text-dim);">نسخ العلامات وترتيب التصاميم</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="teepublic-tools-toggle" checked><span
+          class="slider"></span></label>
+    </div>
+  </div>
+
+  <!-- Tab 4: Radar & Sniper -->
+  <div id="tab-radar" class="tab-content">
+    <div style="text-align: center; margin-bottom: 0.9375rem;">
+      <div style="font-size: 2rem; margin-bottom: 0.3125rem;">🎯</div>
+      <h3 style="margin: 0; color: var(--primary);">قناص النيتشات</h3>
+      <p style="font-size: 0.6875rem; color: var(--text-dim); margin-top: 0.3125rem;">أدوات التجسس واستخراج البيانات للمنصات الثلاث</p>
+    </div>
+
+    <div class="control-group" style="flex-direction: column; align-items: flex-start; gap: 0.75rem;">
+      <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-size: 0.8125rem; font-weight: bold; margin-bottom: 0.125rem; color: #f59e0b;">🟠 قناص أمازون (Amazon)</div>
+          <div style="font-size: 0.6875rem; color: var(--text-dim);">تحميل التصاميم المفرغة، واستخراج الكلمات الدلالية.</div>
+        </div>
+        <label class="switch"><input type="checkbox" id="amazon-sniper-toggle" checked><span class="slider"></span></label>
+      </div>
+    </div>
+
+    <div class="control-group" style="flex-direction: column; align-items: flex-start; gap: 0.75rem;">
+      <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-size: 0.8125rem; font-weight: bold; margin-bottom: 0.125rem; color: #ef4444;">🔴 رادار Redbubble</div>
+          <div style="font-size: 0.6875rem; color: var(--text-dim);">نسخ العلامات (Tags) وإظهار المفضلات للنيتشات.</div>
+        </div>
+        <label class="switch"><input type="checkbox" id="redbubble-radar-toggle" checked><span class="slider"></span></label>
+      </div>
+    </div>
+
+    <div class="control-group" style="flex-direction: column; align-items: flex-start; gap: 0.75rem;">
+      <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-size: 0.8125rem; font-weight: bold; margin-bottom: 0.125rem; color: #3b82f6;">🔵 رادار TeePublic</div>
+          <div style="font-size: 0.6875rem; color: var(--text-dim);">محلل الكلمات المفتاحية الأعلى مبيعاً (Best Tags).</div>
+        </div>
+        <label class="switch"><input type="checkbox" id="teepublic-radar-toggle" checked><span class="slider"></span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 4: Settings -->
+  <div id="tab-settings" class="tab-content">
+    <div class="control-group">
+      <span>تحديث البيانات الآن</span>
+      <button id="fetch-now" class="btn"><span class="icon">🔄</span><span>تحديث</span></button>
+    </div>
+    <div class="control-group">
+      <span>أخذ نسخة احتياطية (JSON)</span>
+      <button id="export-btn" class="btn btn-secondary">تصدير</button>
+    </div>
+    <div class="control-group">
+      <span>وضع لقطة الشاشة (إخفاء الأرباح)</span>
+      <label class="switch"><input type="checkbox" id="screenshot-mode"><span class="slider"></span></label>
+    </div>
+  </div>
+
+  <script src="popup_new.js"></script>
+</body>
+
+</html>

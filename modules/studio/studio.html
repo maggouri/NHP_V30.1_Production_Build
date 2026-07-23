@@ -1,0 +1,2120 @@
+<style>
+    .studio-module-root.studio-ui-shell {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        width: 100%;
+        min-height: 0;
+        box-sizing: border-box;
+        padding: 0.25rem 0.125rem 0.75rem;
+    }
+
+    .studio-shell-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding-bottom: 0.75rem;
+        margin-bottom: 0.625rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .studio-shell-title-block {
+        display: flex;
+        gap: 0.625rem;
+        align-items: flex-start;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .studio-shell-icon {
+        width: 2.375rem;
+        height: 2.375rem;
+        border-radius: 0.625rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        background: rgba(108, 99, 255, 0.14);
+        border: 1px solid rgba(108, 99, 255, 0.28);
+        flex-shrink: 0;
+    }
+
+    .studio-shell-title-block h2 {
+        margin: 0 0 0.25rem;
+        font-size: 0.9375rem;
+        font-weight: 900;
+        color: var(--text);
+    }
+
+    .studio-shell-title-block .studio-shell-brand-en {
+        margin: 0 0 0.125rem;
+        font-size: 0.625rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .studio-shell-title-block .studio-shell-sub {
+        margin: 0;
+        font-size: 0.625rem;
+        color: var(--text-muted);
+        line-height: 1.45;
+        max-width: 27.5rem;
+    }
+
+    .studio-shell-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+        justify-content: flex-end;
+    }
+
+    .studio-shell-actions .action-btn {
+        margin: 0 !important;
+    }
+
+    .studio-shell-actions #studio-gemini-window-toggle {
+        padding: 0.5rem 0.75rem !important;
+        background: rgba(79, 70, 229, 0.16) !important;
+        border: 1px solid rgba(129, 140, 248, 0.32) !important;
+        color: #c7d2fe !important;
+        font-size: 0.625rem !important;
+    }
+
+    .studio-shell-actions #btn-studio-gemini {
+        padding: 0.5rem 0.875rem !important;
+        background: linear-gradient(135deg, #4F46E5, #818CF8) !important;
+        font-size: 0.6875rem !important;
+    }
+
+    .studio-shell-actions #btn-studio-chatgpt {
+        padding: 0.5rem 0.875rem !important;
+        background: linear-gradient(135deg, #10B981, #34D399) !important;
+        font-size: 0.6875rem !important;
+    }
+
+    .studio-step-rail {
+        margin-bottom: 0.75rem;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding-bottom: 0.25rem;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .studio-step-rail .studio-pipeline-steps {
+        margin-bottom: 0;
+        min-width: min(30rem, 100%);
+    }
+
+    @media (max-width: 32.5rem) {
+        .studio-step-rail .studio-pipeline-steps {
+            min-width: 26.25rem;
+        }
+    }
+
+    /* Vertical rhythm inside each pipeline step */
+    .studio-section-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 0.875rem;
+        min-width: 0;
+    }
+
+    .studio-section-stack .studio-upload-zone {
+        margin-bottom: 0;
+    }
+
+    .studio-card {
+        border-radius: 0.75rem;
+        padding: 0.75rem;
+        box-sizing: border-box;
+    }
+
+    .studio-card-title {
+        margin: 0 0 0.625rem;
+        font-size: 0.75rem;
+        font-weight: 900;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .studio-card-title .studio-card-title-en {
+        font-size: 0.625rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .studio-card--amber {
+        background: rgba(245, 158, 11, 0.05);
+        border: 1px solid rgba(245, 158, 11, 0.22);
+    }
+
+    .studio-card--emerald {
+        background: rgba(16, 185, 129, 0.04);
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .studio-card--violet {
+        background: rgba(167, 139, 250, 0.04);
+        border: 1px solid rgba(167, 139, 250, 0.2);
+    }
+
+    .studio-card--muted {
+        background: rgba(0, 0, 0, 0.18);
+        border: 1px solid var(--border);
+    }
+
+    .studio-card--tabs {
+        padding: 0;
+        overflow: hidden;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+    }
+
+    .studio-card--tabs .studio-card-title--tabs {
+        padding: 0.75rem 0.75rem 0.5rem;
+        margin: 0;
+        font-size: 0.75rem;
+        font-weight: 900;
+        color: var(--text);
+    }
+
+    .studio-auto-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.625rem;
+        margin-bottom: 0.625rem;
+        flex-wrap: wrap;
+    }
+
+    .studio-auto-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+        margin-bottom: 0.625rem;
+    }
+
+    @media (max-width: 26.25rem) {
+        .studio-auto-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .studio-auto-grid label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.6875rem;
+        color: var(--text);
+        background: rgba(0, 0, 0, 0.16);
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+    }
+
+    .studio-tm-tab-row {
+        display: flex;
+        gap: 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .studio-tm-preview-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(8.75rem, 1fr));
+        gap: 0.5rem;
+        margin-bottom: 0.625rem;
+    }
+
+    .crops-queue-container {
+        margin-top: 0.5rem;
+        padding: 0.375rem;
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px dashed rgba(255, 255, 255, 0.15);
+        border-radius: 0.375rem;
+        min-width: 0;
+    }
+
+    .queue-title {
+        display: block;
+        margin-bottom: 0.25rem;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        color: var(--text-muted);
+    }
+
+    .crops-grid {
+        display: flex;
+        gap: 0.375rem;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding-bottom: 0.25rem;
+        min-width: 0;
+        max-width: 100%;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(71, 85, 105, 0.9) transparent;
+    }
+
+    .crops-grid::-webkit-scrollbar {
+        height: 0.25rem;
+    }
+
+    .crops-grid::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.35);
+        border-radius: 999px;
+    }
+
+    .crops-grid::-webkit-scrollbar-thumb {
+        background: rgba(51, 65, 85, 0.95);
+        border-radius: 999px;
+    }
+
+    .crops-grid::-webkit-scrollbar-thumb:hover {
+        background: rgba(71, 85, 105, 1);
+    }
+
+    .crop-thumb {
+        width: 2.8125rem;
+        height: 2.8125rem;
+        flex-shrink: 0;
+        object-fit: cover;
+        border-radius: 0.25rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .studio-tm-tool-grid {
+        display: flex;
+        gap: 0.375rem;
+        flex-wrap: wrap;
+    }
+
+    .studio-tm-tool-grid label {
+        flex: 1;
+        min-width: 4.5rem;
+    }
+
+    #tm-preview-container {
+        min-height: 2rem;
+        height: clamp(2rem, 52vh, 40rem);
+        max-height: 40rem;
+    }
+
+    @media (max-width: 32.5rem) {
+        #tm-preview-container {
+            min-height: 16.25rem;
+            height: clamp(16.25rem, 42vh, 32.5rem);
+        }
+    }
+
+    .studio-publish-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.625rem;
+    }
+
+    .studio-publish-row2 {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+    }
+
+    @media (max-width: 23.75rem) {
+        .studio-publish-row2 {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .studio-section-stack .studio-action-bar {
+        flex-wrap: wrap;
+    }
+
+    @media (max-width: 26.25rem) {
+        .studio-section-stack .studio-rename-row {
+            flex-direction: column;
+            align-items: stretch;
+        }
+    }
+    /* === Smart Hover Dashboard: Master Top Gate === */
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 900 !important;
+        background: rgba(15, 15, 20, 0.95);
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: grid !important;
+        grid-template-columns: 25% 50% 25% !important;
+        gap: 0.9375rem !important;
+        align-items: start !important;
+        height: auto !important;
+        max-height: 45vh !important;
+        transform: translateY(-96%) !important;
+        transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        padding: 0.9375rem;
+        overflow: visible;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate::after {
+        content: '▼ لوحة التحكم' !important;
+        position: absolute !important;
+        bottom: -0.9375rem !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        background-color: #6c5ce7 !important;
+        color: #ffffff !important;
+        font-size: 0.5625rem !important;
+        font-weight: normal !important;
+        padding: 1px 0.75rem !important;
+        border-radius: 0 0 0.25rem 0.25rem !important;
+        cursor: pointer !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+        pointer-events: auto !important;
+        letter-spacing: 0 !important;
+        line-height: 1.2 !important;
+        transition: background-color 0.3s ease !important;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate:hover::after,
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate:focus-within::after {
+        background: #5b4bc4;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate:hover {
+        transform: translateY(0) !important;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate .studio-panel-section {
+        min-height: 0;
+        max-height: calc(45vh - 1.875rem);
+        overflow: auto;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 0.625rem;
+        padding: 0.5rem;
+        background: rgba(0, 0, 0, 0.24);
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-1,
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-3,
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-master-gate-middle,
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #tm-queue-section {
+        display: block !important;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-master-gate-middle {
+        display: flex !important;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-master-gate-middle .tm-upload-inline {
+        margin: 0 !important;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-1 .studio-auto-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.25rem;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-1 .studio-auto-grid label {
+        padding: 0.25rem 0.375rem;
+        font-size: 0.625rem;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #tm-queue-grid {
+        overflow-x: auto;
+        overflow-y: hidden;
+        display: flex !important;
+        gap: 0.5rem;
+        max-height: none;
+        padding-bottom: 0.25rem;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #tm-queue-grid .studio-img-card,
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #tm-queue-grid .queue-item {
+        flex: 0 0 auto;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #tm-history-section,
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate .studio-tm-tab-row,
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #tm-tab-history,
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #tm-clear-history-btn {
+        display: none !important;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-1,
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-master-gate-middle,
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-3,
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-1 *,
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-master-gate-middle *,
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-3 * {
+        font-size: 0.6875rem !important;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #studio-section-2 {
+        padding-top: 0.9375rem !important;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode .tm-studio-shell {
+        height: calc(100vh - 0.9375rem);
+        width: 100%;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #tm-preview-section,
+    #panel-studio.tm-studio-compact.studio-gate-mode #tm-preview-container {
+        height: 100%;
+        width: 100%;
+    }
+
+    /* === TeeMaster Studio Compact Layout v1 === */
+    #panel-studio.tm-studio-compact #studio-section-2 {
+        height: calc(100% - 0.9375rem);
+        padding-top: 0.9375rem;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode .studio-module-root.studio-ui-shell {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #studio-section-2 {
+        display: flex !important;
+        height: calc(100% - 0.9375rem);
+        width: 100%;
+        min-height: 0;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #studio-section-2 .studio-section-stack,
+    #panel-studio.tm-studio-compact.studio-gate-mode #studio-section-2 .tm-studio-shell {
+        height: 100%;
+        width: 100%;
+        min-height: 0;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    #panel-studio.tm-studio-compact {
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    #panel-studio.tm-studio-compact .studio-module-root.studio-ui-shell {
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-2 .studio-section-stack {
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-2 .studio-section-header,
+    #panel-studio.tm-studio-compact #studio-section-2>.studio-section-stack>.studio-card-title,
+    #panel-studio.tm-studio-compact #studio-section-2>.studio-section-stack>.studio-card {
+        display: none;
+    }
+
+    #panel-studio.tm-studio-compact .tm-studio-shell {
+        height: calc(100vh - 3.4375rem);
+        min-height: 0;
+        overflow: hidden;
+        display: grid;
+        grid-template-rows: 2.1875rem 1fr;
+        grid-template-columns: 2.8125rem minmax(0, 1fr) 17.5rem;
+        grid-template-areas:
+            "header header header"
+            "toolbar workspace sidebar";
+        gap: 0.1875rem;
+    }
+
+    #panel-studio.tm-studio-compact .tm-studio-header {
+        grid-area: header;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.1875rem;
+        padding: 0.1875rem 0.375rem;
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 0.375rem;
+        background: rgba(16, 185, 129, 0.08);
+        box-shadow: none;
+        backdrop-filter: none;
+        min-height: 2.1875rem;
+        max-height: 2.1875rem;
+        overflow: hidden;
+    }
+
+    #panel-studio.tm-studio-compact .tm-header-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #10B981;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+    }
+
+    #panel-studio.tm-studio-compact .tm-header-icons {
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+        color: #cbd5e1;
+    }
+
+    #panel-studio.tm-studio-compact .tm-stage-tabs {
+        display: none !important;
+    }
+
+    #panel-studio.tm-studio-compact .tm-stage-tab {
+        display: none !important;
+    }
+
+    #panel-studio.tm-studio-compact .tm-stage-tab.active {
+        color: #10B981;
+        border-color: rgba(16, 185, 129, 0.45);
+        background: rgba(16, 185, 129, 0.14);
+    }
+
+    #panel-studio.tm-studio-compact #studio-upload-btn-2 {
+        height: 1.625rem !important;
+        min-height: 1.625rem !important;
+        padding: 0 0.5rem !important;
+        border-radius: 0.375rem !important;
+        font-size: 0.6875rem !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+    }
+
+    #panel-studio.tm-studio-compact .tm-upload-btn-wrap {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    #panel-studio.tm-studio-compact #studio-silent-loading {
+        position: absolute;
+        top: -1.125rem;
+        right: 0;
+        display: none;
+        align-items: center;
+        gap: 0.375rem;
+        background: rgba(2, 6, 23, 0.86);
+        border: 1px solid rgba(16, 185, 129, 0.35);
+        border-radius: 999px;
+        padding: 0.1875rem 0.5rem;
+        z-index: 8;
+        pointer-events: none;
+        white-space: nowrap;
+    }
+
+    #panel-studio.tm-studio-compact #studio-silent-loading.is-active {
+        display: inline-flex;
+    }
+
+    #panel-studio.tm-studio-compact .studio-silent-spinner {
+        width: 0.6875rem;
+        height: 0.6875rem;
+        border-radius: 50%;
+        border: 0.125rem solid rgba(16, 185, 129, 0.25);
+        border-top-color: #10B981;
+        animation: studioSilentSpin 0.8s linear infinite;
+    }
+
+    #panel-studio.tm-studio-compact .studio-silent-text {
+        font-size: 0.625rem;
+        font-weight: 700;
+        color: #6EE7B7;
+        line-height: 1;
+    }
+
+    @keyframes studioSilentSpin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    #panel-studio.tm-studio-compact .tm-toolbar {
+        grid-area: toolbar;
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+        padding: 0.1875rem;
+        padding-bottom: 0.9375rem;
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 0.375rem;
+        background: rgba(0, 0, 0, 0.2);
+        height: 100%;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    #panel-studio.tm-studio-compact .tm-tool-label {
+        width: 1.75rem !important;
+        height: 1.75rem !important;
+        min-width: 1.75rem !important;
+        min-height: 1.75rem !important;
+        border-radius: 0.4375rem !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 0 !important;
+        padding: 0 !important;
+        line-height: 1 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        flex: 0 0 1.75rem !important;
+    }
+
+    #panel-studio.tm-studio-compact .tm-tool-label::before {
+        content: attr(data-icon);
+        font-size: 0.8125rem;
+    }
+
+    #panel-studio.tm-studio-compact .tm-workspace {
+        grid-area: workspace;
+        height: 100%;
+        min-width: 0;
+        min-height: 0;
+        overflow: auto;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 0.375rem;
+        background: rgba(0, 0, 0, 0.16);
+        position: relative;
+        padding: 0.1875rem;
+        flex: 1 1 auto;
+    }
+
+    #panel-studio.tm-studio-compact .tm-workspace.ctrl-ready {
+        cursor: grab !important;
+    }
+
+    #panel-studio.tm-studio-compact .tm-workspace.ctrl-panning {
+        cursor: grabbing !important;
+        user-select: none;
+    }
+
+    #panel-studio.tm-studio-compact #tm-preview-section {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        height: 100%;
+        flex: 1 1 auto;
+        margin: 0;
+        border: none;
+        background: transparent;
+        padding: 0;
+    }
+
+    #panel-studio.tm-studio-compact #tm-preview-section .studio-card-title,
+    #panel-studio.tm-studio-compact #tm-preview-section>p,
+    #panel-studio.tm-studio-compact #tm-preview-section .studio-tm-tool-grid,
+    #panel-studio.tm-studio-compact #tm-preview-section .studio-tm-preview-actions,
+    #panel-studio.tm-studio-compact #tm-preview-section>div[style*="display:flex; align-items:center; gap:0.75rem"] {
+        display: none !important;
+    }
+
+    #panel-studio.tm-studio-compact #tm-preview-container {
+        min-height: 0 !important;
+        height: 100% !important;
+        flex: 1 1 auto;
+        max-height: none !important;
+        margin-bottom: 0 !important;
+        overflow: auto !important;
+    }
+
+    #panel-studio.tm-studio-compact .tm-zoom-overlay {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        z-index: 7;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        background: rgba(0, 0, 0, 0.58);
+        border: 1px solid var(--border);
+        border-radius: 0.4375rem;
+        padding: 0.25rem;
+    }
+
+    #panel-studio.tm-studio-compact .tm-zoom-overlay button {
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 0.375rem;
+        border: 1px solid var(--border);
+        background: var(--surface2);
+        color: var(--text);
+        font-size: 0.75rem;
+        padding: 0;
+        cursor: pointer;
+        box-shadow: none;
+    }
+
+    #panel-studio.tm-studio-compact .tm-zoom-overlay #tm-zoom-level {
+        min-width: 2.25rem;
+        text-align: center;
+        font-size: 0.6875rem;
+        color: var(--text-muted);
+    }
+
+    #panel-studio.tm-studio-compact .tm-sidebar {
+        grid-area: sidebar;
+        height: 100%;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-bottom: 1.25rem;
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 0.375rem;
+        background: rgba(0, 0, 0, 0.2);
+        padding: 0.1875rem 0.1875rem 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.1875rem;
+    }
+
+    #panel-studio.tm-studio-compact .tm-sidebar::-webkit-scrollbar {
+        width: 0.3125rem;
+    }
+
+    #panel-studio.tm-studio-compact .tm-sidebar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    #panel-studio.tm-studio-compact .tm-sidebar::-webkit-scrollbar-thumb {
+        background: rgba(30, 41, 59, 0.9);
+        border-radius: 999px;
+    }
+
+    #panel-studio.tm-studio-compact .tm-sidebar::-webkit-scrollbar-thumb:hover {
+        background: rgba(51, 65, 85, 0.95);
+    }
+
+    #panel-studio.tm-studio-compact ::-webkit-scrollbar {
+        width: 0.375rem;
+        height: 0.375rem;
+    }
+
+    #panel-studio.tm-studio-compact ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    #panel-studio.tm-studio-compact ::-webkit-scrollbar-thumb {
+        background: rgba(148, 163, 184, 0.28);
+        border-radius: 999px;
+    }
+
+    #panel-studio.tm-studio-compact ::-webkit-scrollbar-thumb:hover {
+        background: rgba(148, 163, 184, 0.45);
+    }
+
+    #panel-studio.tm-studio-compact * {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(148, 163, 184, 0.28) transparent;
+    }
+
+    #panel-studio.tm-studio-compact .tm-sidebar .studio-card,
+    #panel-studio.tm-studio-compact .tm-sidebar #tm-progress-container,
+    #panel-studio.tm-studio-compact .tm-sidebar .tm-log-card,
+    #panel-studio.tm-studio-compact .tm-sidebar #tm-start-btn,
+    #panel-studio.tm-studio-compact .tm-sidebar .tm-next-row,
+    #panel-studio.tm-studio-compact .tm-sidebar .tm-mini-queue-card {
+        margin: 0 !important;
+        box-shadow: none !important;
+    }
+
+    #panel-studio.tm-studio-compact .tm-sidebar * {
+        box-shadow: none !important;
+    }
+
+    #panel-studio.tm-studio-compact .tm-sidebar,
+    #panel-studio.tm-studio-compact .tm-sidebar label,
+    #panel-studio.tm-studio-compact .tm-sidebar input,
+    #panel-studio.tm-studio-compact .tm-sidebar select,
+    #panel-studio.tm-studio-compact .tm-sidebar button,
+    #panel-studio.tm-studio-compact .tm-sidebar span,
+    #panel-studio.tm-studio-compact .tm-sidebar div {
+        font-size: 0.6875rem !important;
+    }
+
+    #panel-studio.tm-studio-compact .tm-sidebar .studio-card-title {
+        font-size: 0.8125rem !important;
+        margin-bottom: 0.375rem !important;
+    }
+
+    #panel-studio.tm-studio-compact .tm-sidebar .studio-card {
+        padding: 0.1875rem !important;
+    }
+
+    #panel-studio.tm-studio-compact .tm-sidebar #tm-queue-grid {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 0.1875rem !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        max-height: none !important;
+        min-height: 0 !important;
+    }
+
+    #panel-studio.tm-studio-compact .tm-sidebar #tm-history-list {
+        max-height: 7.5rem !important;
+        overflow-y: auto !important;
+    }
+
+    #panel-studio.tm-studio-compact .tm-sidebar #tm-queue-grid .studio-img-card,
+    #panel-studio.tm-studio-compact .tm-sidebar #tm-queue-grid .queue-item {
+        width: 1.5rem !important;
+        height: 1.5rem !important;
+        min-width: 1.5rem !important;
+        min-height: 1.5rem !important;
+        border-radius: 0.25rem !important;
+        flex-shrink: 0 !important;
+        background: #0d1117 !important;
+        border: 1px solid rgba(148, 163, 184, 0.15) !important;
+        overflow: hidden !important;
+    }
+
+    #panel-studio.tm-studio-compact .tm-sidebar #tm-tab-queue,
+    #panel-studio.tm-studio-compact .tm-sidebar #tm-tab-history {
+        padding: 0.375rem !important;
+        font-size: 0.6875rem !important;
+    }
+
+    #panel-studio.tm-studio-compact .tm-sidebar #tm-log-area {
+        height: 4.375rem !important;
+    }
+
+    #panel-studio.tm-studio-compact .tm-sidebar #tm-proofread-actions {
+        justify-content: flex-start !important;
+    }
+
+    #panel-studio.tm-studio-compact .tm-side-header-strip {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 0.375rem;
+        padding: 0.1875rem;
+        font-size: 0.6875rem;
+        background: rgba(0, 0, 0, 0.18);
+        box-shadow: none;
+    }
+
+    #panel-studio.tm-studio-compact .tm-side-header-strip .tm-side-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #e2e8f0;
+        white-space: nowrap;
+    }
+
+    #panel-studio.tm-studio-compact .tm-side-header-strip .tm-side-tolerance {
+        display: flex;
+        align-items: center;
+        gap: 0.1875rem;
+        min-width: 0;
+        flex: 1;
+    }
+
+    #panel-studio.tm-studio-compact .tm-side-header-strip #tm-tolerance {
+        min-width: 0;
+        flex: 1;
+        margin: 0;
+    }
+
+    #panel-studio.tm-studio-compact .tm-side-header-strip #tm-tol-val {
+        padding: 0 0.25rem;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        font-size: 0.6875rem;
+        line-height: 1.4;
+    }
+
+    #panel-studio.tm-studio-compact .tm-crops-section {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        flex: 1 1 auto;
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 0.375rem;
+        padding: 0.25rem;
+    }
+
+    #panel-studio.tm-studio-compact .tm-crops-section h4 {
+        font-size: 0.6875rem;
+        font-weight: 700;
+        margin: 0 0 0.25rem;
+        color: #e2e8f0;
+    }
+
+    #panel-studio.tm-studio-compact #tm-crops-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.1875rem;
+        overflow-y: auto;
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    #panel-studio.tm-studio-compact #tm-crops-grid .crop-thumb {
+        aspect-ratio: 1 / 1;
+        border-radius: 0.25rem;
+        background: #0d1117;
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        overflow: hidden;
+    }
+
+    #panel-studio.tm-studio-compact #tm-crops-grid .crop-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    #panel-studio.tm-studio-compact .tm-actions-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 0.1875rem;
+    }
+
+    #panel-studio.tm-studio-compact .tm-actions-stack>button {
+        height: 1.75rem !important;
+        padding: 0 0.5rem !important;
+        font-size: 0.6875rem !important;
+        border-radius: 0.375rem !important;
+        box-shadow: none !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 0.375rem !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #panel-studio.tm-studio-compact .crops-queue-container {
+        margin-top: 0.25rem;
+        padding: 0.25rem;
+        flex: 0 0 auto;
+    }
+
+    #panel-studio.tm-studio-compact .tm-job-queue-strip {
+        display: flex;
+        gap: 0.1875rem;
+        overflow-x: auto;
+        overflow-y: hidden;
+        border-top: 1px solid rgba(148, 163, 184, 0.12);
+        padding-top: 0.25rem;
+        margin-top: 0.25rem;
+        flex: 0 0 auto;
+    }
+
+    #panel-studio.tm-studio-compact .tm-mini-queue-card {
+        margin-top: auto !important;
+    }
+
+    #panel-studio.tm-studio-compact .tm-mini-queue-card #studio-tm-queue-h,
+    #panel-studio.tm-studio-compact .tm-mini-queue-card .studio-tm-tab-row,
+    #panel-studio.tm-studio-compact .tm-mini-queue-card #tm-history-section,
+    #panel-studio.tm-studio-compact .tm-mini-queue-card #tm-proofread-actions,
+    #panel-studio.tm-studio-compact .tm-mini-queue-card #tm-proofread-status,
+    #panel-studio.tm-studio-compact .tm-mini-queue-card #tm-clear-queue-btn,
+    #panel-studio.tm-studio-compact .tm-mini-queue-card #tm-clear-history-btn {
+        display: none !important;
+    }
+
+    #panel-studio.tm-studio-compact .tm-mini-queue-card #tm-queue-section {
+        display: block !important;
+        padding: 0 !important;
+    }
+
+    #panel-studio.tm-studio-compact .tm-mini-queue-card #tm-queue-section>div {
+        margin: 0 !important;
+    }
+
+    #panel-studio.tm-studio-compact .tm-upload-inline #studio-upload-zone-2 {
+        margin-top: 0.25rem;
+        padding: 0.5rem !important;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-2.tm-has-image .tm-upload-inline #studio-upload-zone-2 {
+        display: none;
+    }
+
+    #panel-studio.tm-studio-compact .tm-bg-switches {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.25rem;
+    }
+
+    #panel-studio.tm-studio-compact .tm-bg-switches button {
+        width: 1.375rem;
+        height: 1.375rem;
+        border-radius: 0.25rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        flex-shrink: 0;
+        cursor: pointer;
+        box-shadow: none;
+        padding: 0;
+    }
+
+    /* === Studio Header / Renamer / Peel Banana Compact v1 === */
+    #panel-studio.tm-studio-compact .studio-module-root.studio-ui-shell {
+        padding: 0.25rem !important;
+        gap: 0.25rem !important;
+        overflow: hidden;
+    }
+
+    #panel-studio.tm-studio-compact .studio-shell-header {
+        align-items: center;
+        flex-wrap: nowrap;
+        gap: 0.25rem;
+        padding: 0.125rem 0.25rem;
+        margin: 0;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+    }
+
+    #panel-studio.tm-studio-compact .studio-shell-icon,
+    #panel-studio.tm-studio-compact .studio-shell-brand-en,
+    #panel-studio.tm-studio-compact .studio-shell-sub {
+        display: none !important;
+    }
+
+    #panel-studio.tm-studio-compact .studio-shell-title-block h2 {
+        margin: 0;
+        font-size: 0.8125rem;
+        line-height: 1.15;
+    }
+
+    #panel-studio.tm-studio-compact .studio-shell-actions {
+        flex-wrap: nowrap;
+        gap: 0.25rem;
+    }
+
+    #panel-studio.tm-studio-compact .studio-shell-actions .action-btn,
+    #panel-studio.tm-studio-compact #studio-gemini-window-toggle,
+    #panel-studio.tm-studio-compact #btn-studio-gemini,
+    #panel-studio.tm-studio-compact #btn-studio-chatgpt {
+        height: 1.75rem !important;
+        min-height: 1.75rem !important;
+        padding: 0 0.5rem !important;
+        font-size: 0.6875rem !important;
+        border-radius: 0.375rem !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+    }
+
+    #panel-studio.tm-studio-compact .studio-step-rail,
+    #panel-studio.tm-studio-compact .studio-pipeline-steps,
+    #panel-studio.tm-studio-compact #studio-nav-step1,
+    #panel-studio.tm-studio-compact #studio-nav-step2,
+    #panel-studio.tm-studio-compact #studio-nav-step3 {
+        display: none !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
+        border: 0 !important;
+        overflow: hidden !important;
+    }
+
+    #panel-studio.tm-studio-compact .studio-step-node {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+        min-height: 1.75rem;
+        border-radius: 0.375rem;
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        background: rgba(0, 0, 0, 0.2);
+        padding: 0 0.375rem;
+    }
+
+    #panel-studio.tm-studio-compact .studio-step-icon {
+        width: 1rem;
+        height: 1rem;
+        font-size: 0.75rem;
+        border: none;
+        background: transparent;
+        margin: 0;
+    }
+
+    #panel-studio.tm-studio-compact .studio-step-label {
+        margin: 0;
+        font-size: 0.6875rem;
+        line-height: 1;
+    }
+
+    #panel-studio.tm-studio-compact .studio-step-node:has(.studio-step-icon.active),
+    #panel-studio.tm-studio-compact .studio-step-node:has(.studio-step-label.active) {
+        border-color: rgba(16, 185, 129, 0.45);
+        background: rgba(16, 185, 129, 0.1);
+    }
+
+    #panel-studio.tm-studio-compact .studio-arrow {
+        width: 0.75rem;
+        min-width: 0.75rem;
+        height: 0.125rem;
+        margin: 0;
+        background: rgba(148, 163, 184, 0.35);
+        border: none;
+    }
+
+    #panel-studio.tm-studio-compact .studio-arrow::after {
+        display: none;
+    }
+
+    #panel-studio.tm-studio-compact .studio-panel-section .studio-section-header {
+        padding: 0.25rem 0;
+        margin-bottom: 0.125rem;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-1 .studio-auto-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.25rem 0.5rem;
+        margin-bottom: 0.25rem;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-1 .studio-auto-grid label {
+        font-size: 0.6875rem;
+        padding: 0.25rem 0.375rem;
+        border-radius: 0.375rem;
+        margin: 0;
+    }
+
+    @media (max-width: 68.75rem) {
+        #panel-studio.tm-studio-compact #studio-section-1 .studio-auto-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-1 .studio-action-bar {
+        gap: 0.25rem;
+        margin: 0;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-1 .studio-btn-secondary,
+    #panel-studio.tm-studio-compact #studio-section-1 .studio-btn-next {
+        min-height: 1.75rem;
+        height: 1.875rem;
+        font-size: 0.6875rem;
+        border-radius: 0.375rem;
+        padding: 0 0.5rem;
+        box-shadow: none !important;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-1 #studio-to-step2-btn {
+        margin-top: 0.25rem;
+        min-height: 1.875rem;
+        height: 1.875rem;
+        padding: 0 0.5rem;
+        font-size: 0.6875rem;
+        box-shadow: none !important;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-3 .studio-card {
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        box-shadow: none !important;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-3,
+    #panel-studio.tm-studio-compact #studio-section-3 {
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        padding-right: 0.3125rem !important;
+        min-width: 0 !important;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(51, 65, 85, 0.95) rgba(15, 23, 42, 0.28);
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-3::-webkit-scrollbar,
+    #panel-studio.tm-studio-compact #studio-section-3::-webkit-scrollbar {
+        width: 0.25rem;
+        height: 0.25rem;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-3::-webkit-scrollbar-track,
+    #panel-studio.tm-studio-compact #studio-section-3::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.28);
+        border-radius: 999px;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-3::-webkit-scrollbar-thumb,
+    #panel-studio.tm-studio-compact #studio-section-3::-webkit-scrollbar-thumb {
+        background: rgba(51, 65, 85, 0.95);
+        border-radius: 999px;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-3::-webkit-scrollbar-thumb:hover,
+    #panel-studio.tm-studio-compact #studio-section-3::-webkit-scrollbar-thumb:hover {
+        background: rgba(71, 85, 105, 1);
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-3 input,
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-3 select,
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-3 button,
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-3 .bulk-rename-container,
+    #panel-studio.tm-studio-compact #studio-section-3 input,
+    #panel-studio.tm-studio-compact #studio-section-3 select,
+    #panel-studio.tm-studio-compact #studio-section-3 button,
+    #panel-studio.tm-studio-compact #studio-section-3 .bulk-rename-container {
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-3 .studio-rename-compact-row,
+    #panel-studio.tm-studio-compact #studio-section-3 .studio-rename-compact-row {
+        flex-wrap: wrap !important;
+        min-width: 0 !important;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-3 .studio-rename-row,
+    #panel-studio.tm-studio-compact #studio-section-3 .studio-rename-row {
+        flex-wrap: wrap !important;
+        min-width: 0 !important;
+    }
+
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-3 .studio-section-title > div,
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-3 .studio-card-title,
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-3 label,
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-3 p,
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-3 span,
+    #panel-studio.tm-studio-compact #studio-section-3 .studio-section-title > div,
+    #panel-studio.tm-studio-compact #studio-section-3 .studio-card-title,
+    #panel-studio.tm-studio-compact #studio-section-3 label,
+    #panel-studio.tm-studio-compact #studio-section-3 p,
+    #panel-studio.tm-studio-compact #studio-section-3 span {
+        white-space: normal !important;
+        word-wrap: break-word !important;
+        overflow-wrap: anywhere !important;
+    }
+
+    /* قائمة الصور — keep status badges on one line (RENEAM AI, niche, crop) */
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-3 .studio-file-item > span:not(.studio-file-name-edit),
+    #panel-studio.tm-studio-compact.studio-gate-mode #master-top-gate #studio-section-3 .studio-file-item .studio-file-badge,
+    #panel-studio.tm-studio-compact #studio-section-3 .studio-file-item > span:not(.studio-file-name-edit),
+    #panel-studio.tm-studio-compact #studio-section-3 .studio-file-item .studio-file-badge {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        white-space: nowrap !important;
+        overflow-wrap: normal !important;
+        word-wrap: normal !important;
+        word-break: normal !important;
+        flex-shrink: 0 !important;
+        margin-inline-start: 0.375rem !important;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-3 .studio-file-item {
+        flex-wrap: nowrap !important;
+        min-width: 0 !important;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-3 .studio-file-item .studio-item-check-3,
+    #panel-studio.tm-studio-compact #studio-section-3 .studio-file-item .studio-file-thumb {
+        flex-shrink: 0 !important;
+        margin-inline-end: 0.125rem !important;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-3 #studio-upload-zone-3 {
+        max-height: 2.5rem;
+        min-height: 2.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.25rem 0.375rem !important;
+        border: 1px dashed rgba(148, 163, 184, 0.35);
+        border-radius: 0.5rem;
+        margin: 0;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-3 #studio-upload-zone-3::before {
+        content: "📥";
+        font-size: 0.8125rem;
+        flex: 0 0 auto;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-3 #studio-upload-zone-3 p {
+        margin: 0 !important;
+        font-size: 0.6875rem !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-3 #studio-upload-btn-3 {
+        margin-inline-start: auto;
+        height: 1.75rem;
+        min-height: 1.75rem;
+        padding: 0 0.5rem !important;
+        font-size: 0.6875rem !important;
+        border-radius: 0.375rem !important;
+        box-shadow: none !important;
+        white-space: nowrap;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-3 .studio-rename-compact-row {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        min-height: 2rem;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-3 #ai-rename-image-wrap {
+        margin: 0 !important;
+        padding: 0.25rem 0.375rem !important;
+        border-radius: 0.375rem !important;
+        min-height: 2rem;
+        max-width: 45%;
+        overflow: hidden;
+        flex: 0 1 45%;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-3 #ai-rename-image-wrap label {
+        font-size: 0.6875rem !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-3 .studio-rename-row {
+        flex: 1;
+        align-items: center;
+        gap: 0.25rem;
+        margin: 0;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-3 #studio-bulk-name {
+        height: 1.625rem;
+        min-height: 1.625rem;
+        font-size: 0.75rem;
+        padding: 0 0.5rem;
+        border-radius: 0.375rem;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-3 #studio-apply-bulk-name {
+        height: 1.75rem;
+        min-height: 1.75rem;
+        font-size: 0.6875rem;
+        padding: 0 0.5rem;
+        border-radius: 0.375rem;
+        box-shadow: none !important;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-3 .studio-action-bar {
+        gap: 0.25rem;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-3 .studio-action-bar button,
+    #panel-studio.tm-studio-compact #studio-section-2 .studio-auto-seo-flow-row .studio-to-seo-btn,
+    #panel-studio.tm-studio-compact #studio-section-3 .studio-to-seo-btn {
+        min-height: 1.75rem;
+        height: 1.875rem;
+        padding: 0 0.5rem !important;
+        font-size: 0.6875rem !important;
+        border-radius: 0.375rem !important;
+        box-shadow: none !important;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-2 .studio-auto-seo-flow-row {
+        gap: 0.25rem;
+        margin-top: 0.25rem;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-3 .studio-publish-actions {
+        gap: 0.25rem;
+    }
+
+    #panel-studio.tm-studio-compact #studio-section-3 .studio-publish-row2 {
+        gap: 0.25rem;
+    }
+
+    /* === Unified Studio: legacy top header chrome (CSS-only) === */
+    #panel-studio #studio-shell-heading {
+        display: none !important;
+    }
+
+    #panel-studio #studio-gemini-window-toggle {
+        display: none !important;
+    }
+
+    #panel-studio #tm-proofread-window-toggle {
+        display: none !important;
+    }
+
+    #panel-studio header.studio-shell-header,
+    #panel-studio .studio-shell-header,
+    #panel-studio .studio-shell-actions,
+    #panel-studio .studio-top-bar,
+    #panel-studio .module-header {
+        display: none !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        overflow: hidden !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
+        gap: 0 !important;
+    }
+
+    #panel-studio .studio-module-root.studio-ui-shell {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+
+    #panel-studio.tm-studio-compact .studio-module-root.studio-ui-shell {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+
+    #panel-studio.tm-studio-compact:not(.studio-gate-mode) .tm-studio-shell {
+        height: calc(100vh - 0.9375rem) !important;
+        max-height: calc(100vh - 0.9375rem) !important;
+    }
+</style>
+
+<div class="studio-module-root studio-ui-shell" dir="rtl">
+
+    <header class="studio-shell-header" aria-labelledby="studio-shell-heading">
+        <div class="studio-shell-title-block">
+            <div class="studio-shell-icon" aria-hidden="true">🎨</div>
+            <div class="min-w-0">
+                <h2 id="studio-shell-heading" lang="ar">خط إنتاج الاستوديو</h2>
+                <p class="studio-shell-brand-en" lang="en">STUDIO Pipeline</p>
+                <p class="studio-shell-sub">من تحضير الصور وتنظيفها إلى المعالجة والتسمية ثم النشر</p>
+            </div>
+        </div>
+        <div class="studio-shell-actions">
+            <button type="button" id="studio-gemini-window-toggle" class="action-btn">
+                <i class="fa-solid fa-window-restore"></i> نوافذ Studio: مفعلة
+            </button>
+            <button type="button" id="btn-studio-gemini" class="action-btn">
+                <i class="fa-solid fa-microchip"></i> مركز التصميم Gemini
+            </button>
+            <button type="button" id="btn-studio-chatgpt" class="action-btn">
+                <i class="fa-solid fa-comment-dots"></i> مركز التصميم ChatGPT
+            </button>
+        </div>
+    </header>
+
+    <!-- Step Indicators -->
+    <div class="studio-step-rail">
+    <div class="studio-pipeline-steps">
+        <div class="studio-step-node" id="studio-nav-step1">
+            <div class="studio-step-icon step-peel active" id="studio-icon-step1">🍌</div>
+            <div class="studio-step-label active" id="studio-label-step1">Peel Banana</div>
+        </div>
+        <div class="studio-arrow" id="studio-arrow-1"></div>
+        <div class="studio-step-node" id="studio-nav-step2">
+            <div class="studio-step-icon step-teemaster" id="studio-icon-step2">🚀</div>
+            <div class="studio-step-label" id="studio-label-step2">Tee Master</div>
+        </div>
+        <div class="studio-arrow" id="studio-arrow-2"></div>
+        <div class="studio-step-node" id="studio-nav-step3">
+            <div class="studio-step-icon step-renamer" id="studio-icon-step3">🏷️</div>
+            <div class="studio-step-label" id="studio-label-step3">File Renamer</div>
+        </div>
+    </div>
+    </div>
+
+    <div id="master-top-gate"></div>
+
+    <div class="studio-panel-section active" id="studio-section-1">
+        <div class="studio-section-header">
+            <div class="studio-section-title">
+                <div class="studio-section-icon peel-icon">🍌</div>
+                <div>
+                    <div style="font-size:0.875rem; font-weight:800; color:#FBBF24;">مكتبة الاستوديو — Peel Banana</div>
+                    <div style="font-size:0.625rem; color:var(--text-muted);">التحضير وإزالة علامات الذكاء الاصطناعي محلياً</div>
+                </div>
+            </div>
+            <span class="studio-badge" id="studio-step1-count">0 صور</span>
+        </div>
+
+        <div class="studio-section-stack">
+        <div class="studio-info-box">
+            <strong style="color:#FBBF24;">المرحلة 1 — التحضير:</strong> ارفع الصور لإزالة العلامات المائية للذكاء الاصطناعي بخصوصية تامة. بعد النجاح يمكنك المتابعة يدوياً أو عبر المسار التلقائي الاختياري أدناه.
+        </div>
+
+        <section class="studio-card studio-card--amber" aria-labelledby="studio-auto-h">
+            <div class="studio-auto-head">
+                <div>
+                    <h3 class="studio-card-title" id="studio-auto-h" style="margin:0 0 0.25rem;">مسار تلقائي اختياري <span class="studio-card-title-en">Auto pipeline</span></h3>
+                    <div style="font-size:0.625rem; color:var(--text-muted); line-height:1.45;">يعمل فقط عند التفعيل. يمكنك الاستمرار بالمسار اليدوي الحالي دون تغيير.</div>
+                </div>
+                <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.75rem; font-weight:700; color:var(--text); cursor:pointer; flex-shrink:0;">
+                    <input type="checkbox" id="studio-auto-enable" style="width:1rem; height:1rem; accent-color:#F59E0B;">
+                    تشغيل الوضع التلقائي
+                </label>
+            </div>
+
+            <div class="studio-auto-grid">
+                <label>
+                    <input type="checkbox" id="studio-auto-detect-four" checked style="width:0.875rem; height:0.875rem; accent-color:#F59E0B;">
+                    اكتشاف 4 تصاميم
+                </label>
+                <label>
+                    <input type="checkbox" id="studio-auto-ai-crop" checked style="width:0.875rem; height:0.875rem; accent-color:#F59E0B;">
+                    تحديد القص بالذكاء الاصطناعي
+                </label>
+                <label>
+                    <input type="checkbox" id="studio-auto-remove-original" checked style="width:0.875rem; height:0.875rem; accent-color:#F59E0B;">
+                    حذف الأصل بعد النجاح
+                </label>
+                <label>
+                    <input type="checkbox" id="studio-auto-pause-after-crop" checked style="width:0.875rem; height:0.875rem; accent-color:#F59E0B;">
+                    توقف بعد الاقتصاص للمراجعة اليدوية
+                </label>
+                <label>
+                    <input type="checkbox" id="studio-auto-bg-remove" checked style="width:0.875rem; height:0.875rem; accent-color:#F59E0B;">
+                    إزالة الخلفية تلقائيا
+                </label>
+                <label>
+                    <input type="checkbox" id="studio-auto-suggest-niche" checked style="width:0.875rem; height:0.875rem; accent-color:#F59E0B;">
+                    اقتراح نيتش من الملاحظات
+                </label>
+            </div>
+
+            <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.6875rem; color:var(--text); background:rgba(0,0,0,0.16); padding:0.5rem; border-radius:0.5rem; cursor:pointer; margin-bottom:0.5rem;">
+                <input type="checkbox" id="studio-auto-send-seo" style="width:0.875rem; height:0.875rem; accent-color:#F59E0B;">
+                إرسال تلقائي إلى SEO بعد اكتمال المعالجة
+            </label>
+
+            <div id="studio-auto-status" style="font-size:0.625rem; color:var(--text-muted); line-height:1.5;">
+                الوضع اليدوي هو النشط حاليا.
+            </div>
+        </section>
+
+        <!-- Upload Zone -->
+        <input type="file" id="studio-file-input-1" multiple accept="image/png,image/jpeg,image/jpg"
+            style="display:none;">
+        <div class="studio-upload-zone" id="studio-upload-zone-1">
+            <div style="font-size:1.875rem; margin-bottom:0.5rem;">📥</div>
+            <p style="font-size:0.8125rem; font-weight:700; color:var(--text); margin:0 0 0.5rem;">اسحب الصور هنا أو انقر الزر
+            </p>
+            <button id="studio-upload-btn-1"
+                style="background:linear-gradient(135deg,#F59E0B,#FBBF24); color:#000; border:none; padding:0.5rem 1.25rem; border-radius:0.5rem; font-weight:800; font-size:0.75rem; cursor:pointer; font-family:'Tajawal',sans-serif;">
+                📂 اختيار الصور
+            </button>
+            <div style="margin-top:0.5rem; font-size:0.6875rem; color:var(--text-muted);">PNG، JPG، JPEG مدعومة</div>
+        </div>
+
+        <!-- Image Grid -->
+        <div class="studio-img-grid" id="studio-grid-1"></div>
+
+        <!-- Progress -->
+        <div id="studio-peel-progress" style="display:none;">
+            <div style="display:flex; justify-content:space-between; font-size:0.6875rem; margin-bottom:0.3125rem;">
+                <span style="color:var(--text-muted);">جاري المعالجة...</span>
+                <span id="studio-peel-pct" style="color:#F59E0B; font-weight:800;">0%</span>
+            </div>
+            <div class="studio-progress-bar-wrap">
+                <div class="studio-progress-bar-fill" id="studio-peel-bar"></div>
+            </div>
+        </div>
+
+        <div class="studio-action-bar">
+            <button class="studio-btn-secondary" id="studio-peel-download-btn" style="display:none;">
+                <i class="fa-solid fa-download"></i> تحميل الكل
+            </button>
+            <button class="studio-btn-next" id="studio-peel-process-btn" disabled>
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                بدء إزالة العلامات
+            </button>
+        </div>
+
+        <button class="studio-btn-next" id="studio-to-step2-btn"
+            style="background: linear-gradient(135deg, #10B981, #059669); box-shadow: 0 4px 15px rgba(16,185,129,0.3);">
+            <i class="fa-solid fa-arrow-left"></i>
+            انتقال إلى TeeMaster Pro 5K
+            <span id="studio-step2-badge"
+                style="background:rgba(255,255,255,0.2); padding:0.125rem 0.5rem; border-radius:0.625rem; font-size:0.625rem;">0
+                صور</span>
+        </button>
+        </div><!-- .studio-section-stack -->
+    </div>
+
+    <!-- ■■■ STEP 2: TeeMaster Pro 5K ■■■ -->
+    <div class="studio-panel-section" id="studio-section-2">
+        <div class="studio-section-stack">
+            <div class="tm-studio-shell">
+                <div class="tm-studio-header">
+                    <div class="tm-header-title">STUDIO Pipeline <span class="tm-header-icons">🍌 🚀 🏷️</span></div>
+                    <div class="tm-stage-tabs" aria-label="Pipeline stages">
+                        <span class="tm-stage-tab">🍌 Peel Banana</span>
+                        <span class="tm-stage-tab active">🚀 Tee Master</span>
+                        <span class="tm-stage-tab">🏷️ File Renamer</span>
+                    </div>
+                    <span class="studio-badge"
+                        style="color:#10B981; border-color:rgba(16,185,129,0.3); background:rgba(16,185,129,0.1);"
+                        id="studio-step2-count">0 صور</span>
+                    <div class="tm-upload-btn-wrap">
+                        <button id="studio-upload-btn-2" title="اختيار الصور / Choisir images / Upload images"
+                            style="background:linear-gradient(135deg,#10B981,#34D399); color:#fff; border:none; border-radius:0.5rem; font-weight:800; cursor:pointer; font-family:'Tajawal',sans-serif;">
+                            📂 اختيار الصور
+                        </button>
+                        <div id="studio-silent-loading" aria-live="polite" aria-hidden="true">
+                            <span class="studio-silent-spinner"></span>
+                            <span class="studio-silent-text">Silent Peel...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tm-toolbar">
+                    <label class="tm-tool-label" data-icon="🎯" title="التقاط اللون / Pipette / Eyedropper">
+                        <input type="radio" name="tm-preview-tool" value="color" checked style="display:none;">
+                    </label>
+                    <label class="tm-tool-label" data-icon="🔲" title="قص مربع / Recadrage rectangle / Crop rectangle">
+                        <input type="radio" name="tm-preview-tool" value="crop" style="display:none;">
+                    </label>
+                    <label class="tm-tool-label" data-icon="✍️" title="قص حر / Recadrage libre / Free crop">
+                        <input type="radio" name="tm-preview-tool" value="crop-free" style="display:none;">
+                    </label>
+                    <label class="tm-tool-label" data-icon="🪄" title="سحر متصل / Baguette connectee / Magic wand connected">
+                        <input type="radio" name="tm-preview-tool" value="magic-wand" style="display:none;">
+                    </label>
+                    <label class="tm-tool-label" data-icon="🌈" title="سحر شامل / Baguette globale / Global magic">
+                        <input type="radio" name="tm-preview-tool" value="magic-global" style="display:none;">
+                    </label>
+                    <label class="tm-tool-label" data-icon="🧽" title="ممحاة / Gomme / Eraser">
+                        <input type="radio" name="tm-preview-tool" value="eraser" style="display:none;">
+                    </label>
+                    <label class="tm-tool-label" data-icon="🛠️" title="استرجاع / Restaurer / Restore">
+                        <input type="radio" name="tm-preview-tool" value="restore" style="display:none;">
+                    </label>
+                    <button id="tm-undo-btn" title="تراجع / Annuler / Undo"
+                        style="width:1.75rem; height:1.75rem; border-radius:0.4375rem; border:1px solid var(--border); background:var(--surface2); color:var(--text); cursor:pointer;">↩️</button>
+                    <div class="tm-bg-switches">
+                        <button id="tm-bg-black-btn" title="أسود / Noir / Black" style="background:#000;">⬛</button>
+                        <button id="tm-bg-white-btn" title="أبيض / Blanc / White" style="background:#fff;">⬜</button>
+                        <button id="tm-bg-trans-btn" title="شفاف / Transparent / Transparent" style="background:var(--surface2);">🏁</button>
+                    </div>
+                </div>
+
+                <div class="tm-workspace">
+                    <div id="tm-preview-section" style="display:none;" class="studio-card studio-card--muted">
+                        <div id="tm-preview-container"
+                            style="background:#111; border:1px solid var(--border); border-radius:0.5rem; overflow:auto; margin-bottom:0.625rem; display:flex; justify-content:center; align-items:center; position:relative; user-select:none;">
+                            <canvas id="tm-preview-canvas" style="cursor:crosshair; display:block;"></canvas>
+                            <canvas id="tm-preview-overlay"
+                                style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; display:none;"></canvas>
+                        </div>
+                    </div>
+                    <div class="tm-zoom-overlay">
+                        <button id="tm-zoom-out-btn" title="تصغير / Zoom out / Zoom out">−</button>
+                        <span id="tm-zoom-level">100%</span>
+                        <button id="tm-zoom-in-btn" title="تكبير / Zoom in / Zoom in">+</button>
+                        <button id="tm-zoom-reset-btn" title="إعادة التكبير / Reset zoom / Reset">↺</button>
+                    </div>
+                </div>
+
+                <div class="tm-sidebar">
+                    <input type="file" id="studio-file-input-2" multiple accept="image/png,image/jpeg,image/jpg"
+                        style="display:none;">
+                    <section class="studio-card studio-card--emerald tm-upload-inline" aria-labelledby="studio-tm-intake-h">
+                        <h3 class="studio-card-title" id="studio-tm-intake-h" style="color:#10B981;">
+                            استيراد التصاميم <span class="studio-card-title-en">Upload</span>
+                        </h3>
+                        <div class="studio-upload-zone" id="studio-upload-zone-2"
+                            style="border-color:rgba(16,185,129,0.35); padding:1.125rem; margin-bottom:0;">
+                            <div style="font-size:1.25rem; margin-bottom:0.25rem;">📥</div>
+                            <p style="font-size:0.6875rem; font-weight:700; color:var(--text); margin:0 0 0.375rem;">اسحب التصاميم هنا</p>
+                            <div id="tm-queue-info"
+                                style="margin-top:0.375rem; font-weight:bold; color:#10B981; display:none; font-size:0.6875rem;">
+                                ✅ تم تحديد <span id="tm-queue-count">0</span> صور جاهزة للمعالجة.
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="tm-side-header-strip">
+                        <span class="tm-side-title">TeeMaster Pro 5K</span>
+                        <label class="tm-side-tolerance" for="tm-tolerance">
+                            <span style="font-size:0.6875rem; color:var(--text-muted);">Tol</span>
+                            <input type="range" id="tm-tolerance" min="0" max="255" value="30" style="width:100%;">
+                            <span id="tm-tol-val" style="font-weight:bold; color:var(--primary);">30</span>
+                        </label>
+                    </div>
+
+                    <section class="studio-card studio-card--emerald" aria-labelledby="studio-tm-settings-h">
+            <h3 class="studio-card-title" id="studio-tm-settings-h" style="color:#10B981;">
+                <i class="fa-solid fa-sliders"></i> إعدادات المعالجة و API <span class="studio-card-title-en">Settings</span>
+            </h3>
+
+            <div style="margin-bottom:0.75rem;">
+                <label
+                    style="font-size:0.6875rem; color:var(--text-muted); display:block; margin-bottom:0.375rem; font-weight:700;">كيف
+                    يتم تحديد لون الخلفية؟</label>
+                <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                    <label
+                        style="flex:1; min-width:7.5rem; background:rgba(0,0,0,0.2); padding:0.5rem; border-radius:0.5rem; border:1px solid var(--border); cursor:pointer; text-align:center; font-size:0.6875rem; color:var(--text);">
+                        <input type="radio" name="tm-bg-detect" value="ai" id="tm-use-ai-bg"> 🤖 تلقائي (Gemini
+                        AI)
+                    </label>
+                    <label
+                        style="flex:1; min-width:7.5rem; background:rgba(0,0,0,0.2); padding:0.5rem; border-radius:0.5rem; border:1px solid var(--border); cursor:pointer; text-align:center; font-size:0.6875rem; color:var(--text);">
+                        <input type="radio" name="tm-bg-detect" value="manual" id="tm-use-manual-bg" checked> 🎯 يدوياً
+                        (القطارة)
+                    </label>
+                </div>
+            </div>
+
+            <div id="tm-gemini-key-group" style="margin-bottom:0.75rem;">
+                <label style="font-size:0.6875rem; color:var(--text-muted); display:block; margin-bottom:0.3125rem;">مفتاح Gemini
+                    API:</label>
+                <input type="password" id="tm-gemini-key" value="" autocomplete="off"
+                    placeholder="الصق مفتاح Google AI (Gemini) — لا يُخزَّن في الواجهة كقيمة افتراضية"
+                    style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:0.5rem; padding:0.5rem 0.625rem; color:var(--text); font-size:0.6875rem; outline:none;">
+            </div>
+
+            <div style="margin-bottom:0.75rem;">
+                <label style="font-size:0.6875rem; color:var(--text-muted); display:block; margin-bottom:0.3125rem;">خوارزمية
+                    الإزالة:</label>
+                <select id="tm-removal-mode"
+                    style="width:100%; box-sizing:border-box; background:var(--surface2); border:1px solid var(--border); border-radius:0.5rem; padding:0.5rem; color:var(--text); font-size:0.6875rem;">
+                    <option value="auto">تلقائي (دع الذكاء الاصطناعي يقرر الأفضل)</option>
+                    <option value="flood">حذف ذكي من الحواف (طريقة آمنة)</option>
+                    <option value="global">حذف عميق (يمسح نفس اللون من قلب التصميم)</option>
+                </select>
+            </div>
+
+            <div style="background:rgba(0,0,0,0.2); padding:0.625rem; border-radius:0.5rem; margin-bottom:0.625rem;">
+                <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-size:0.6875rem;">
+                    <input type="checkbox" id="tm-ai-tolerance" checked>
+                    <span>السماح للذكاء الاصطناعي باختيار قوة التسامح تلقائياً (ينصح به)</span>
+                </label>
+            </div>
+
+            <div style="background:rgba(79,70,229,0.10); padding:0.625rem; border-radius:0.5rem; margin-bottom:0.625rem; border:1px solid rgba(129,140,248,0.28);">
+                <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-size:0.6875rem; color:var(--text);">
+                    <input type="checkbox" id="tm-local-ai-upscale" style="width:0.875rem; height:0.875rem; accent-color:#818CF8;">
+                    <span>Local AI Upscale (Real-ESRGAN) قبل إخراج 5K</span>
+                </label>
+                <div style="font-size:0.625rem; color:var(--text-muted); margin-top:0.3125rem; line-height:1.4;">
+                    مجاني ومحلي. إذا لم يكن Real-ESRGAN مثبتاً سيكمل Studio بالطريقة الحالية.
+                </div>
+            </div>
+
+            <div style="font-size:0.625rem; color:var(--text-muted);">
+                شريط Tolerance متاح في شريط العنوان الجانبي.
+            </div>
+
+            <div style="font-size:0.625rem; color:#10B981; margin-top:0.75rem; background:rgba(16,185,129,0.1); padding:0.5rem 0.75rem; border-radius:0.5rem; border:1px solid rgba(16,185,129,0.3); line-height:1.4;">
+                <div style="font-weight:900; margin-bottom:0.25rem; display:flex; align-items:center; gap:0.3125rem;">
+                    <i class="fa-solid fa-circle-check"></i> معايير الجودة الفائقة (POD Standards)
+                </div>
+                • الأبعاد: <span style="font-weight:bold;">312.5rem × 343.75rem</span> (تدعم جميع المنتجات)<br>
+                • الكثافة: <span style="font-weight:bold;">160 DPI</span> (جودة تصدير احترافية)<br>
+                • التنسيق: <span style="font-weight:bold;">Transparent PNG</span> مع توسيط تلقائي
+            </div>
+                    </section>
+
+                    <section class="tm-crops-section" aria-label="صور مقتصة">
+                        <h4>صور مقتصة (Crops)</h4>
+                        <div id="tm-crops-grid"></div>
+                    </section>
+
+                    <section class="studio-card studio-card--muted">
+                        <h3 class="studio-card-title" style="color:#10B981; margin-bottom:0.375rem;">
+                            ✨ إجراءات و AI
+                        </h3>
+                        <div class="studio-tm-preview-actions tm-actions-stack">
+                <button id="tm-auto-extract-btn"
+                    style="min-width:0; background:linear-gradient(135deg,#8B5CF6,#6D28D9); color:#fff; border:none; padding:0.5625rem; border-radius:0.5rem; font-size:0.75rem; font-weight:800; cursor:pointer; font-family:'Tajawal',sans-serif;">
+                    ✨ استخراج 4 تصاميم عبر AI
+                </button>
+                <button id="tm-bulk-global-magic-btn"
+                    style="min-width:0; background:linear-gradient(135deg,#EC4899,#BE185D); color:#fff; border:none; padding:0.5625rem; border-radius:0.5rem; font-size:0.75rem; font-weight:800; cursor:pointer; font-family:'Tajawal',sans-serif;">
+                    🌈 السحر الشامل لكل الطابور
+                </button>
+                <button id="tm-add-crop-btn"
+                    style="display:none; min-width:0; background:linear-gradient(135deg,#10b981,#059669); color:#fff; border:none; padding:0.5625rem; border-radius:0.5rem; font-size:0.8125rem; font-weight:800; cursor:pointer; font-family:'Tajawal',sans-serif;">
+                    ➕ فصل الجزء كصورة للطابور
+                </button>
+                <button id="tm-skip-btn"
+                    style="min-width:0; background:var(--surface2); border:1px solid var(--banned); color:var(--banned); padding:0.5625rem; border-radius:0.5rem; font-size:0.75rem; font-weight:700; cursor:pointer; font-family:'Tajawal',sans-serif;">
+                    ⏭️ تخطي وإزالة الصورة
+                </button>
+                        </div>
+                        <div class="crops-queue-container">
+                            <span class="queue-title">الصور المستخرجة:</span>
+                            <div id="crops-mini-queue" class="crops-grid"></div>
+                        </div>
+                        <div
+                            style="display:flex; align-items:center; gap:0.5rem; background:rgba(0,0,0,0.2); padding:0.5rem; border-radius:0.5rem; border:1px solid var(--border); margin-top:0.375rem;">
+                            <input type="color" id="tm-manual-color" value="#000000"
+                                style="width:2rem; height:2rem; border:none; border-radius:50%; padding:0; cursor:pointer; background:transparent; outline:none; flex-shrink:0;">
+                            <div>
+                                <span id="tm-color-display" style="font-weight:bold; font-size:0.8125rem; color:#A78BFA;">#000000</span>
+                                <div style="font-size:0.6875rem; color:var(--text-muted); margin-top:0.125rem;">لون الخلفية اليدوي</div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="studio-card studio-card--tabs tm-mini-queue-card" aria-labelledby="studio-tm-queue-h">
+                        <h3 class="studio-card-title studio-card-title--tabs" id="studio-tm-queue-h">
+                            الطابور والسجل <span class="studio-card-title-en">Queue &amp; history</span>
+                        </h3>
+                        <div class="studio-tm-tab-row">
+                            <div id="tm-tab-queue"
+                                style="flex:1; padding:0.5rem; text-align:center; font-size:0.75rem; font-weight:800; cursor:pointer; border-bottom:0.125rem solid #10B981; color:#10B981;">
+                                📁 طابور المعالجة</div>
+                            <div id="tm-tab-history"
+                                style="flex:1; padding:0.5rem; text-align:center; font-size:0.75rem; font-weight:700; cursor:pointer; color:var(--text-muted); border-bottom:0.125rem solid transparent;">
+                                🕒 السجل التاريخي</div>
+                        </div>
+
+                        <div id="tm-queue-section"
+                            style="display:none; padding:0.5rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.375rem;">
+                                <span style="font-size:0.6875rem; font-weight:800; color:var(--text);">🖼️ معرض الصور قيد الانتظار</span>
+                                <button id="tm-clear-queue-btn"
+                                    style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:var(--banned); padding:0.1875rem 0.5rem; border-radius:0.375rem; font-size:0.6875rem; cursor:pointer;">🗑️
+                                    تفريغ</button>
+                            </div>
+                            <div id="tm-proofread-actions" style="display:flex; gap:0.375rem; align-items:center; flex-wrap:wrap; justify-content:flex-end; margin-bottom:0.375rem;">
+                                <label style="display:flex; align-items:center; gap:0.3125rem; font-size:0.625rem; color:var(--text-muted); cursor:pointer;">
+                                    <input type="checkbox" id="tm-proof-select-all" checked style="width:0.8125rem; height:0.8125rem; accent-color:#0EA5E9;">
+                                    &#1578;&#1581;&#1583;&#1610;&#1583; &#1575;&#1604;&#1603;&#1604;
+                                </label>
+                                <button id="tm-proofread-window-toggle"
+                                    style="background:rgba(14,165,233,0.12); border:1px solid rgba(14,165,233,0.28); color:#7DD3FC; padding:0.3125rem 0.5rem; border-radius:0.375rem; font-size:0.625rem; font-weight:800; cursor:pointer; font-family:'Tajawal',sans-serif;">
+                                    <i class="fa-solid fa-window-restore"></i> نوافذ المدقق: مفعلة
+                                </button>
+                                <button id="tm-proofread-gemini-btn"
+                                    style="background:linear-gradient(135deg,#0EA5E9,#2563EB); border:none; color:#fff; padding:0.3125rem 0.5rem; border-radius:0.375rem; font-size:0.6875rem; font-weight:800; cursor:pointer; font-family:'Tajawal',sans-serif;">
+                                    <i class="fa-solid fa-spell-check"></i> &#1601;&#1581;&#1589; &#1575;&#1604;&#1605;&#1582;&#1578;&#1575;&#1585; &#1601;&#1610; Gemini
+                                </button>
+                            </div>
+                            <div id="tm-proofread-status" style="display:none; margin-bottom:0.5rem; font-size:0.625rem; color:#7DD3FC; line-height:1.5; background:rgba(14,165,233,0.08); border:1px solid rgba(14,165,233,0.2); border-radius:0.5rem; padding:0.4375rem 0.5625rem;">
+                            </div>
+                            <div id="tm-queue-grid" class="tm-job-queue-strip"
+                                style="display:grid; grid-template-columns:repeat(auto-fill,minmax(3.75rem,1fr)); gap:0.375rem; max-height:9.375rem; overflow-y:auto;">
+                            </div>
+                        </div>
+
+                        <div id="tm-history-section"
+                            style="display:none; padding:0.5rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.375rem;">
+                                <span style="font-size:0.6875rem; font-weight:800; color:var(--text);">🕒 السجل التاريخي</span>
+                                <button id="tm-clear-history-btn"
+                                    style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:var(--banned); padding:0.25rem 0.5rem; border-radius:0.375rem; font-size:0.6875rem; cursor:pointer;">🗑️
+                                    مسح</button>
+                            </div>
+                            <div id="tm-history-list"
+                                style="max-height:9.375rem; overflow-y:auto; font-size:0.6875rem; color:var(--text-muted); text-align:center; padding:0.625rem;">
+                                جاري التحميل...</div>
+                        </div>
+                    </section>
+
+                    <div id="tm-progress-container"
+                        style="display:none; background:rgba(0,0,0,0.15); border:1px solid rgba(16,185,129,0.2); border-radius:0.625rem; padding:0.5rem;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:0.375rem;">
+                            <span id="tm-progress-text" style="font-size:0.75rem; font-weight:800; color:#10B981;">جاري المعالجة: 0 /
+                                0</span>
+                            <span id="tm-progress-pct" style="font-size:0.75rem; font-weight:bold; color:#10B981;">0%</span>
+                        </div>
+                        <div style="height:0.5rem; background:rgba(0,0,0,0.3); border-radius:0.3125rem; overflow:hidden; margin-bottom:0.25rem;">
+                            <div id="tm-progress-fill"
+                                style="height:100%; width:0%; background:linear-gradient(90deg,#10B981,#34D399); transition:width 0.3s;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tm-log-card"
+                        style="background:rgba(0,0,0,0.25); border:1px solid var(--border); border-radius:0.625rem; padding:0.5rem;">
+                        <div
+                            style="font-size:0.6875rem; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:0.375rem; margin-bottom:0.375rem;">
+                            📋 السجل المباشر</div>
+                        <div id="tm-log-area"
+                            style="height:5.625rem; overflow-y:auto; font-family:'Courier New',monospace; font-size:0.6875rem; color:#94a3b8; line-height:1.5;">
+                        </div>
+                    </div>
+
+                    <button id="tm-start-btn"
+                        style="width:100%; padding:0.6875rem; background:linear-gradient(135deg,#10B981,#059669); color:#fff; border:none; border-radius:0.625rem; font-size:0.75rem; font-weight:800; cursor:not-allowed; opacity:0.5; font-family:'Tajawal',sans-serif; display:flex; align-items:center; justify-content:center; gap:0.5rem;"
+                        disabled>
+                        🚀 يجب عليك رفع الصور أولاً لبدء المعالجة
+                    </button>
+
+                    <div style="display:flex; gap:0.5rem;" class="tm-next-row">
+                        <button class="studio-btn-secondary" id="studio-teemaster-download-btn" style="display:none;">
+                            <i class="fa-solid fa-download"></i> تحميل المُعالجة
+                        </button>
+                    </div>
+
+                    <button class="studio-btn-next" id="studio-to-step3-btn"
+                        style="background: linear-gradient(135deg, var(--primary), #A78BFA);">
+                        <i class="fa-solid fa-arrow-left"></i>
+                        انتقال إلى Smart File Renamer AI
+                        <span id="studio-step3-badge"
+                            style="background:rgba(255,255,255,0.2); padding:0.125rem 0.5rem; border-radius:0.625rem; font-size:0.625rem;">0
+                            صور</span>
+                    </button>
+
+                    <div class="studio-auto-seo-flow-row" style="display:flex; flex-direction:column; gap:0.5rem; margin-top:0.5rem;">
+                        <button class="studio-to-seo-btn" id="studio-auto-seo-flow-btn"
+                            style="background:linear-gradient(135deg,#0EA5E9,#2563EB); box-shadow:0 4px 18px rgba(14,165,233,0.32);">
+                            <i class="fa-solid fa-gears"></i>
+                            تلقائي: معالجة + RENEAM AI + توليد SEO
+                        </button>
+                        <button class="studio-to-seo-btn" id="studio-auto-seo-queued-btn"
+                            style="background:linear-gradient(135deg,#6366F1,#4F46E5); box-shadow:0 4px 18px rgba(99,102,241,0.32);">
+                            <i class="fa-solid fa-clock"></i>
+                            بانتظار الرفع: معالجة + RENEAM AI + توليد SEO
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div><!-- .studio-section-stack -->
+    </div>
+
+
+    <!-- ■■■ STEP 3: Smart File Renamer AI ■■■ -->
+    <div class="studio-panel-section" id="studio-section-3">
+        <div class="studio-section-header">
+            <div class="studio-section-title">
+                <div class="studio-section-icon renamer-icon">🏷️</div>
+                <div>
+                    <div style="font-size:0.875rem; font-weight:800; color:#A78BFA;">التسمية الذكية — Smart File Renamer AI</div>
+                    <div style="font-size:0.625rem; color:var(--text-muted);">أسماء الملفات ثم النشر إلى SEO / AUT</div>
+                </div>
+            </div>
+            <span class="studio-badge" id="studio-step3-count">0 صور</span>
+        </div>
+
+        <div class="studio-section-stack">
+
+        <div class="studio-info-box">
+            <strong style="color:#A78BFA;">المرحلة 3 — التسمية والنشر:</strong> صورك النهائية جاهزة. استخدم تسمية جماعية أو فردية، ثم أرسل إلى SEO أو AUT أو كليهما.
+        </div>
+
+        <!-- رفع مباشر (اختياري) -->
+        <section class="studio-card studio-card--violet" aria-labelledby="studio-step3-upload-h">
+            <h3 class="studio-card-title" id="studio-step3-upload-h" style="color:#A78BFA;">
+                رفع صور للتسمية <span class="studio-card-title-en">Direct upload</span>
+            </h3>
+            <input type="file" id="studio-file-input-3" multiple accept="image/png,image/jpeg,image/jpg"
+                style="display:none;">
+            <div class="studio-upload-zone" id="studio-upload-zone-3"
+                style="border-color:rgba(167,139,250,0.3); padding:0.75rem; border-style:dashed; margin-bottom:0;">
+                <p style="font-size:0.6875rem; font-weight:700; color:var(--text); margin:0 0 0.3125rem;">أو ارفع صوراً جاهزة للتسمية مباشرة</p>
+                <button id="studio-upload-btn-3"
+                    style="background:linear-gradient(135deg,#8B5CF6,#A78BFA); color:#fff; border:none; padding:0.3125rem 0.9375rem; border-radius:0.375rem; font-weight:800; font-size:0.625rem; cursor:pointer; font-family:'Tajawal',sans-serif;">
+                    📂 اختيار صور
+                </button>
+            </div>
+        </section>
+
+        <!-- تسمية جماعية -->
+        <section class="studio-card" style="background:rgba(108,99,255,0.05); border:1px solid rgba(108,99,255,0.2);" aria-labelledby="studio-bulk-rename-h">
+            <h3 class="studio-card-title" id="studio-bulk-rename-h" style="color:var(--primary);">
+                التسمية الجماعية <span class="studio-card-title-en">Bulk rename</span>
+            </h3>
+        <!-- AI Renaming Activation + Bulk row -->
+        <div class="studio-rename-compact-row">
+            <div id="ai-rename-image-wrap" style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; background: rgba(108, 99, 255, 0.1); padding: 0.5rem; border-radius: 0.5rem; border: 1px solid rgba(108, 99, 255, 0.3);">
+                <input type="checkbox" id="rename-by-image-ai" class="modern-checkbox" style="width:1rem; height:1rem; cursor:pointer; accent-color: var(--primary);">
+                <label for="rename-by-image-ai" style="font-size:0.75rem; color:var(--text); cursor:pointer; font-weight: bold;">
+                    👁️ تسمية ذكية
+                </label>
+                <button type="button" class="studio-btn-secondary" id="studio-google-ai-rename-btn" style="margin-inline-start:auto; padding:0.375rem 0.625rem; font-size:0.625rem; color:#BFDBFE; border-color:rgba(59,130,246,0.35); background:rgba(59,130,246,0.12);">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> RENEAM AI
+                </button>
+            </div>
+            <div class="studio-rename-row">
+                <input type="text" class="studio-rename-input" id="studio-bulk-name"
+                    placeholder="مثال: vintage cat lover t-shirt">
+                <button class="studio-btn-secondary" id="studio-apply-bulk-name" style="flex-shrink:0;">
+                    <i class="fa-solid fa-check-double"></i> تطبيق على الكل
+                </button>
+            </div>
+        </div>
+            <div style="font-size:0.625rem; color:var(--text-muted); margin-top:-0.3125rem;">
+                سيتم تسمية جميع الصور بنفس الاسم المدخل بدون ترقيم (نفس التسمية للكل).
+            </div>
+        </section>
+
+        <!-- قائمة الملفات -->
+        <div>
+        <div
+            style="font-size:0.6875rem; font-weight:700; color:var(--text-muted); margin-bottom:0.5rem; display:flex; align-items:center; gap:0.3125rem;">
+            <i class="fa-solid fa-list" style="color:var(--primary);"></i>
+            قائمة الصور (انقر على الاسم للتعديل)
+        </div>
+        <div class="studio-file-list" id="studio-file-list-3"></div>
+        </div>
+
+        <!-- تنزيل وإعادة التعيين -->
+        <div class="studio-action-bar" style="margin-bottom:0;">
+            <button class="studio-btn-secondary" id="studio-download-final-btn">
+                <i class="fa-solid fa-download"></i> تحميل جميع الصور
+            </button>
+            <button class="studio-btn-secondary" id="studio-reset-pipeline-btn"
+                style="color:var(--banned); border-color:rgba(239,68,68,0.3);">
+                <i class="fa-solid fa-rotate-left"></i> إعادة البدء
+            </button>
+        </div>
+
+        <!-- النشر إلى SEO / AUT -->
+        <section class="studio-publish-actions" aria-label="نشر الصور">
+            <label for="studio-seo-clear-first" style="display:flex; align-items:center; justify-content:flex-start; gap:0.5rem; background:rgba(139,92,246,0.08); border:1px solid rgba(139,92,246,0.2); border-radius:0.625rem; padding:0.5625rem 0.75rem; font-size:0.75rem; font-weight:700; color:var(--text); cursor:pointer;">
+                <input type="checkbox" id="studio-seo-clear-first" checked style="width:1rem; height:1rem; accent-color:#8B5CF6;">
+                مع الحذف
+                <span style="font-size:0.625rem; font-weight:400; color:var(--text-muted);">يفرغ طابور SEO قبل استقبال الصور الجديدة</span>
+            </label>
+            <button class="studio-to-seo-btn" id="studio-to-seo-btn" disabled>
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                إرسال الصور إلى SEO AI للنشر
+                <span id="studio-seo-badge"
+                    style="background:rgba(255,255,255,0.2); padding:0.125rem 0.5rem; border-radius:0.625rem; font-size:0.625rem;">0
+                    صور</span>
+            </button>
+            <div class="studio-publish-row2">
+                <button class="studio-to-seo-btn" id="studio-to-aut-btn" disabled
+                    style="padding:10px 12px; font-size:12px; background: linear-gradient(135deg, #10B981, #059669); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
+                    <i class="fa-solid fa-rocket"></i> إرسال إلى AUT
+                </button>
+                <button class="studio-to-seo-btn" id="studio-to-both-btn" disabled
+                    style="padding:10px 12px; font-size:12px; background: linear-gradient(135deg, #8B5CF6, #6D28D9); box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);">
+                    <i class="fa-solid fa-layer-group"></i> إرسال للكل
+                </button>
+            </div>
+            <button class="studio-to-seo-btn" id="studio-to-edited-library-btn" disabled
+                title="إرسال الصور الحالية إلى مكتبة التصاميم المعدّلة (Canva Bridge)"
+                style="padding:10px 12px; font-size:12px; background: linear-gradient(135deg, #0EA5E9, #0369A1); box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);">
+                <i class="fa-solid fa-images"></i> إرسال إلى مكتبة التصاميم المعدّلة
+            </button>
+        </section>
+
+        </div><!-- .studio-section-stack -->
+    </div>
+
+</div>

@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NHP Web Control</title>
+  <style>
+    :root {
+      --app-vh: 1vh;
+      --bg: #070812;
+      --surface: #111426;
+      --surface-2: #171c33;
+      --surface-3: #0f1327;
+      --border: #2d355e;
+      --text: #e6e9ff;
+      --muted: #9da8df;
+      --primary: #6c63ff;
+      --primary-2: #8b5cf6;
+      --success: #10b981;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      background: radial-gradient(circle at top, #1a1e39 0%, var(--bg) 50%);
+      color: var(--text);
+    }
+    .layout {
+      width: calc(100vw - 16px);
+      max-width: none;
+      margin: 8px auto;
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 10px;
+      height: calc((var(--app-vh) * 100) - 16px);
+    }
+    .sidebar {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(20, 24, 44, 0.92);
+      padding: 12px;
+      height: 100%;
+      position: sticky;
+      top: 8px;
+      overflow: auto;
+    }
+    .brand-title { margin: 0; font-size: 17px; font-weight: 800; }
+    .brand-sub { color: var(--muted); font-size: 11px; margin: 4px 0 12px; }
+    .nav-group { margin-top: 10px; }
+    .nav-label { color: var(--muted); font-size: 11px; margin: 0 0 6px; }
+    .nav-btn {
+      width: 100%;
+      text-align: right;
+      padding: 10px 11px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-bottom: 7px;
+    }
+    .nav-btn.active {
+      background: linear-gradient(135deg, rgba(108, 99, 255, 0.38), rgba(139, 92, 246, 0.36));
+      border-color: rgba(167, 139, 250, 0.78);
+    }
+    .main {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(14, 18, 35, 0.94);
+      padding: 14px;
+      min-height: 100%;
+      height: 100%;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: rgba(20, 24, 44, 0.7);
+    }
+    .top-title { margin: 0; font-size: 16px; font-weight: 800; }
+    .top-sub { color: var(--muted); font-size: 11px; margin-top: 4px; }
+    .badge {
+      font-size: 11px;
+      color: #93c5fd;
+      border: 1px solid #1d4ed8;
+      border-radius: 999px;
+      padding: 5px 10px;
+      background: rgba(30, 64, 175, 0.2);
+    }
+    .section { display: none; }
+    .section.active {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+    }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(23, 28, 51, 0.95), rgba(12, 15, 28, 0.95));
+    }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    button, input { border-radius: 10px; border: 1px solid transparent; outline: none; }
+    button {
+      color: white;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      background: var(--surface-2);
+      border-color: var(--border);
+    }
+    button:hover { filter: brightness(1.08); }
+    .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-2)); border: none; }
+    .btn-warning { background: linear-gradient(135deg, #f59e0b, #d97706); border: none; color: #140f04; }
+    .btn-info-soft { background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.45); color: #bae6fd; }
+    .btn-danger { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #fca5a5; }
+    .btn-success { background: rgba(16, 185, 129, 0.14); border-color: rgba(16, 185, 129, 0.35); color: #86efac; }
+    .trend-new-badge {
+      display: inline-flex;
+      align-items: center;
+      margin-inline-start: 8px;
+      padding: 1px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(56, 189, 248, 0.55);
+      background: rgba(56, 189, 248, 0.16);
+      color: #7dd3fc;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      vertical-align: middle;
+    }
+    .search {
+      flex: 1;
+      min-width: 220px;
+      padding: 10px 12px;
+      color: var(--text);
+      background: #0f1222;
+      border-color: var(--border);
+    }
+    .meta { margin: 8px 0 12px; color: var(--muted); font-size: 12px; }
+    .trend-list-scroll-wrap {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 0;
+      min-height: 0;
+      margin-top: 12px;
+    }
+    #trend-list-container {
+      flex: 1 1 0;
+      min-height: 180px;
+      overflow-x: auto;
+      overflow-y: auto;
+      padding-inline: 2px;
+      padding-inline-end: 6px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .trend-list-scroll-wrap.trend-scroll--overflow #trend-list-container {
+      padding-inline-end: 40px;
+    }
+    .trend-scroll-fab {
+      position: absolute;
+      inset-inline-end: 4px;
+      bottom: 8px;
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 6;
+      pointer-events: none;
+    }
+    .trend-scroll-btn {
+      pointer-events: auto;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      border: 1px solid rgba(167, 139, 250, 0.45);
+      background: rgba(17, 22, 43, 0.92);
+      color: #e6e9ff;
+      font-size: 14px;
+      line-height: 1;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+      cursor: pointer;
+    }
+    .trend-scroll-btn:hover {
+      filter: brightness(1.12);
+      border-color: rgba(167, 139, 250, 0.75);
+    }
+    .trend-card-shell {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .field-card { border: 1px solid var(--border); background: #11162b; border-radius: 10px; }
+    .hidden { display: none !important; }
+    .empty-msg {
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      color: var(--muted);
+      padding: 16px;
+      text-align: center;
+      font-size: 12px;
+      background: var(--surface-3);
+    }
+    .panel {
+      margin-top: 12px;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      background: rgba(17, 22, 43, 0.8);
+    }
+    #ai-trend-text, #ai-design-text { white-space: pre-wrap; line-height: 1.5; color: #cdd5ff; font-size: 12px; }
+    .coming-card {
+      border: 1px dashed rgba(167, 139, 250, 0.5);
+      border-radius: 12px;
+      padding: 14px;
+      background: rgba(108, 99, 255, 0.08);
+      color: #cfd7ff;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .embedded-shell {
+      margin-top: 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #090d1f;
+      min-height: calc((var(--app-vh) * 100) - 280px);
+      position: relative;
+      display: flex;
+    }
+    .embedded-frame {
+      width: 100%;
+      height: 100%;
+      min-height: calc((var(--app-vh) * 100) - 280px);
+      border: 0;
+      background: #090d1f;
+      display: block;
+    }
+    .embedded-placeholder {
+      min-height: calc((var(--app-vh) * 100) - 280px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 18px;
+      text-align: center;
+    }
+    .coming-title { margin: 0 0 6px; font-size: 15px; }
+    .toast {
+      position: fixed;
+      left: 16px;
+      bottom: 16px;
+      max-width: min(440px, 90vw);
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(17, 24, 39, 0.95);
+      font-size: 12px;
+      color: var(--text);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: 0.2s ease;
+      pointer-events: none;
+      z-index: 20;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .layout {
+        height: auto;
+        min-height: calc((var(--app-vh) * 100) - 16px);
+      }
+      .sidebar { height: auto; position: static; }
+      .main { min-height: auto; height: auto; }
+      .embedded-shell,
+      .embedded-frame,
+      .embedded-placeholder {
+        min-height: 420px;
+      }
+    }
+  </style>
+  <script src="extension-theme-boot.js"></script>
+  <link rel="stylesheet" href="extension-theme.css">
+</head>
+<body>
+  <main class="layout">
+    <aside class="sidebar">
+      <h1 class="brand-title">NHP Web Control</h1>
+      <p class="brand-sub">واجهة شاملة خفيفة - إدراج تدريجي للأقسام</p>
+
+      <div class="nav-group">
+        <p class="nav-label">الأقسام المفعلة</p>
+        <button class="nav-btn active" data-section="section-trend">Trend (فعال)</button>
+        <button class="nav-btn" data-section="section-tm-search">TM SEARCH</button>
+        <button class="nav-btn" data-section="section-note">Note</button>
+      </div>
+
+      <div class="nav-group">
+        <p class="nav-label">أقسام جاهزة للإدراج</p>
+        <button class="nav-btn" data-section="section-studio">Studio</button>
+        <button class="nav-btn" data-section="section-uspto">USPTO</button>
+        <button class="nav-btn" data-section="section-teepublic">TeePublic</button>
+        <button class="nav-btn" data-section="section-seo">SEO</button>
+        <button class="nav-btn" data-section="section-autopilot">Autopilot</button>
+        <button class="nav-btn" data-section="section-social">Social+</button>
+      </div>
+    </aside>
+
+    <section class="main">
+      <header class="topbar">
+        <div>
+          <h2 class="top-title" id="active-section-title">Trend Dashboard</h2>
+          <div class="top-sub" id="active-section-sub">مربوط مباشرة بمنطق الإضافة الحالي</div>
+        </div>
+        <span class="badge">Connected to Extension Core</span>
+      </header>
+
+      <section id="section-trend" class="section active">
+        <div class="card trend-card-shell">
+          <div class="row">
+            <button id="trend-fetch-btn" class="btn-primary">
+              <span class="btn-text">جلب الترندات</span>
+              <span class="spinner-small hidden">...</span>
+            </button>
+            <button id="btn-ai-trend-analyze">تحليل AI</button>
+            <button id="btn-full-auto" class="btn-warning">تشغيل المسار الكامل</button>
+            <button id="trend-reset-checked-btn" class="btn-info-soft">Reset Checked</button>
+            <button id="trend-copy-all-btn" class="btn-success">نسخ الكل</button>
+            <button id="trend-clear-cache-btn" class="btn-danger">مسح الكاش</button>
+          </div>
+          <div class="meta">
+            <span id="trend-last-update">آخر تحديث: لم يتم بعد</span>
+          </div>
+          <div class="row">
+            <input id="trend-filter-input" class="search" placeholder="ابحث داخل الترندات..." />
+          </div>
+
+          <div id="ai-trend-results" class="panel hidden">
+            <strong>اقتراحات AI:</strong>
+            <div id="ai-trend-text"></div>
+          </div>
+
+          <div class="trend-list-scroll-wrap">
+            <div id="trend-list-container">
+              <div class="empty-msg">اضغط "جلب الترندات" لبدء التحميل.</div>
+            </div>
+            <div class="trend-scroll-fab" role="toolbar" aria-label="تمرير القائمة">
+              <button type="button" id="trend-scroll-up" class="trend-scroll-btn" title="للأعلى">↑</button>
+              <button type="button" id="trend-scroll-down" class="trend-scroll-btn" title="للأسفل">↓</button>
+            </div>
+          </div>
+
+          <div id="ai-design-idea" class="panel hidden">
+            <div class="row" style="justify-content: space-between;">
+              <strong>مقترح تصميم للنيش</strong>
+              <button id="copy-design-prompt">نسخ الأمر</button>
+            </div>
+            <div id="ai-design-text"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="section-studio" class="section">
+        <div class="coming-card">
+          <h3 class="coming-title">Studio - المرحلة القادمة</h3>
+          هذا القسم جاهز للربط في الخطوة التالية. سننقل الواجهة تدريجيًا مع الحفاظ على نفس الوظائف وربطها بمحرك الإضافة.
+        </div>
+      </section>
+      <section id="section-tm-search" class="section">
+        <div class="card">
+          <div class="row" style="margin-bottom:12px;">
+            <button id="tm-open-tmhunt" class="btn-primary">TMHUNT</button>
+            <button id="tm-open-uspto">USPTO</button>
+            <button id="tm-open-analysis" class="btn-success">ANALYSIS</button>
+          </div>
+          <div class="coming-card" style="margin-bottom:10px;">
+            <h3 class="coming-title">TM SEARCH HUB</h3>
+            هذا القسم يجمع أدوات الفحص الثلاث في واجهة واحدة. في هذه المرحلة يمكنك فتح كل أداة مباشرة من هنا، والخطوة التالية ستكون دمج الواجهات الداخلية تدريجيًا داخل هذا القسم نفسه.
+          </div>
+          <div class="embedded-shell">
+            <div id="tm-embedded-placeholder" class="embedded-placeholder">
+              اختر القسم المراد عرضه بالأعلى وسيتم تحميله هنا داخل نفس الصفحة.
+            </div>
+            <iframe id="tm-search-frame" class="embedded-frame hidden" title="TM Search Internal Viewer"></iframe>
+          </div>
+        </div>
+      </section>
+      <section id="section-note" class="section">
+        <div class="card trend-card-shell">
+          <div class="glass-card"
+            style="margin-bottom: 12px; padding: 15px; background: linear-gradient(135deg, rgba(108, 99, 255, 0.1), rgba(167, 139, 250, 0.1));">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+              <div>
+                <h2 style="font-size: 16px; font-weight: 800; color: #fff; margin: 0;">📝 نوتة المهام والنيتشات</h2>
+                <span id="nc-stats" style="font-size: 10px; color: var(--muted);">0 نيش</span>
+              </div>
+              <div style="display:flex; gap:5px;">
+                <button id="btn-import-analysis" class="btn"
+                  style="padding: 5px 10px; font-size: 10px; background: linear-gradient(135deg, #10B981, #059669); border: none; color: white; border-radius: 6px; cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 4px;">
+                  استيراد
+                </button>
+                <button id="btn-export-note" class="btn" title="تصدير الملاحظات (TXT)">تصدير</button>
+                <button id="btn-import-note" class="btn" title="استيراد الملاحظات (TXT)">استيراد</button>
+                <input type="file" id="nc-import-input" accept=".txt" class="hidden">
+                <button id="btn-clear-note" class="btn btn-danger"
+                  style="padding: 5px 8px; font-size: 10px; border-radius: 6px; cursor: pointer; font-weight: 700;">
+                  حذف
+                </button>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+              <input type="text" id="nc-search" class="search" placeholder="بحث في الملاحظات..." />
+            </div>
+
+            <div id="niche-container" class="task-list"
+              style="flex:1; min-height:260px; max-height:none; overflow-y: auto; padding-right: 2px; border:1px solid var(--border); border-radius:10px; background:#0f1327;">
+            </div>
+
+            <div id="nc-unofficial-panel" class="mt-4 pt-3 border-t border-white/10" style="display:none;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <div class="field-label" style="margin:0;">Unofficial Trends</div>
+                <span id="nc-unofficial-stats" style="font-size:9px; color:var(--muted);">0 عنصر</span>
+              </div>
+              <div style="font-size:10px; color:var(--muted); margin-bottom:8px;">
+                إشارات Radar غير الرسمية ونتائج مرورها عبر USPTO وTeePublic.
+              </div>
+              <div id="unofficial-trends-container" class="task-list"
+                style="max-height: 180px; overflow-y: auto; padding-right: 2px;">
+                <div class="text-center py-4 text-[10px] text-white/20">لا توجد ترندات غير رسمية حالياً</div>
+              </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-white/5">
+              <div class="field-label mb-2">إضافة نيشات يدوياً (كل نيتش في سطر)</div>
+              <textarea id="bulk-text" class="search"
+                style="height: 88px; font-size: 11px; margin-bottom: 8px; width:100%; resize:vertical;"
+                placeholder="قم بلصق النيشات هنا..."></textarea>
+              <button id="nc-update-bulk" class="btn btn-primary py-2 text-xs w-full">
+                تحديث القائمة
+              </button>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-white/10">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <div class="field-label" style="margin:0;">🕒 H. HISTORIQUE (السجل)</div>
+                <span style="font-size:9px; color:var(--muted);">آخر 10 دفعات</span>
+              </div>
+              <div id="nc-history-list"
+                style="max-height: 180px; overflow-y: auto; padding-right: 4px; border:1px solid var(--border); border-radius:10px; background:#0f1327; padding:6px;">
+                <div class="text-center py-4 text-[10px] text-white/20">لا يوجد سجل حالياً</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section id="section-uspto" class="section"><div class="coming-card"><h3 class="coming-title">USPTO</h3>واجهة جاهزة للإدراج التدريجي.</div></section>
+      <section id="section-teepublic" class="section"><div class="coming-card"><h3 class="coming-title">TeePublic</h3>واجهة جاهزة للإدراج التدريجي.</div></section>
+      <section id="section-seo" class="section"><div class="coming-card"><h3 class="coming-title">SEO</h3>واجهة جاهزة للإدراج التدريجي.</div></section>
+      <section id="section-autopilot" class="section"><div class="coming-card"><h3 class="coming-title">Autopilot</h3>واجهة جاهزة للإدراج التدريجي.</div></section>
+      <section id="section-social" class="section"><div class="coming-card"><h3 class="coming-title">Social+</h3>واجهة جاهزة للإدراج التدريجي.</div></section>
+    </section>
+  </main>
+
+  <div id="web-toast" class="toast"></div>
+  <script type="module" src="web-control.js"></script>
+</body>
+</html>

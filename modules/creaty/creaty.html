@@ -1,0 +1,878 @@
+<link rel="stylesheet" href="modules/creaty/creaty.css">
+
+<div class="creaty-root" id="creaty-root">
+  <header class="creaty-header">
+    <div class="creaty-header__title">
+      <i class="fa-solid fa-masks-theater"></i>
+      <span data-creaty-i18n="title">CREATY</span>
+    </div>
+    <div class="creaty-header__api" id="creaty-api-label" dir="ltr">—</div>
+  </header>
+
+  <div class="creaty-columns">
+    <!-- Column 1 — Registration & Activation -->
+    <section class="creaty-column creaty-column--active" data-creaty-column="signup" aria-label="Registration & Activation">
+      <header class="creaty-column__head">
+        <h2 class="creaty-column__title" data-creaty-i18n="colSignupTitle">Registration & Activation</h2>
+        <p class="creaty-column__subtitle" data-creaty-i18n="colSignupSubtitle">التسجيل والتفعيل</p>
+      </header>
+
+      <div class="creaty-col1-tabs" role="tablist" aria-label="Column 1">
+        <button type="button" class="creaty-col1-tab creaty-col1-tab--active" role="tab" id="creaty-col1-tab-registration" aria-selected="true" aria-controls="creaty-col1-panel-registration" data-creaty-col1-tab="registration">
+          <i class="fa-solid fa-list-check"></i>
+          <span data-creaty-i18n="col1TabRegistration">التسجيل والسجلات</span>
+        </button>
+        <button type="button" class="creaty-col1-tab" role="tab" id="creaty-col1-tab-ai" aria-selected="false" aria-controls="creaty-col1-panel-ai" data-creaty-col1-tab="ai">
+          <i class="fa-solid fa-robot"></i>
+          <span data-creaty-i18n="col1TabAiAssistant">مساعد AI</span>
+        </button>
+      </div>
+
+      <div class="creaty-col1-panels" id="creaty-col1-panels">
+
+      <!-- Tab 1: Registration & Logs -->
+      <div id="creaty-col1-panel-registration" class="creaty-col1-panel creaty-col1-panel--registration creaty-col1-panel--active" role="tabpanel" aria-labelledby="creaty-col1-tab-registration">
+
+      <div class="creaty-server-panel" id="creaty-server-panel" aria-live="polite">
+        <div class="creaty-server-panel__status">
+          <span class="creaty-server-dot creaty-server-dot--offline" id="creaty-server-dot" aria-hidden="true"></span>
+          <div class="creaty-server-panel__labels">
+            <span class="creaty-server-panel__name" data-creaty-i18n="serverName">Creaty Server</span>
+            <span class="creaty-server-panel__text" id="creaty-server-status-text">—</span>
+            <span class="creaty-server-panel__phase" id="creaty-server-phase" hidden></span>
+          </div>
+        </div>
+        <button type="button" id="creaty-server-wake-btn" class="creaty-btn creaty-btn--ghost creaty-btn--compact" title="">
+          <i class="fa-solid fa-power-off"></i> <span data-creaty-i18n="serverWake">تشغيل السيرفر</span>
+        </button>
+      </div>
+
+      <p class="creaty-phase-hint" data-creaty-i18n="phaseHint">المراحل: PENDING — artisan — apprentice — design 1–5 — active — DONE</p>
+
+      <!-- Advanced Settings Block (Hidden as per requirement) -->
+      <div style="display: none;">
+        <div class="creaty-toolbar">
+          <div class="creaty-field">
+            <label for="creaty-batch-size" data-creaty-i18n="batchSize">Batch size</label>
+            <input type="number" id="creaty-batch-size" class="creaty-input" min="1" max="50" value="5">
+          </div>
+          <div class="creaty-field creaty-field--grow">
+            <label for="creaty-api-base" data-creaty-i18n="apiBase">API Base</label>
+            <input type="url" id="creaty-api-base" class="creaty-input" dir="ltr" placeholder="https://emailcore-6i3w.onrender.com">
+          </div>
+        </div>
+
+        <div class="creaty-toolbar">
+          <div class="creaty-field">
+            <label for="creaty-user-id">User ID</label>
+            <input type="text" id="creaty-user-id" class="creaty-input" dir="ltr" placeholder="8" autocomplete="off">
+          </div>
+          <div class="creaty-field creaty-field--grow">
+            <label for="creaty-token">Access Token</label>
+            <input type="password" id="creaty-token" class="creaty-input" dir="ltr" placeholder="Paste token from EmailCore" autocomplete="off">
+          </div>
+        </div>
+
+        <label class="creaty-skip-option" for="creaty-skip-registered">
+          <input type="checkbox" id="creaty-skip-registered">
+          <span data-creaty-i18n="skipRegistered">تخطي المسجّلين مسبقاً</span>
+        </label>
+
+        <label class="creaty-skip-option" for="creaty-show-browser">
+          <input type="checkbox" id="creaty-show-browser" checked>
+          <span data-creaty-i18n="showBrowser">إظهار المتصفح</span>
+        </label>
+
+        <label class="creaty-skip-option" for="creaty-auto-proxy-warehouse">
+          <input type="checkbox" id="creaty-auto-proxy-warehouse">
+          <span data-creaty-i18n="autoProxyWarehouse">تفعيل مخزن البروكسيات التلقائي</span>
+        </label>
+
+        <div class="creaty-field creaty-field--grow">
+          <label for="creaty-default-proxy" data-creaty-i18n="defaultProxy">بروكسي افتراضي (ip:port:user:pass أو WIFI)</label>
+          <input type="text" id="creaty-default-proxy" class="creaty-input" dir="ltr" placeholder="host:port:user:pass" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="creaty-field creaty-field--grow creaty-field--multi">
+        <label for="creaty-referral-urls" data-creaty-i18n="referralUrls">روابط الإحالة</label>
+        <textarea id="creaty-referral-urls" class="creaty-input creaty-textarea" dir="ltr" rows="3" placeholder="https://tee.pub/lic/..."></textarea>
+        <p class="creaty-field-hint" id="creaty-referral-urls-hint" data-creaty-i18n="referralUrlsHint">ضع كل رابط في سطر مستقل. إذا تركتها فارغة سيتم استخدام الرابط القديم.</p>
+        <div class="creaty-actions creaty-actions--row creaty-referral-actions">
+          <button type="button" id="creaty-save-referral-urls" class="creaty-btn creaty-btn--ghost">
+            <i class="fa-solid fa-floppy-disk"></i> <span data-creaty-i18n="saveReferralUrls">حفظ / استبدال الروابط</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="creaty-actions creaty-actions--row">
+        <button type="button" id="creaty-pull-aut" class="creaty-btn creaty-btn--ghost">
+          <i class="fa-solid fa-download"></i> <span data-creaty-i18n="pullAut">Pull from AUT</span>
+        </button>
+        <button type="button" class="creaty-btn creaty-btn--ghost creaty-pull-site-emails">
+          <i class="fa-solid fa-cloud-arrow-down"></i> <span data-creaty-i18n="pullSiteEmails">سحب إيميلات الموقع</span>
+        </button>
+        <button type="button" id="creaty-refresh-queue" class="creaty-btn creaty-btn--ghost">
+          <i class="fa-solid fa-rotate"></i> <span data-creaty-i18n="refresh">Refresh</span>
+        </button>
+        <button type="button" id="creaty-start-runner" class="creaty-btn creaty-btn--primary">
+          <i class="fa-solid fa-play"></i> <span data-creaty-i18n="start">Start</span>
+        </button>
+        <button type="button" id="creaty-stop-runner" class="creaty-btn creaty-btn--danger" disabled>
+          <i class="fa-solid fa-stop"></i> <span data-creaty-i18n="stop">Stop</span>
+        </button>
+      </div>
+
+      <div class="creaty-status-bar">
+        <span class="creaty-phase-label" data-creaty-i18n="phaseLabel">Phase:</span>
+        <span id="creaty-phase" class="creaty-phase-value">IDLE</span>
+        <span class="creaty-queue-pill" id="creaty-queue-count" style="display: none;">0 in queue</span>
+        <span class="creaty-runner-pill" id="creaty-runner-state">Stopped</span>
+      </div>
+
+      <div class="creaty-queue-preview" id="creaty-queue-preview" style="display: none;"></div>
+
+      <div class="creaty-log-wrap">
+        <div class="creaty-log-header" data-creaty-i18n="logHeader">Progress Log</div>
+        <div id="creaty-log" class="creaty-log" aria-live="polite"></div>
+      </div>
+
+      </div><!-- /creaty-col1-panel-registration -->
+
+      <!-- Tab 2: AI Assistant -->
+      <div id="creaty-col1-panel-ai" class="creaty-col1-panel creaty-col1-panel--ai" role="tabpanel" aria-labelledby="creaty-col1-tab-ai" hidden>
+
+        <div class="creaty-supervisor-wrap" id="creaty-supervisor-wrap" aria-live="polite">
+          <div class="creaty-log-header" data-creaty-i18n="supervisorTitle">مشرف AI — Field Watch</div>
+
+          <div class="creaty-supervisor-status-panel">
+            <div id="creaty-supervisor-status" class="creaty-stub-note creaty-supervisor-status">مشرف AI: في انتظار الأتمتة…</div>
+            <div id="creaty-supervisor-journal" class="creaty-supervisor-journal creaty-stub-note"></div>
+          </div>
+
+          <div class="creaty-supervisor-chat" id="creaty-supervisor-chat">
+            <div
+              class="creaty-supervisor-chat-history"
+              id="creaty-supervisor-chat-history"
+              role="log"
+              aria-live="polite"
+              aria-relevant="additions"
+            ></div>
+
+            <div class="creaty-supervisor-chat-attach-preview" id="creaty-supervisor-chat-attach-preview" hidden>
+              <span class="creaty-supervisor-chat-attach-thumb-wrap">
+                <img id="creaty-supervisor-chat-attach-thumb" class="creaty-supervisor-chat-attach-thumb" alt="">
+                <button type="button" class="creaty-supervisor-chat-attach-clear" id="creaty-supervisor-chat-attach-clear" data-creaty-i18n-title="supervisorChatRemoveImage" title="إزالة الصورة">
+                  <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
+              </span>
+            </div>
+
+            <div class="creaty-supervisor-chat-actions">
+              <button
+                type="button"
+                class="creaty-supervisor-chat-fix-btn creaty-supervisor-chat-fix-btn--bar"
+                id="creaty-supervisor-chat-fix"
+                data-creaty-i18n="supervisorChatFixInternal"
+                hidden
+              >اصلح المشكل داخليا</button>
+            </div>
+
+            <form class="creaty-supervisor-chat-input-bar" id="creaty-supervisor-chat-form" autocomplete="off">
+              <input type="file" id="creaty-supervisor-chat-file" accept="image/*" hidden>
+              <button
+                type="button"
+                class="creaty-supervisor-chat-btn creaty-supervisor-chat-attach"
+                id="creaty-supervisor-chat-attach"
+                data-creaty-i18n-title="supervisorChatAttach"
+                title="إرفاق صورة"
+              >
+                <i class="fa-solid fa-paperclip" aria-hidden="true"></i>
+              </button>
+              <textarea
+                id="creaty-supervisor-chat-text"
+                class="creaty-supervisor-chat-textarea"
+                rows="1"
+                data-creaty-i18n-placeholder="supervisorChatPlaceholder"
+                placeholder="اسأل المشرف عن الأتمتة أو أرفق لقطة شاشة…"
+              ></textarea>
+              <button
+                type="submit"
+                class="creaty-supervisor-chat-btn creaty-supervisor-chat-send"
+                id="creaty-supervisor-chat-send"
+                data-creaty-i18n-title="supervisorChatSend"
+                title="إرسال"
+              >
+                <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+
+      </div><!-- /creaty-col1-panel-ai -->
+
+      </div><!-- /creaty-col1-panels -->
+    </section>
+
+    <!-- Column 2 — Upload Schedule + Store Generator (tabs) -->
+    <section class="creaty-column creaty-column--active creaty-column--upload" data-creaty-column="upload" aria-label="Upload Schedule">
+      <header class="creaty-column__head">
+        <h2 class="creaty-column__title" data-creaty-i18n="colUploadPlanTitle">جدولة الرفع — خطة Artisan (12 يوم)</h2>
+        <p class="creaty-column__subtitle" data-creaty-i18n="colUploadPlanSubtitle">Upload Schedule — Artisan Plan (12 days)</p>
+      </header>
+
+      <nav class="creaty-admin-sidebar" id="creaty-admin-sidebar" aria-label="EmailCore Admin">
+        <p class="creaty-admin-sidebar__kicker" data-creaty-i18n="adminSidebarKicker">Admin</p>
+        <div class="creaty-admin-sidebar__links" role="list">
+          <button type="button" class="creaty-admin-sidebar__link" role="listitem" data-creaty-admin-nav="store" id="creaty-admin-nav-store">
+            <i class="fa-solid fa-envelope" aria-hidden="true"></i>
+            <span data-creaty-i18n="adminNavEmailLibrary">Email Library</span>
+          </button>
+          <button type="button" class="creaty-admin-sidebar__link" role="listitem" data-creaty-admin-nav="mailbox-setup" id="creaty-admin-nav-mailbox-setup">
+            <i class="fa-solid fa-envelope-circle-check" aria-hidden="true"></i>
+            <span data-creaty-i18n="col2TabMailboxSetup">إعداد البريد</span>
+          </button>
+          <button type="button" class="creaty-admin-sidebar__link creaty-admin-sidebar__link--admin" role="listitem" data-creaty-admin-nav="domain-registry" id="creaty-admin-nav-domain-registry" hidden>
+            <i class="fa-solid fa-globe" aria-hidden="true"></i>
+            <span data-creaty-i18n="col2TabDomainRegistry">إدارة النطاقات</span>
+          </button>
+          <button type="button" class="creaty-admin-sidebar__link" role="listitem" data-creaty-admin-nav="dashboard" id="creaty-admin-nav-dashboard">
+            <i class="fa-solid fa-table-columns" aria-hidden="true"></i>
+            <span data-creaty-i18n="col2TabDashboard">قائمة الحسابات</span>
+          </button>
+        </div>
+      </nav>
+
+      <div class="creaty-col2-tabs" role="tablist" aria-label="Column 2">
+        <button type="button" class="creaty-col2-tab creaty-col2-tab--active" role="tab" id="creaty-col2-tab-schedule" aria-selected="true" aria-controls="creaty-col2-panel-schedule" data-creaty-col2-tab="schedule">
+          <i class="fa-solid fa-calendar-days"></i>
+          <span data-creaty-i18n="col2TabSchedule">جدولة الرفع</span>
+        </button>
+        <button type="button" class="creaty-col2-tab" role="tab" id="creaty-col2-tab-mailbox-setup" aria-selected="false" aria-controls="creaty-col2-panel-mailbox-setup" data-creaty-col2-tab="mailbox-setup">
+          <i class="fa-solid fa-envelope-circle-check"></i>
+          <span data-creaty-i18n="col2TabMailboxSetup">إعداد البريد</span>
+        </button>
+        <button type="button" class="creaty-col2-tab" role="tab" id="creaty-col2-tab-domain-registry" aria-selected="false" aria-controls="creaty-col2-panel-domain-registry" data-creaty-col2-tab="domain-registry" hidden>
+          <i class="fa-solid fa-globe"></i>
+          <span data-creaty-i18n="col2TabDomainRegistry">إدارة النطاقات</span>
+        </button>
+        <button type="button" class="creaty-col2-tab" role="tab" id="creaty-col2-tab-store" aria-selected="false" aria-controls="creaty-col2-panel-store" data-creaty-col2-tab="store">
+          <i class="fa-solid fa-store"></i>
+          <span>Email Library</span>
+        </button>
+        <button type="button" class="creaty-col2-tab" role="tab" id="creaty-col2-tab-design-library" aria-selected="false" aria-controls="creaty-col2-panel-design-library" data-creaty-col2-tab="design-library">
+          <i class="fa-solid fa-images"></i>
+          <span data-creaty-i18n="col2TabDesignLibrary">مكتبة التصاميم</span>
+        </button>
+        <button type="button" class="creaty-col2-tab" role="tab" id="creaty-col2-tab-dashboard" aria-selected="false" aria-controls="creaty-col2-panel-dashboard" data-creaty-col2-tab="dashboard">
+          <i class="fa-solid fa-table-columns"></i>
+          <span data-creaty-i18n="col2TabDashboard">قائمة الحسابات</span>
+        </button>
+      </div>
+
+      <div class="creaty-col2-panels" id="creaty-col2-panels">
+
+      <!-- Tab 1: Artisan schedule -->
+      <div id="creaty-col2-panel-schedule" class="creaty-col2-panel creaty-col2-panel--active" role="tabpanel" aria-labelledby="creaty-col2-tab-schedule">
+
+      <div class="creaty-server-panel creaty-ghost-panel" id="creaty-ghost-panel" aria-live="polite">
+        <div class="creaty-server-panel__status">
+          <span class="creaty-server-dot creaty-server-dot--offline" id="creaty-ghost-dot" aria-hidden="true"></span>
+          <div class="creaty-server-panel__labels">
+            <span class="creaty-server-panel__name" data-creaty-i18n="ghostServerName">Ghost Server</span>
+            <span class="creaty-server-panel__text" id="creaty-ghost-status-text">—</span>
+            <span class="creaty-server-panel__phase" id="creaty-ghost-next-upload" hidden></span>
+          </div>
+        </div>
+        <button type="button" id="creaty-ghost-wake-btn" class="creaty-btn creaty-btn--ghost creaty-btn--compact" title="">
+          <i class="fa-solid fa-power-off"></i> <span data-creaty-i18n="ghostServerStart">تشغيل السيرفر</span>
+        </button>
+      </div>
+
+      <div class="creaty-schedule-controls">
+        <div class="creaty-field">
+          <label for="creaty-schedule-select-mode" data-creaty-i18n="scheduleSelectMode">اختيار الحسابات</label>
+          <select id="creaty-schedule-select-mode" class="creaty-input creaty-select">
+            <option value="single" data-creaty-i18n="scheduleModeSingle">حساب واحد</option>
+            <option value="multi" data-creaty-i18n="scheduleModeMulti">عدة حسابات</option>
+            <option value="all" data-creaty-i18n="scheduleModeAll">الكل (جاهز للجدولة)</option>
+          </select>
+        </div>
+
+        <div class="creaty-field" id="creaty-schedule-single-wrap">
+          <label for="creaty-schedule-account" data-creaty-i18n="scheduleAccount">Account</label>
+          <select id="creaty-schedule-account" class="creaty-input creaty-select">
+            <option value="" data-creaty-i18n="scheduleAccountPlaceholder">— Select activated account —</option>
+          </select>
+        </div>
+
+        <div class="creaty-field creaty-field--multi" id="creaty-schedule-multi-wrap" hidden>
+          <label for="creaty-schedule-accounts-multi" data-creaty-i18n="scheduleAccountsMulti">حسابات متعددة</label>
+          <select id="creaty-schedule-accounts-multi" class="creaty-input creaty-select creaty-select--multi" multiple size="5"></select>
+          <p class="creaty-field-hint" data-creaty-i18n="scheduleMultiHint">Ctrl+Click لاختيار أكثر من حساب</p>
+        </div>
+
+        <div class="creaty-field">
+          <label for="creaty-schedule-account-count" data-creaty-i18n="scheduleAccountCount">عدد الحسابات</label>
+          <input type="number" id="creaty-schedule-account-count" class="creaty-input" min="1" max="50" value="1" title="">
+        </div>
+
+        <div class="creaty-field">
+          <label for="creaty-schedule-niche" data-creaty-i18n="scheduleNiche">Niche / النيش</label>
+          <input type="text" id="creaty-schedule-niche" class="creaty-input" data-creaty-i18n-placeholder="scheduleNichePlaceholder" placeholder="ما المجال الذي تستهدفه؟" maxlength="120">
+        </div>
+
+        <div class="creaty-schedule-row">
+          <div class="creaty-field">
+            <label for="creaty-schedule-start-date" data-creaty-i18n="scheduleStartDate">Start date</label>
+            <input type="date" id="creaty-schedule-start-date" class="creaty-input" dir="ltr">
+          </div>
+          <div class="creaty-field">
+            <label for="creaty-schedule-gap" data-creaty-i18n="scheduleDaysBetween">Days between uploads</label>
+            <input type="number" id="creaty-schedule-gap" class="creaty-input" min="1" max="7" value="2">
+          </div>
+          <div class="creaty-field">
+            <label for="creaty-schedule-designs" data-creaty-i18n="scheduleDesignCount">Design count</label>
+            <input type="number" id="creaty-schedule-designs" class="creaty-input" min="1" max="5" value="5">
+          </div>
+        </div>
+
+        <div class="creaty-actions creaty-actions--row">
+          <button type="button" id="creaty-schedule-start-btn" class="creaty-btn creaty-btn--primary">
+            <i class="fa-solid fa-calendar-check"></i> <span data-creaty-i18n="scheduleStart">Start schedule</span>
+          </button>
+          <button type="button" id="creaty-schedule-pause" class="creaty-btn creaty-btn--ghost" disabled>
+            <i class="fa-solid fa-pause"></i> <span data-creaty-i18n="schedulePause">Pause</span>
+          </button>
+          <button type="button" id="creaty-schedule-resume" class="creaty-btn creaty-btn--ghost" disabled>
+            <i class="fa-solid fa-play"></i> <span data-creaty-i18n="scheduleResume">Resume</span>
+          </button>
+          <button type="button" id="creaty-schedule-reset" class="creaty-btn creaty-btn--danger" disabled>
+            <i class="fa-solid fa-rotate-left"></i> <span data-creaty-i18n="scheduleReset">Reset</span>
+          </button>
+        </div>
+
+        <div class="creaty-schedule-bundle-preview" id="creaty-schedule-bundle-preview" hidden aria-live="polite"></div>
+
+        <label class="creaty-skip-option" for="creaty-schedule-skip-store">
+          <input type="checkbox" id="creaty-schedule-skip-store">
+          <span data-creaty-i18n="scheduleSkipStoreSetup">المتجر جاهز — تخطي التأسيس</span>
+        </label>
+
+        <div class="creaty-actions creaty-actions--row">
+          <button type="button" id="creaty-schedule-skip" class="creaty-btn creaty-btn--ghost" disabled>
+            <i class="fa-solid fa-forward"></i> <span data-creaty-i18n="scheduleSkipDay">Skip day</span>
+          </button>
+          <button type="button" id="creaty-schedule-complete" class="creaty-btn creaty-btn--ghost" disabled>
+            <i class="fa-solid fa-check"></i> <span data-creaty-i18n="scheduleMarkComplete">Mark phase complete</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="creaty-schedule-progress-wrap">
+        <div class="creaty-schedule-progress-meta">
+          <span id="creaty-schedule-day-progress" class="creaty-schedule-progress-label">0/12 days</span>
+          <span id="creaty-schedule-design-progress" class="creaty-schedule-progress-label">0/5 designs</span>
+          <span id="creaty-schedule-status-pill" class="creaty-schedule-pill creaty-schedule-pill--idle" data-creaty-i18n="scheduleNotStarted">Not started</span>
+        </div>
+        <div class="creaty-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+          <div id="creaty-schedule-progress-fill" class="creaty-progress-bar__fill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <p class="creaty-ghost-note" id="creaty-ghost-automation-note">
+        <i class="fa-solid fa-robot"></i>
+        <span id="creaty-ghost-automation-text" data-creaty-i18n="scheduleGhostIdle">الأتمتة عبر Ghost Server (3019) — جاهزة</span>
+      </p>
+
+      <details class="creaty-golden-rules">
+        <summary data-creaty-i18n="scheduleGoldenRules">Golden rules</summary>
+        <ul class="creaty-golden-rules__list">
+          <li data-creaty-i18n="ruleOriginality">Originality — no free stock abuse</li>
+          <li data-creaty-i18n="ruleTags">No tag spamming</li>
+          <li data-creaty-i18n="ruleCopyright">Copyright strictness</li>
+          <li data-creaty-i18n="ruleNatural">Natural activity — spaced uploads (not bot-like)</li>
+        </ul>
+      </details>
+
+      <div class="creaty-timeline" id="creaty-timeline" aria-live="polite"></div>
+
+      </div><!-- /creaty-col2-panel-schedule -->
+
+      <!-- Tab: Mailbox setup wizard (EP-301C) -->
+      <div id="creaty-col2-panel-mailbox-setup" class="creaty-col2-panel creaty-col2-panel--mailbox-setup" role="tabpanel" aria-labelledby="creaty-col2-tab-mailbox-setup" hidden>
+        <section class="creaty-mbl-root" aria-label="Mailbox setup journey">
+          <header class="creaty-mbl-head">
+            <div>
+              <h3 class="creaty-mbl-head__title" data-creaty-i18n="mailboxSetupTitle">إعداد البريد — من التسجيل إلى الجاهزية</h3>
+              <p class="creaty-mbl-head__desc" data-creaty-i18n="mailboxSetupDesc">رحلة موحّدة: تسجيل الدخول → اختيار النطاق → إنشاء البريد → التحقق → جاهز.</p>
+            </div>
+            <button type="button" id="creaty-mbl-refresh" class="creaty-btn creaty-btn--ghost creaty-btn--compact" title="تحديث">
+              <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+              <span data-creaty-i18n="refresh">تحديث</span>
+            </button>
+          </header>
+
+          <ol class="creaty-mbl-stepper" id="creaty-mbl-stepper" aria-label="خطوات الإعداد"></ol>
+
+          <div id="creaty-mbl-loading" class="creaty-mbl-loading" role="status" aria-live="polite" hidden></div>
+          <div id="creaty-mbl-status" class="creaty-mbl-status" role="status" aria-live="polite"></div>
+          <div id="creaty-mbl-error" class="creaty-mbl-error" role="alert" aria-live="assertive" hidden></div>
+
+          <div id="creaty-mbl-role-banner" class="creaty-mbl-role-banner" hidden></div>
+
+          <div class="creaty-mbl-panels">
+          <div id="creaty-mbl-panel-login" class="creaty-mbl-panel creaty-mbl-panel--active" data-mbl-step="LOGIN"></div>
+          <div id="creaty-mbl-panel-domain" class="creaty-mbl-panel" data-mbl-step="CHOOSE_DOMAIN" hidden></div>
+          <div id="creaty-mbl-panel-create" class="creaty-mbl-panel" data-mbl-step="CREATE_MAILBOX" hidden></div>
+          <div id="creaty-mbl-panel-validation" class="creaty-mbl-panel" data-mbl-step="VALIDATION" hidden></div>
+          <div id="creaty-mbl-panel-created" class="creaty-mbl-panel" data-mbl-step="MAILBOX_CREATED" hidden></div>
+          <div id="creaty-mbl-panel-connection" class="creaty-mbl-panel" data-mbl-step="CONNECTION_SETTINGS" hidden></div>
+          <div id="creaty-mbl-panel-ready" class="creaty-mbl-panel" data-mbl-step="READY" hidden></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Tab: Domain registry quick access (EP-302C / AR-09) -->
+      <div id="creaty-col2-panel-domain-registry" class="creaty-col2-panel creaty-col2-panel--domain-registry" role="tabpanel" aria-labelledby="creaty-col2-tab-domain-registry" hidden>
+        <section class="creaty-dreg-root" aria-label="Domain registry quick access">
+          <header class="creaty-dreg-head">
+            <div>
+              <h3 class="creaty-dreg-head__title" data-creaty-i18n="domainRegistryQuickTitle">إدارة النطاقات — وصول سريع</h3>
+              <p class="creaty-dreg-head__desc" data-creaty-i18n="domainRegistryQuickDesc">الإدارة الكاملة من لوحة EmailCore Web Admin — Creaty للمعاينة والوصول فقط.</p>
+            </div>
+            <button type="button" id="creaty-dreg-refresh" class="creaty-btn creaty-btn--ghost creaty-btn--compact" title="تحديث">
+              <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+              <span data-creaty-i18n="refresh">تحديث</span>
+            </button>
+          </header>
+
+          <div id="creaty-dreg-loading" class="creaty-dreg-loading" role="status" aria-live="polite" hidden></div>
+          <div id="creaty-dreg-status" class="creaty-dreg-status" role="status" aria-live="polite"></div>
+          <div id="creaty-dreg-error" class="creaty-dreg-error" role="alert" aria-live="assertive" hidden></div>
+          <div id="creaty-dreg-role-banner" class="creaty-dreg-role-banner" hidden></div>
+          <div id="creaty-dreg-content" class="creaty-dreg-content"></div>
+        </section>
+      </div>
+
+      <!-- Tab 2: Store profile generator -->
+      <div id="creaty-col2-panel-store" class="creaty-col2-panel creaty-col2-panel--emailcore" role="tabpanel" aria-labelledby="creaty-col2-tab-store" hidden>
+        <section class="creaty-emailcore" aria-label="EmailCore Email Library">
+          <div class="creaty-emailcore-config creaty-emailcore-config--deprecated">
+            <p class="creaty-store-hint">⚙️ إعدادات الربط بالموقع انتقلت إلى <strong>مركز الإدارة → التكاملات</strong>. سجّل الدخول هناك بنفس حساب الموقع.</p>
+          </div>
+          <p id="creaty-emailcore-status" class="creaty-store-hint" aria-live="polite">أدخل بيانات EmailCore ثم اختبر الاتصال.</p>
+          <div class="creaty-emailcore-create">
+            <div class="creaty-field"><label for="creaty-emailcore-count">توليد عادي</label><input id="creaty-emailcore-count" class="creaty-input" type="number" min="1" max="50" value="1"></div>
+            <button id="creaty-emailcore-generate" class="creaty-btn creaty-btn--primary" type="button">توليد حسابات</button>
+            <div class="creaty-field"><label for="creaty-emailcore-custom">بريد مخصص ثابت</label><input id="creaty-emailcore-custom" class="creaty-input" dir="ltr" placeholder="name@emailcore.app"></div>
+             <button id="creaty-emailcore-create-custom" class="creaty-btn creaty-btn--ghost" type="button">إنشاء المخصص</button>
+             <button id="creaty-emailcore-add-all-creaty" class="creaty-btn creaty-btn--primary" type="button" style="background: linear-gradient(135deg, var(--primary), #4f46e5); color:#fff; border:0; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:700; font-size:11px; margin-inline-start:4px;">إضافة الكل كـ CREATY</button>
+          </div>
+          <div class="creaty-emailcore-grid">
+            <section><h3>قائمة الإيميلات</h3><div class="creaty-emailcore-scroll"><table><thead><tr><th>البريد</th><th>الرسائل</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody id="creaty-emailcore-sessions"></tbody></table></div></section>
+            <section>
+              <div class="creaty-emailcore-messages-head">
+                <h3>الرسائل الجديدة</h3>
+                <div class="creaty-emailcore-messages-tools">
+                  <select id="creaty-emailcore-category" class="creaty-input" aria-label="تصفية التصنيف">
+                    <option value="all">الكل</option>
+                    <option value="Activation">Activation</option>
+                    <option value="Security">Security</option>
+                    <option value="Sales">Sales</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  <button id="creaty-emailcore-compose-open" class="creaty-btn creaty-btn--primary creaty-btn--compact" type="button">رسالة جديدة</button>
+                </div>
+              </div>
+              <div id="creaty-emailcore-messages" class="creaty-emailcore-messages"></div>
+            </section>
+          </div>
+        </section>
+
+        <dialog id="creaty-emailcore-compose-dialog" class="creaty-emailcore-compose-dialog" dir="rtl">
+          <form id="creaty-emailcore-compose-form" class="creaty-emailcore-compose-form">
+            <header class="creaty-emailcore-compose-head">
+              <strong id="creaty-emailcore-compose-title">إرسال بريد</strong>
+              <button type="button" id="creaty-emailcore-compose-close" class="creaty-btn creaty-btn--ghost creaty-btn--compact">إغلاق</button>
+            </header>
+            <div class="creaty-field">
+              <label for="creaty-emailcore-compose-from">من</label>
+              <select id="creaty-emailcore-compose-from" class="creaty-input" dir="ltr" required></select>
+            </div>
+            <div class="creaty-field">
+              <label for="creaty-emailcore-compose-to">إلى</label>
+              <input id="creaty-emailcore-compose-to" class="creaty-input" dir="ltr" type="text" required placeholder="target@example.com">
+            </div>
+            <div class="creaty-field">
+              <label for="creaty-emailcore-compose-subject">الموضوع</label>
+              <input id="creaty-emailcore-compose-subject" class="creaty-input" type="text" required>
+            </div>
+            <div class="creaty-field">
+              <label for="creaty-emailcore-compose-body">الرسالة</label>
+              <textarea id="creaty-emailcore-compose-body" class="creaty-input creaty-textarea" rows="8" required></textarea>
+            </div>
+            <div class="creaty-emailcore-compose-actions">
+              <button type="submit" id="creaty-emailcore-compose-send" class="creaty-btn creaty-btn--primary">إرسال</button>
+            </div>
+          </form>
+        </dialog>
+      </div><!-- /creaty-col2-panel-store -->
+
+      <dialog id="creaty-store-card-dialog" class="creaty-store-card-dialog" dir="rtl">
+        <div class="creaty-store-card-head"><strong>توليد المتجر</strong><button id="creaty-store-card-close" class="creaty-btn creaty-btn--ghost" type="button">إغلاق</button></div>
+
+        <div class="creaty-store-gen">
+          <div class="creaty-field">
+            <label for="creaty-store-account" data-creaty-i18n="storeAccount">الحساب</label>
+            <select id="creaty-store-account" class="creaty-input creaty-select">
+              <option value="" data-creaty-i18n="scheduleAccountPlaceholder">— اختر حساباً مفعّلاً —</option>
+            </select>
+          </div>
+
+          <div class="creaty-field">
+            <label for="creaty-store-niche" data-creaty-i18n="storeNiche">النيش / Niche</label>
+            <input type="text" id="creaty-store-niche" class="creaty-input" data-creaty-i18n-placeholder="storeNicheAutoPlaceholder" placeholder="يُختار تلقائياً إن تُرك فارغاً" maxlength="120">
+          </div>
+
+          <div class="creaty-actions creaty-actions--row">
+            <button type="button" id="creaty-store-generate-btn" class="creaty-btn creaty-btn--primary">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span data-creaty-i18n="storeGenerate">توليد بالذكاء</span>
+            </button>
+            <button type="button" id="creaty-store-generate-images-btn" class="creaty-btn creaty-btn--ghost" disabled>
+              <i class="fa-solid fa-image"></i>
+              <span data-creaty-i18n="storeGenerateImages">توليد الصور</span>
+            </button>
+            <button type="button" id="creaty-store-save-btn" class="creaty-btn creaty-btn--ghost" disabled>
+              <i class="fa-solid fa-floppy-disk"></i>
+              <span data-creaty-i18n="storeSave">حفظ للحساب</span>
+            </button>
+            <button type="button" id="creaty-store-apply-live-btn" class="creaty-btn creaty-btn--ghost" disabled>
+              <i class="fa-solid fa-robot"></i>
+              <span data-creaty-i18n="storeApplyLive">تطبيق مباشر</span>
+            </button>
+          </div>
+
+          <div class="creaty-store-output" id="creaty-store-output" hidden>
+            <div class="creaty-field">
+              <label for="creaty-store-title" data-creaty-i18n="storeTitle">عنوان المتجر</label>
+              <input type="text" id="creaty-store-title" class="creaty-input" maxlength="120" dir="auto">
+            </div>
+            <div class="creaty-field">
+              <label for="creaty-store-bio" data-creaty-i18n="storeBio">نبذة المتجر</label>
+              <textarea id="creaty-store-bio" class="creaty-input creaty-textarea" rows="4" dir="auto"></textarea>
+            </div>
+
+            <fieldset class="creaty-store-links">
+              <legend data-creaty-i18n="storeLinks">روابط التواصل (وهمية)</legend>
+              <div class="creaty-field">
+                <label for="creaty-store-link-ig">Instagram</label>
+                <input type="url" id="creaty-store-link-ig" class="creaty-input" dir="ltr" placeholder="https://instagram.com/...">
+              </div>
+              <div class="creaty-field">
+                <label for="creaty-store-link-tw">Twitter / X</label>
+                <input type="url" id="creaty-store-link-tw" class="creaty-input" dir="ltr" placeholder="https://x.com/...">
+              </div>
+              <div class="creaty-field">
+                <label for="creaty-store-link-fb">Facebook</label>
+                <input type="url" id="creaty-store-link-fb" class="creaty-input" dir="ltr" placeholder="https://facebook.com/...">
+              </div>
+              <div class="creaty-field">
+                <label for="creaty-store-link-pin">Pinterest</label>
+                <input type="url" id="creaty-store-link-pin" class="creaty-input" dir="ltr" placeholder="https://pinterest.com/...">
+              </div>
+            </fieldset>
+
+            <fieldset class="creaty-store-images">
+              <legend data-creaty-i18n="storeImages">الصور</legend>
+              <div class="creaty-field">
+                <label for="creaty-store-avatar-prompt" data-creaty-i18n="storeAvatarPrompt">موجه صورة المتجر (Avatar)</label>
+                <textarea id="creaty-store-avatar-prompt" class="creaty-input creaty-textarea" rows="2" dir="auto"></textarea>
+              </div>
+              <div class="creaty-field">
+                <label for="creaty-store-cover-prompt" data-creaty-i18n="storeCoverPrompt">موجه الغلاف (Cover)</label>
+                <textarea id="creaty-store-cover-prompt" class="creaty-input creaty-textarea" rows="2" dir="auto"></textarea>
+              </div>
+              <div class="creaty-store-upload-row">
+                <div class="creaty-field">
+                  <label for="creaty-store-avatar-file" data-creaty-i18n="storeAvatarUpload">رفع Avatar</label>
+                  <span class="creaty-store-dim" id="creaty-store-avatar-dim" data-creaty-i18n="storeAvatarDim">500×500 — TeePublic avatar</span>
+                  <input type="file" id="creaty-store-avatar-file" accept="image/png,image/jpeg,image/webp" class="creaty-file-input">
+                  <div class="creaty-store-preview" id="creaty-store-avatar-preview"></div>
+                </div>
+                <div class="creaty-field">
+                  <label for="creaty-store-cover-file" data-creaty-i18n="storeCoverUpload">رفع Cover</label>
+                  <span class="creaty-store-dim" id="creaty-store-cover-dim" data-creaty-i18n="storeCoverDim">1920×480 — TeePublic banner</span>
+                  <input type="file" id="creaty-store-cover-file" accept="image/png,image/jpeg,image/webp" class="creaty-file-input">
+                  <div class="creaty-store-preview creaty-store-preview--wide" id="creaty-store-cover-preview"></div>
+                </div>
+              </div>
+              <div id="creaty-store-binary-tabs-root" class="creaty-store-binary-root"></div>
+            </fieldset>
+          </div>
+
+          <p class="creaty-store-hint" id="creaty-store-status" data-creaty-i18n="storeHint">اختر حساباً ونيشاً ثم اضغط «توليد بالذكاء» (CLIProxyAPI)</p>
+        </div>
+
+      </dialog>
+
+      <!-- Tab 3: Design Library -->
+      <div id="creaty-col2-panel-design-library" class="creaty-col2-panel creaty-col2-panel--design-library" role="tabpanel" aria-labelledby="creaty-col2-tab-design-library" hidden>
+        <div id="creaty-design-library" class="creaty-dlib-root" aria-live="polite">
+          <div class="creaty-dlib-loading" data-creaty-i18n="dlLoading">جاري تحميل مكتبة التصاميم…</div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Supervision dashboard -->
+      <div id="creaty-col2-panel-dashboard" class="creaty-col2-panel creaty-col2-panel--dashboard" role="tabpanel" aria-labelledby="creaty-col2-tab-dashboard" hidden>
+        <style>
+            .ap-accounts-tabs-header {
+                display: flex;
+                gap: 0.375rem;
+                margin-bottom: 0.5rem;
+                align-items: center;
+                width: 100%;
+            }
+            .ap-tab-pill {
+                flex: 1;
+                padding: 0.375rem 0.5rem;
+                font-size: 0.6875rem;
+                font-weight: 700;
+                border-radius: 0.375rem;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.15s ease;
+                background: rgba(15, 12, 35, 0.45);
+                border: 1px solid rgba(148, 163, 184, 0.15);
+                color: #94a3b8;
+            }
+            .ap-tab-pill:hover {
+                background: rgba(255, 255, 255, 0.05);
+                color: #e2e8f0;
+            }
+            .ap-tab-pill.is-active.ap-tab-pill-creaty {
+                background: rgba(168, 85, 247, 0.15);
+                border-color: rgba(168, 85, 247, 0.4);
+                color: #d8b4fe;
+            }
+            .ap-tab-pill.is-active.ap-tab-pill-normal {
+                background: rgba(99, 102, 241, 0.15);
+                border-color: rgba(99, 102, 241, 0.4);
+                color: #c7d2fe;
+            }
+            .ap-tab-pill .badge {
+                padding: 0.125rem 0.3125rem;
+                font-size: 0.5625rem;
+                border-radius: 0.25rem;
+                margin-inline-start: 0.25rem;
+            }
+            .ap-tab-pill-creaty .badge {
+                background: rgba(168, 85, 247, 0.25);
+                color: #e9d5ff;
+            }
+            .ap-tab-pill-normal .badge {
+                background: rgba(99, 102, 241, 0.25);
+                color: #c7d2fe;
+            }
+        </style>
+
+        <!-- Sub-tabs for CREATY Dashboard -->
+        <div class="ap-accounts-tabs-header mb-2">
+            <button type="button" id="creaty-tab-creaty-btn" class="ap-tab-pill ap-tab-pill-creaty is-active">
+                CREATY <span id="creaty-dash-creaty-count" class="badge">0</span>
+            </button>
+            <button type="button" id="creaty-tab-normal-btn" class="ap-tab-pill ap-tab-pill-normal">
+                Normal <span id="creaty-dash-normal-count" class="badge">0</span>
+            </button>
+            <input type="text" id="creaty-accounts-search" class="creaty-input" placeholder="🔍 بحث في الحسابات..." style="max-width: 180px; margin-inline-start: auto; padding: 4px 8px; font-size: 11px; margin-bottom: 0;">
+        </div>
+
+        <div class="creaty-dash-toolbar">
+          <div class="creaty-filter-pills" id="creaty-dash-filters" role="group" aria-label="Stage filters">
+            <button type="button" class="creaty-filter-pill is-active" data-filter="all" data-creaty-i18n="dashFilterAll">الكل</button>
+            <button type="button" class="creaty-filter-pill" data-filter="pending" data-creaty-i18n="dashFilterPending">Pending</button>
+            <button type="button" class="creaty-filter-pill" data-filter="artisan" data-creaty-i18n="dashFilterArtisan">artisan</button>
+            <button type="button" class="creaty-filter-pill" data-filter="apprentice" data-creaty-i18n="dashFilterApprentice">apprentice</button>
+            <button type="button" class="creaty-filter-pill" data-filter="design" data-creaty-i18n="dashFilterDesign">Designs</button>
+            <button type="button" class="creaty-filter-pill" data-filter="active" data-creaty-i18n="dashFilterActive">active</button>
+            <button type="button" class="creaty-filter-pill" data-filter="done" data-creaty-i18n="dashFilterDone">Done</button>
+          </div>
+          <div class="creaty-dash-count">
+            <strong id="creaty-dash-count-num">0</strong>
+            <span data-creaty-i18n="dashAccounts">حساب</span>
+            <button type="button" class="creaty-icon-btn" id="creaty-dash-refresh" data-creaty-i18n-title="dashRefresh" title="تحديث">
+              <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="creaty-imported-bulkbar" id="creaty-dash-bulkbar">
+          <button type="button" class="creaty-filter-pill" id="creaty-dash-select-all">
+            <i class="fa-solid fa-check-double"></i>
+            <span data-creaty-i18n="importedSelectAll">تحديد الكل</span>
+          </button>
+          <button type="button" class="creaty-filter-pill" id="creaty-dash-clear-selection">
+            <i class="fa-solid fa-xmark"></i>
+            <span data-creaty-i18n="importedClearSelection">إلغاء التحديد</span>
+          </button>
+          <span class="creaty-imported-selected-count" id="creaty-dash-selected-count">محدد: 0</span>
+          <button type="button" class="creaty-filter-pill" id="creaty-dash-signup-selected">
+            <i class="fa-solid fa-play"></i>
+            <span data-creaty-i18n="importedBulkSignupSelected">تسجيل المحدد</span>
+          </button>
+          <button type="button" class="creaty-filter-pill" id="creaty-dash-delete-selected">
+            <i class="fa-solid fa-trash"></i>
+            <span data-creaty-i18n="importedBulkDeleteSelected">حذف المحدد</span>
+          </button>
+          <button type="button" class="creaty-filter-pill" id="creaty-dash-store-selected">
+            <i class="fa-solid fa-store"></i>
+            <span data-creaty-i18n="importedBulkStoreSelected">تطبيق متجر المحدد</span>
+          </button>
+          <button type="button" class="creaty-filter-pill" id="creaty-dash-signup-all">
+            <i class="fa-solid fa-layer-group"></i>
+            <span data-creaty-i18n="importedBulkSignupAll">تسجيل الكل</span>
+          </button>
+          <button type="button" class="creaty-filter-pill" id="creaty-dash-delete-all">
+            <i class="fa-solid fa-trash-can"></i>
+            <span data-creaty-i18n="importedBulkDeleteAll">حذف الكل</span>
+          </button>
+          <button type="button" class="creaty-filter-pill" id="creaty-dash-store-all">
+            <i class="fa-solid fa-shop"></i>
+            <span data-creaty-i18n="importedBulkStoreAll">تطبيق متجر الكل</span>
+          </button>
+        </div>
+
+        <div class="creaty-table-wrap">
+          <table class="creaty-dash-table" id="creaty-dash-table">
+            <thead>
+              <tr>
+                <th class="creaty-imported-head creaty-imported-head--select" style="width: 40px; text-align: center; vertical-align: middle;">
+                  <input type="checkbox" id="creaty-dash-check-visible" class="creaty-imported-checkbox" aria-label="Select visible accounts">
+                </th>
+                <th data-creaty-i18n="dashColEmail">Email</th>
+                <th data-creaty-i18n="dashColStage">Stage</th>
+                <th data-creaty-i18n="dashColActions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="creaty-dash-tbody">
+              <tr class="creaty-empty-row">
+                <td colspan="4" data-creaty-i18n="dashLoading">جاري التحميل…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      </div><!-- /creaty-col2-panels -->
+
+    </section>
+  </div>
+
+  <dialog id="creaty-designs-modal" class="creaty-designs-modal" aria-labelledby="creaty-designs-modal-title">
+    <div class="creaty-designs-modal__panel">
+      <div class="creaty-designs-modal__head">
+        <h3 id="creaty-designs-modal-title" class="creaty-designs-modal__title" data-creaty-i18n="designsModalTitle">كل التصاميم</h3>
+        <button type="button" class="creaty-icon-btn" id="creaty-designs-modal-close" aria-label="Close">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <ul id="creaty-designs-modal-list" class="creaty-designs-modal__list"></ul>
+      <div class="creaty-designs-modal__foot">
+        <button type="button" class="creaty-btn creaty-btn--ghost creaty-btn--compact" id="creaty-designs-modal-less" data-creaty-i18n="designsShowLess">عرض أقل</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="creaty-imported-preview-modal" class="creaty-designs-modal creaty-imported-preview-modal" aria-labelledby="creaty-imported-preview-title">
+    <div class="creaty-designs-modal__panel creaty-imported-preview-modal__panel">
+      <div class="creaty-designs-modal__head">
+        <h3 id="creaty-imported-preview-title" class="creaty-designs-modal__title">Account Preview</h3>
+        <button type="button" class="creaty-icon-btn" id="creaty-imported-preview-close" aria-label="Close">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div id="creaty-imported-preview-body" class="creaty-imported-preview-body"></div>
+      <div class="creaty-designs-modal__foot">
+        <button type="button" class="creaty-btn creaty-btn--ghost creaty-btn--compact" id="creaty-imported-preview-done">Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Floating Card (Moved to correct location at root level) -->
+  <div id="creaty-floating-card" class="creaty-floating-card is-collapsed" aria-live="polite">
+    <button type="button" id="creaty-floating-card-pill" class="creaty-floating-card__pill">
+      <i class="fa-solid fa-briefcase"></i>
+      <span>CREATY</span>
+    </button>
+    <section class="creaty-floating-card__panel" aria-label="Creaty Floating Card">
+      <header class="creaty-floating-card__head">
+        <div class="creaty-floating-card__title">
+          <i class="fa-solid fa-briefcase"></i>
+          <span>حقيبة CREATY</span>
+        </div>
+        <div class="creaty-floating-card__controls">
+          <button type="button" id="creaty-floating-card-minimize" class="creaty-floating-card__icon" title="تصغير">
+            <i class="fa-solid fa-minus"></i>
+          </button>
+        </div>
+      </header>
+
+      <div class="creaty-floating-card__body">
+        <div class="creaty-floating-card__field">
+          <label for="creaty-floating-card-account">الحساب</label>
+          <select id="creaty-floating-card-account" class="creaty-input creaty-select"></select>
+        </div>
+
+        <div class="creaty-floating-card__meta">
+          <div class="creaty-floating-card__meta-row">
+            <span>البريد</span>
+            <strong id="creaty-floating-card-email">—</strong>
+          </div>
+          <div class="creaty-floating-card__meta-row">
+            <span>الاسم</span>
+            <strong id="creaty-floating-card-name">—</strong>
+          </div>
+          <div class="creaty-floating-card__meta-row">
+            <span>المتجر</span>
+            <strong id="creaty-floating-card-title">—</strong>
+          </div>
+          <div class="creaty-floating-card__meta-row">
+            <span>النيش</span>
+            <strong id="creaty-floating-card-niche">—</strong>
+          </div>
+        </div>
+
+        <div class="creaty-floating-card__bio" id="creaty-floating-card-bio">لا توجد بيانات متجر بعد.</div>
+
+        <div class="creaty-floating-card__images">
+          <div class="creaty-floating-card__image">
+            <div class="creaty-floating-card__image-label">Avatar</div>
+            <div class="creaty-floating-card__image-box" id="creaty-floating-card-avatar"></div>
+          </div>
+          <div class="creaty-floating-card__image">
+            <div class="creaty-floating-card__image-label">Cover</div>
+            <div class="creaty-floating-card__image-box creaty-floating-card__image-box--wide" id="creaty-floating-card-cover"></div>
+          </div>
+        </div>
+
+        <div class="creaty-floating-card__actions">
+          <button type="button" id="creaty-floating-card-open-tab" class="creaty-btn creaty-btn--ghost">
+            <i class="fa-solid fa-store"></i>
+            <span>فتح تبويب المتجر</span>
+          </button>
+          <button type="button" id="creaty-floating-card-generate" class="creaty-btn creaty-btn--primary">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span>توليد AI</span>
+          </button>
+          <button type="button" id="creaty-floating-card-save" class="creaty-btn creaty-btn--ghost">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span>حفظ</span>
+          </button>
+        </div>
+
+        <div class="creaty-floating-card__status" id="creaty-floating-card-status">اختر حسابًا لعرض بيانات المتجر.</div>
+      </div>
+    </section>
+  </div>
+</div>

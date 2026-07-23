@@ -1,0 +1,16 @@
+================================================================================
+  OBSOLETE — DO NOT FOLLOW THESE INSTRUCTIONS
+  قديم — لا تتبع هذه التعليمات
+================================================================================
+
+This file is outdated. Production_Build IS your Chrome extension folder.
+
+See instead:
+  LOAD_EXTENSION.txt
+
+The EMAILCORE folder is an alternate copy for EmailCore Lite workflows only.
+Your primary extension is:
+
+  E:\NHP_V30.1_Production_Build\NHP_PLATFORM\02_Chrome_Extension
+
+================================================================================

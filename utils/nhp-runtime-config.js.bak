@@ -1,0 +1,221 @@
+/**
+ * NHP runtime config — Windows vs WSL backend (Chrome on Windows, servers in WSL).
+ * Loaded in service worker (importScripts) and extension UI pages (script tag).
+ */
+(function (global) {
+    'use strict';
+
+    const STORAGE_KEYS = Object.freeze({
+        backendMode: 'nhpBackendMode',
+        localHost: 'nhpLocalHost',
+        projectDir: 'nhpProjectDir',
+        wslDistro: 'nhpWslDistro',
+        proxyBaseUrl: 'nhpProxyBaseUrl'
+    });
+
+    const DEFAULT_WINDOWS_PROJECT_DIR = 'C:\\Users\\maggouri\\Desktop\\NHP_V30.1_Production_Build';
+    const DEFAULT_WSL_PROJECT_DIR = '/mnt/c/Users/maggouri/Desktop/NHP_V30.1_Production_Build';
+    const DEFAULT_WIN_HOST = '127.0.0.1';
+    const DEFAULT_WSL_HOST = 'localhost';
+    const DEFAULT_WIN_CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+    const DEFAULT_WSL_CHROME_PATH = '/mnt/c/Program Files/Google/Chrome/Application/chrome.exe';
+
+    const PORTS = Object.freeze({
+        manager: 3009,
+        ghostTeepublic: 3019,
+        ghostRedbubble: 3021,
+        ghostAmazon: 3022,
+        pinterest: 3023,
+        aiBridge: 3031,
+        cliproxy: 8317,
+        chromeDebug: 9331
+    });
+
+    let cache = null;
+
+    function normalizeBackendMode(value) {
+        return String(value || '').toLowerCase() === 'wsl' ? 'wsl' : 'windows';
+    }
+
+    function stripHost(value) {
+        return String(value || '')
+            .trim()
+            .replace(/^https?:\/\//i, '')
+            .split('/')[0]
+            .split(':')[0];
+    }
+
+    function normalizeHost(value, backendMode) {
+        const host = stripHost(value);
+        if (host) return host;
+        return backendMode === 'wsl' ? DEFAULT_WSL_HOST : DEFAULT_WIN_HOST;
+    }
+
+    function defaultProjectDir(backendMode) {
+        return backendMode === 'wsl' ? DEFAULT_WSL_PROJECT_DIR : DEFAULT_WINDOWS_PROJECT_DIR;
+    }
+
+    function defaultChromePath(backendMode) {
+        return backendMode === 'wsl' ? DEFAULT_WSL_CHROME_PATH : DEFAULT_WIN_CHROME_PATH;
+    }
+
+    function getCached() {
+        if (!cache) {
+            cache = {
+                backendMode: 'windows',
+                localHost: DEFAULT_WIN_HOST,
+                projectDir: DEFAULT_WINDOWS_PROJECT_DIR,
+                wslDistro: '',
+                proxyBaseUrl: localUrl(PORTS.cliproxy, '/v1', DEFAULT_WIN_HOST)
+            };
+        }
+        return cache;
+    }
+
+    function localUrl(port, path, hostOverride) {
+        const host = hostOverride || getCached().localHost;
+        const portNum = Number(port) || 0;
+        const pathStr = path
+            ? (String(path).startsWith('/') ? String(path) : `/${path}`)
+            : '';
+        return `http://${host}:${portNum}${pathStr}`;
+    }
+
+    function defaultProxyBaseUrl(hostOverride) {
+        return localUrl(PORTS.cliproxy, '/v1', hostOverride);
+    }
+
+    function joinPath(...parts) {
+        const cfg = getCached();
+        const sep = cfg.backendMode === 'windows' ? '\\' : '/';
+        return parts
+            .filter((p) => p !== undefined && p !== null && String(p).length > 0)
+            .map((p) => String(p).replace(/[/\\]+$/, '').replace(/^[/\\]+/, ''))
+            .join(sep);
+    }
+
+    function windowsPathToWsl(winPath) {
+        const normalized = String(winPath || '').replace(/\//g, '\\');
+        const match = /^([A-Za-z]):\\(.*)$/.exec(normalized);
+        if (!match) return String(winPath || '').replace(/\\/g, '/');
+        return `/mnt/${match[1].toLowerCase()}/${match[2].replace(/\\/g, '/')}`;
+    }
+
+    function applyHostToStoredUrl(url, hostOverride) {
+        const raw = String(url || '').trim();
+        if (!raw) return raw;
+        const host = stripHost(hostOverride || getCached().localHost);
+        try {
+            const parsed = new URL(raw.includes('://') ? raw : `http://${raw}`);
+            parsed.hostname = host;
+            return parsed.toString().replace(/\/+$/, '');
+        } catch (_) {
+            return raw.replace(/127\.0\.0\.1|localhost/gi, host);
+        }
+    }
+
+    function setCacheFromStorage(data) {
+        const payload = data && typeof data === 'object' ? data : {};
+        const backendMode = normalizeBackendMode(payload[STORAGE_KEYS.backendMode]);
+        const localHost = normalizeHost(payload[STORAGE_KEYS.localHost], backendMode);
+        const projectDir = String(payload[STORAGE_KEYS.projectDir] || '').trim() || defaultProjectDir(backendMode);
+        const wslDistro = String(payload[STORAGE_KEYS.wslDistro] || '').trim();
+        const proxyBaseUrl = String(payload[STORAGE_KEYS.proxyBaseUrl] || '').trim() || defaultProxyBaseUrl(localHost);
+        cache = { backendMode, localHost, projectDir, wslDistro, proxyBaseUrl };
+        return cache;
+    }
+
+    function loadFromStorage() {
+        if (typeof chrome === 'undefined' || !chrome.storage?.local) {
+            return Promise.resolve(setCacheFromStorage({}));
+        }
+        return new Promise((resolve) => {
+            chrome.storage.local.get(Object.values(STORAGE_KEYS), (res) => {
+                if (chrome.runtime?.lastError) resolve(setCacheFromStorage({}));
+                else resolve(setCacheFromStorage(res || {}));
+            });
+        });
+    }
+
+    function saveToStorage(partial) {
+        const patch = partial && typeof partial === 'object' ? partial : {};
+        const next = setCacheFromStorage({
+            [STORAGE_KEYS.backendMode]: patch.backendMode ?? getCached().backendMode,
+            [STORAGE_KEYS.localHost]: patch.localHost ?? getCached().localHost,
+            [STORAGE_KEYS.projectDir]: patch.projectDir ?? getCached().projectDir,
+            [STORAGE_KEYS.wslDistro]: patch.wslDistro ?? getCached().wslDistro,
+            [STORAGE_KEYS.proxyBaseUrl]: patch.proxyBaseUrl ?? getCached().proxyBaseUrl
+        });
+        const toSave = {
+            [STORAGE_KEYS.backendMode]: next.backendMode,
+            [STORAGE_KEYS.localHost]: next.localHost,
+            [STORAGE_KEYS.projectDir]: next.projectDir,
+            [STORAGE_KEYS.wslDistro]: next.wslDistro,
+            [STORAGE_KEYS.proxyBaseUrl]: next.proxyBaseUrl
+        };
+        if (typeof chrome === 'undefined' || !chrome.storage?.local) {
+            return Promise.resolve(next);
+        }
+        return new Promise((resolve) => {
+            chrome.storage.local.set(toSave, () => resolve(next));
+        });
+    }
+
+    function wrapCommandForBackend(command, options) {
+        const cfg = getCached();
+        if (cfg.backendMode !== 'wsl') return String(command || '');
+        const opts = options && typeof options === 'object' ? options : {};
+        const distro = String(opts.wslDistro || cfg.wslDistro || '').trim();
+        const distroFlag = distro ? `-d ${distro} ` : '';
+        const proj = String(opts.projectDir || cfg.projectDir || defaultProjectDir('wsl')).replace(/"/g, '\\"');
+        const inner = String(command || '').replace(/'/g, `'\\''`);
+        return `wsl.exe ${distroFlag}--cd "${proj}" bash -lc '${inner}'`;
+    }
+
+    function buildWslNodeServerStart(port, scriptName) {
+        const cfg = getCached();
+        const logFile = joinPath(cfg.projectDir, 'server_logs', `${scriptName}-${port}.log`);
+        return `mkdir -p server_logs && NHP_GHOST_PORT=${port} nohup node ${scriptName} >> "${logFile}" 2>&1 &`;
+    }
+
+    function isCliProxyLocalBaseUrl(baseUrl) {
+        const value = String(baseUrl || '').toLowerCase();
+        return /:(8317)(\/|$)/.test(value) && /127\.0\.0\.1|localhost/.test(value);
+    }
+
+    function migrateProxyBaseUrlForHost(storedBaseUrl) {
+        const raw = String(storedBaseUrl || '').trim();
+        if (!raw || !isCliProxyLocalBaseUrl(raw)) return raw || getCached().proxyBaseUrl;
+        return applyHostToStoredUrl(raw.endsWith('/v1') ? raw : `${raw.replace(/\/+$/, '')}/v1`);
+    }
+
+    const api = {
+        STORAGE_KEYS,
+        PORTS,
+        DEFAULT_WINDOWS_PROJECT_DIR,
+        DEFAULT_WSL_PROJECT_DIR,
+        DEFAULT_WSL_HOST,
+        DEFAULT_WIN_HOST,
+        DEFAULT_WIN_CHROME_PATH,
+        DEFAULT_WSL_CHROME_PATH,
+        loadFromStorage,
+        saveToStorage,
+        getCached,
+        setCacheFromStorage,
+        localUrl,
+        defaultProxyBaseUrl,
+        joinPath,
+        windowsPathToWsl,
+        applyHostToStoredUrl,
+        wrapCommandForBackend,
+        buildWslNodeServerStart,
+        normalizeBackendMode,
+        normalizeHost,
+        defaultProjectDir,
+        defaultChromePath,
+        isCliProxyLocalBaseUrl,
+        migrateProxyBaseUrlForHost
+    };
+
+    global.NhpRuntimeConfig = api;
+})(typeof globalThis !== 'undefined' ? globalThis : self);

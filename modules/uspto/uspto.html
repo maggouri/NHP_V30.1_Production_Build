@@ -1,0 +1,129 @@
+<link rel="stylesheet" href="modules/uspto/uspto.css">
+<div class="uspto-module-root">
+    <!-- Mesh Container -->
+    <div class="mesh-container">
+        <div class="mesh-ball ball-1"></div>
+        <div class="mesh-ball ball-2"></div>
+    </div>
+
+    <!-- Luxury Layout -->
+    <div class="uspto-layout">
+
+        <!-- Left Side: Controls & Stats -->
+        <div class="glass-panel">
+            <div class="luxury-title">
+                <i class="fa-solid fa-trademark" style="color: var(--uspto-primary);"></i>
+                فحص العلامات التجارية (USPTO)
+            </div>
+            <p id="u-emailcore-sync" style="font-size:0.65rem;color:#94a3b8;margin:0.25rem 0 0.85rem;">مزامنة EmailCore: —</p>
+
+            <div class="luxury-stats-grid">
+                <div class="lux-stat-card"><span class="lux-stat-value" id="u-total">0</span><span
+                        class="lux-stat-label">الإجمالي</span></div>
+                <div class="lux-stat-card stat-safe"><span class="lux-stat-value" id="u-safe"
+                        style="color: var(--uspto-safe);">0</span><span class="lux-stat-label">آمن</span></div>
+                <div class="lux-stat-card stat-banned"><span class="lux-stat-value" id="u-banned"
+                        style="color: var(--uspto-banned);">0</span><span class="lux-stat-label">محظور</span></div>
+                <div class="lux-stat-card stat-pend"><span class="lux-stat-value" id="u-pend"
+                        style="color: var(--uspto-secondary);">0</span><span class="lux-stat-label">متبقي</span></div>
+            </div>
+
+            <div class="luxury-status-bar">
+                <div class="lux-status-dot" id="u-statusDot"></div>
+                <span id="u-statusText" style="font-size: 0.6875rem; font-weight: 700;">في انتظار بدء الفحص...</span>
+                <span id="u-currentBadge" class="hidden"
+                    style="margin-right: auto; background: var(--uspto-primary); color: #fff; padding: 0.125rem 0.5rem; border-radius: 1.25rem; font-size: 0.5625rem; font-weight: 800;"></span>
+            </div>
+
+            <div class="luxury-progress-wrap">
+                <div class="lux-progress-header"><span>التقدم</span><b id="u-pct">0%</b></div>
+                <div class="lux-progress-bg">
+                    <div class="lux-progress-fill" id="u-bar"></div>
+                </div>
+            </div>
+
+            <div id="u-alert" class="alert"></div>
+
+            <div class="luxury-title" style="font-size: 0.875rem; margin-bottom: 0.625rem;">
+                <i class="fa-solid fa-list-ul" style="color: var(--uspto-secondary);"></i>
+                قائمة النيتشات
+            </div>
+            <textarea id="u-niches" class="luxury-input luxury-scroll" placeholder="أدخل كل نيتش في سطر..."
+                style="height: 5.375rem; margin-bottom: 0.625rem; resize: none;"></textarea>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                <span style="font-size: 0.6875rem; font-weight: 700; color: var(--uspto-text-dim);">إجمالي: <b
+                        id="u-inputCount" style="color: #fff;">0</b></span>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button id="u-formatBtn" class="luxury-btn btn-secondary"
+                        style="padding: 0.375rem 0.75rem; font-size: 0.625rem;"><i class="fa-solid fa-wand-magic-sparkles"></i>
+                        تنظيم</button>
+                    <button id="u-clearBtn" class="luxury-btn btn-secondary"
+                        style="padding: 0.375rem 0.75rem; font-size: 0.625rem;"><i class="fa-solid fa-trash-can"></i> مسح</button>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 0.625rem;">
+                <button id="u-startBtn" class="luxury-btn btn-primary" style="flex: 1;">🚀 بدء الفحص</button>
+                <button id="u-stopBtn" class="luxury-btn btn-secondary hidden" style="flex: 1;">⏸ إيقاف</button>
+                <button id="u-transferBtn" class="luxury-btn btn-primary hidden"
+                    style="flex: 1; background: var(--uspto-safe);">⏩ نقل</button>
+            </div>
+
+            <div style="display: flex; gap: 0.625rem; margin-top: 0.625rem;">
+                <button id="u-previewBtn" class="luxury-btn btn-secondary" style="flex: 1;" title="المعاينة"><i
+                        class="fa-solid fa-eye"></i></button>
+                <button id="u-resetBtn" class="luxury-btn btn-secondary" style="flex: 1;" title="إعادة تعيين"><i
+                        class="fa-solid fa-rotate-left"></i></button>
+            </div>
+        </div>
+
+        <!-- Right Side: Results -->
+        <div class="glass-panel">
+            <div class="luxury-title">
+                <i class="fa-solid fa-circle-check" style="color: var(--uspto-safe);"></i>
+                النتائج المكتملة
+            </div>
+
+            <div class="u-right-cards">
+                <div class="lux-result-card safe">
+                    <div class="lux-card-header">
+                        <div class="lux-card-title" style="color: var(--uspto-safe);">✅ آمنة <span class="lux-card-count"
+                                id="u-safeCount">0</span></div>
+                        <button id="u-copySafe" class="luxury-btn btn-secondary"
+                            style="padding: 0.25rem 0.5rem; font-size: 0.625rem;"><i class="fa-solid fa-copy"></i></button>
+                    </div>
+                    <div id="u-safeList" class="lux-card-list luxury-scroll">
+                        <div class="empty-msg">لا توجد نتائج</div>
+                    </div>
+                </div>
+
+                <div class="lux-result-card banned">
+                    <div class="lux-card-header">
+                        <div class="lux-card-title" style="color: var(--uspto-banned);">🚫 محظورة <span
+                                class="lux-card-count" id="u-bannedCount">0</span></div>
+                        <button id="u-copyBanned" class="luxury-btn btn-secondary"
+                            style="padding: 0.25rem 0.5rem; font-size: 0.625rem;"><i class="fa-solid fa-copy"></i></button>
+                    </div>
+                    <div id="u-bannedList" class="lux-card-list luxury-scroll">
+                        <div class="empty-msg">لا توجد نتائج</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="luxury-title" style="font-size: 0.875rem; margin-top: 1.25rem; margin-bottom: 0.625rem;">
+                <i class="fa-solid fa-file-export" style="color: var(--uspto-primary);"></i>
+                تصدير البيانات
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                <button id="u-expSafe" class="luxury-btn btn-secondary" style="font-size: 0.625rem;"><i
+                        class="fa-solid fa-download"></i> الآمنة</button>
+                <button id="u-expBanned" class="luxury-btn btn-secondary" style="font-size: 0.625rem;"><i
+                        class="fa-solid fa-download"></i> المحظورة</button>
+            </div>
+            <button id="u-expAll" class="luxury-btn btn-primary w-full" style="margin-top: 0.5rem; font-size: 0.6875rem;"><i
+                    class="fa-solid fa-file-invoice"></i> تصدير التقرير الكامل</button>
+        </div>
+
+    </div>
+</div>

@@ -1,0 +1,754 @@
+/** CREATY supervision dashboard — data merge, render, actions */
+
+export const CREATY_PORT = 3020;
+export const CREATY_SCHEDULE_PREFIX = 'creaty_artisan_schedule_';
+export const CREATY_POLL_MS = 12000;
+
+export const STAGE_KEYS = ['pending', 'creating', 'warming', 'uploading', 'done', 'error'];
+
+const PHASE_TO_STAGE = {
+    PENDING: 'pending',
+    IDLE: 'pending',
+    OPENING: 'creating',
+    FILLING: 'creating',
+    CAPTCHA: 'creating',
+    WAIT_EMAIL: 'creating',
+    ACTIVATING: 'creating',
+    FOUNDATION: 'warming',
+    WARMING: 'warming',
+    WARMUP: 'warming',
+    DESIGN_UPLOAD: 'uploading',
+    UPLOADING: 'uploading',
+    DESIGN: 'uploading',
+    DONE: 'done',
+    FAILED: 'error',
+    ERROR: 'error',
+};
+
+export const I18N = {
+    ar: {
+        'creaty.title': 'NHP EMAILCORE',
+        'creaty.subtitle': 'Creaty Artisan — أتمتة TeePublic',
+        'creaty.col.accounts': 'الحسابات',
+        'creaty.col.artisan': 'جدولة Artisan',
+        'creaty.col.status': 'الحالة السريعة',
+        'creaty.tab.schedule': 'جدولة الرفع',
+        'creaty.tab.store': 'توليد المتجر',
+        'creaty.tab.dashboard': 'لوحة الإشراف',
+        'creaty.filter.all': 'الكل',
+        'creaty.filter.pending': 'قيد الانتظار',
+        'creaty.filter.creating': 'إنشاء حساب',
+        'creaty.filter.warming': 'التسخين',
+        'creaty.filter.uploading': 'الرفع',
+        'creaty.filter.done': 'مكتمل',
+        'creaty.filter.error': 'خطأ',
+        'creaty.dash.accounts': 'حساب',
+        'creaty.col.email': 'البريد',
+        'creaty.col.stage': 'المرحلة',
+        'creaty.col.designs': 'التصاميم المرفوعة',
+        'creaty.col.lastUpload': 'آخر رفع',
+        'creaty.col.remaining': 'المتبقي',
+        'creaty.col.nextScheduled': 'الجدولة التالية',
+        'creaty.col.actions': 'إجراءات',
+        'creaty.dash.loading': 'جاري التحميل…',
+        'creaty.dash.empty': 'لا توجد حسابات للعرض',
+        'creaty.accounts.empty': 'لا توجد حسابات TeePublic',
+        'creaty.schedule.hint': 'اضبط مواعيد الرفع لكل حساب. اختر حساباً من العمود الأول ثم حدّد الجدول.',
+        'creaty.store.hint': 'توليد المتجر والألبومات — يُدار من هذا التبويب.',
+        'creaty.status.hint': 'اختر حساباً لعرض تفاصيله.',
+        'creaty.stage.pending': 'قيد الانتظار',
+        'creaty.stage.creating': 'إنشاء حساب',
+        'creaty.stage.warming': 'التسخين',
+        'creaty.stage.uploading': 'الرفع',
+        'creaty.stage.done': 'مكتمل',
+        'creaty.stage.error': 'خطأ',
+        'creaty.action.play': 'تشغيل / متابعة',
+        'creaty.action.edit': 'تعديل الجدول',
+        'creaty.action.deleteStore': 'حذف توليد المتجر',
+        'creaty.action.delete': 'إعادة ضبط',
+        'creaty.time.never': '—',
+        'creaty.time.now': 'الآن',
+        'creaty.designs.showMore': 'المزيد +{n}',
+        'creaty.designs.showLess': 'عرض أقل',
+        'creaty.designs.modalTitle': 'كل التصاميم',
+        'creaty.dash.stage.foundation': 'إعداد المتجر',
+        'creaty.dash.stage.foundationActions': 'صورة، غلاف، نبذة، روابط اجتماعية، بحث النيش',
+        'creaty.dash.stage.design1': 'رفع تصميم 1',
+        'creaty.dash.stage.design1Actions': '4500×5400، 300dpi، عنوان، وصف، 15 وسم',
+        'creaty.dash.stage.design2': 'رفع تصميم 2',
+        'creaty.dash.stage.design2Actions': 'نفس الجودة، بدون stock أو تكرار',
+        'creaty.dash.stage.design3': 'رفع تصميم 3',
+        'creaty.dash.stage.design3Actions': 'متغيرات داكن/فاتح، وضع يدوي لكل المنتجات',
+        'creaty.dash.stage.design45': 'رفع تصميم 4+5 + مراجعة',
+        'creaty.dash.stage.design45Actions': 'long-tail، مراجعة المتجر، Pinterest',
+        'creaty.dash.stage.start': 'بدء',
+        'creaty.dash.stage.stop': 'إيقاف',
+        'creaty.dash.stage.edit': 'تعديل',
+        'creaty.dash.stage.status.pending': 'معلّق',
+        'creaty.dash.stage.status.running': 'جاري',
+        'creaty.dash.stage.status.done': 'مكتمل',
+        'creaty.dash.stage.status.error': 'خطأ',
+        'creaty.dash.stage.status.stopped': 'متوقف',
+        'creaty.dash.row.expand': 'عرض مراحل الرفع',
+        'creaty.dash.row.collapse': 'إخفاء مراحل الرفع',
+        'creaty.source.creaty': 'Creaty',
+        'creaty.source.imported': 'مستورد',
+        'importedLoginPreview': 'فتح تسجيل الدخول',
+        'importedApplyStore': 'فتح توليد المتجر',
+        'importedDelete': 'حذف الحساب',
+    },
+    en: {
+        'creaty.title': 'NHP EMAILCORE',
+        'creaty.subtitle': 'Creaty Artisan — TeePublic automation',
+        'creaty.col.accounts': 'Accounts',
+        'creaty.col.artisan': 'Artisan schedule',
+        'creaty.col.status': 'Quick status',
+        'creaty.tab.schedule': 'Upload schedule',
+        'creaty.tab.store': 'Store generation',
+        'creaty.tab.dashboard': 'Dashboard',
+        'creaty.filter.all': 'All',
+        'creaty.filter.pending': 'Pending',
+        'creaty.filter.creating': 'Creating account',
+        'creaty.filter.warming': 'Warming',
+        'creaty.filter.uploading': 'Uploading',
+        'creaty.filter.done': 'Done',
+        'creaty.filter.error': 'Error',
+        'creaty.dash.accounts': 'account(s)',
+        'creaty.col.email': 'Email',
+        'creaty.col.stage': 'Stage',
+        'creaty.col.designs': 'Designs uploaded',
+        'creaty.col.lastUpload': 'Last upload',
+        'creaty.col.remaining': 'Remaining',
+        'creaty.col.nextScheduled': 'Next scheduled',
+        'creaty.col.actions': 'Actions',
+        'creaty.dash.loading': 'Loading…',
+        'creaty.dash.empty': 'No accounts to display',
+        'creaty.accounts.empty': 'No TeePublic accounts',
+        'creaty.schedule.hint': 'Set upload times per account. Pick an account in column 1.',
+        'creaty.store.hint': 'Store and album generation — managed in this tab.',
+        'creaty.status.hint': 'Select an account to view details.',
+        'creaty.stage.pending': 'Pending',
+        'creaty.stage.creating': 'Creating account',
+        'creaty.stage.warming': 'Warming',
+        'creaty.stage.uploading': 'Uploading',
+        'creaty.stage.done': 'Done',
+        'creaty.stage.error': 'Error',
+        'creaty.action.play': 'Resume / advance',
+        'creaty.action.edit': 'Edit schedule',
+        'creaty.action.deleteStore': 'Delete store generation',
+        'creaty.action.delete': 'Reset schedule',
+        'creaty.time.never': '—',
+        'creaty.time.now': 'Now',
+        'creaty.designs.showMore': 'More +{n}',
+        'creaty.designs.showLess': 'Show less',
+        'creaty.designs.modalTitle': 'All designs',
+        'creaty.dash.stage.foundation': 'Store setup',
+        'creaty.dash.stage.foundationActions': 'Avatar, cover, bio, social links, niche research',
+        'creaty.dash.stage.design1': 'Upload design 1',
+        'creaty.dash.stage.design1Actions': '4500×5400, 300dpi, title, description, 15 tags',
+        'creaty.dash.stage.design2': 'Upload design 2',
+        'creaty.dash.stage.design2Actions': 'Same quality, no stock or duplicates',
+        'creaty.dash.stage.design3': 'Upload design 3',
+        'creaty.dash.stage.design3Actions': 'Dark/light variants, manual placement',
+        'creaty.dash.stage.design45': 'Upload designs 4+5 + review',
+        'creaty.dash.stage.design45Actions': 'Long-tail, store review, Pinterest',
+        'creaty.dash.stage.start': 'Start',
+        'creaty.dash.stage.stop': 'Stop',
+        'creaty.dash.stage.edit': 'Edit',
+        'creaty.dash.stage.status.pending': 'Pending',
+        'creaty.dash.stage.status.running': 'Running',
+        'creaty.dash.stage.status.done': 'Done',
+        'creaty.dash.stage.status.error': 'Error',
+        'creaty.dash.stage.status.stopped': 'Stopped',
+        'creaty.dash.row.expand': 'Expand upload stages',
+        'creaty.dash.row.collapse': 'Collapse upload stages',
+        'creaty.source.creaty': 'Creaty',
+        'creaty.source.imported': 'Imported',
+        'importedLoginPreview': 'Open Login Preview',
+        'importedApplyStore': 'Open Store Generator',
+        'importedDelete': 'Delete Account',
+    },
+};
+
+/** Collapsed dashboard row shows first design only */
+export const DESIGN_LIST_PREVIEW = 1;
+/** Use modal instead of inline expand when a row has more than this many designs */
+export const DESIGN_LIST_MODAL_THRESHOLD = 8;
+
+/** 5-stage supervision board — mirrors creaty-server-orchestrator WORKFLOW_STAGES */
+export const DASH_UPLOAD_STAGES = [
+    {
+        id: 'foundation',
+        titleKey: 'creaty.dash.stage.foundation',
+        actionsKey: 'creaty.dash.stage.foundationActions',
+        phaseIds: ['foundation'],
+    },
+    {
+        id: 'design1',
+        titleKey: 'creaty.dash.stage.design1',
+        actionsKey: 'creaty.dash.stage.design1Actions',
+        phaseIds: ['design1'],
+    },
+    {
+        id: 'design2',
+        titleKey: 'creaty.dash.stage.design2',
+        actionsKey: 'creaty.dash.stage.design2Actions',
+        phaseIds: ['design2'],
+    },
+    {
+        id: 'design3',
+        titleKey: 'creaty.dash.stage.design3',
+        actionsKey: 'creaty.dash.stage.design3Actions',
+        phaseIds: ['design3'],
+    },
+    {
+        id: 'design45',
+        titleKey: 'creaty.dash.stage.design45',
+        actionsKey: 'creaty.dash.stage.design45Actions',
+        phaseIds: ['design4', 'design5_review'],
+    },
+];
+
+const DASH_COL_COUNT = 4;
+
+export function creatyUrl(path = '') {
+    const p = path ? (String(path).startsWith('/') ? path : `/${path}`) : '';
+    return `http://127.0.0.1:${CREATY_PORT}${p}`;
+}
+
+export function mapPhaseToStage(phase) {
+    const key = String(phase || '').trim().toUpperCase().replace(/\s+/g, '_');
+    if (PHASE_TO_STAGE[key]) return PHASE_TO_STAGE[key];
+    const lower = key.toLowerCase();
+    if (lower.includes('foundation') || lower.includes('warm')) return 'warming';
+    if (lower.includes('upload') || lower.includes('design')) return 'uploading';
+    if (lower.includes('open') || lower.includes('fill') || lower.includes('account')) return 'creating';
+    if (lower.includes('fail') || lower.includes('error')) return 'error';
+    if (lower.includes('done')) return 'done';
+    return 'pending';
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function designLabelFromEntry(entry, index) {
+    if (typeof entry === 'string') return entry.trim();
+    return String(entry?.title || entry?.filename || entry?.name || `Design ${index + 1}`).trim();
+}
+
+export function extractDesignNames(stored, orch) {
+    const sources = [
+        stored?.quintet?.designs,
+        stored?.quintetDesigns,
+        stored?.designs,
+        orch?.quintet?.designs,
+        orch?.quintetDesigns,
+        orch?.designs,
+    ];
+    for (const src of sources) {
+        if (!Array.isArray(src) || !src.length) continue;
+        const names = src.map((d, i) => designLabelFromEntry(d, i)).filter(Boolean);
+        if (names.length) return names;
+    }
+    return [];
+}
+
+export function buildDesignNamesByAccount(scheduleMap, emails) {
+    const map = new Map();
+    emails.forEach((email) => {
+        const key = String(email || '').trim().toLowerCase();
+        if (!key) return;
+        const sk = scheduleStorageKey(email);
+        const stored = scheduleMap[sk] || {};
+        map.set(key, extractDesignNames(stored, {}));
+    });
+    return map;
+}
+
+function formatDesignsShowMore(lang, i18n, hiddenCount) {
+    const tpl = i18n[lang]?.['creaty.designs.showMore'] || 'More +{n}';
+    return tpl.replace('{n}', String(hiddenCount));
+}
+
+export function renderDesignsListHtml(designNames, email, lang, i18n, isExpanded) {
+    if (!Array.isArray(designNames) || !designNames.length) return '';
+    const limit = DESIGN_LIST_PREVIEW;
+    const extraCount = Math.max(0, designNames.length - limit);
+    const useModal = designNames.length > DESIGN_LIST_MODAL_THRESHOLD;
+    const fullTitle = designNames.map((name) => String(name)).join(', ');
+
+    let toggleBtn = '';
+    if (extraCount > 0) {
+        const label = isExpanded && !useModal
+            ? (i18n[lang]?.['creaty.designs.showLess'] || 'Show less')
+            : formatDesignsShowMore(lang, i18n, extraCount);
+        const action = useModal ? 'designs-modal' : 'designs-toggle';
+        const badgeCls = isExpanded && !useModal ? '' : ' creaty-designs-more-badge';
+        toggleBtn = `<button type="button" class="creaty-designs-toggle${badgeCls}" id="creaty-designs-toggle-${escapeHtml(email)}" data-action="${action}" data-email="${escapeHtml(email)}" aria-expanded="${isExpanded ? 'true' : 'false'}" title="${escapeHtml(fullTitle)}">${escapeHtml(label)}</button>`;
+    }
+
+    if (isExpanded && !useModal) {
+        const items = designNames.map((name) => (
+            `<li class="creaty-designs-list__item" dir="ltr" title="${escapeHtml(name)}">${escapeHtml(name)}</li>`
+        )).join('');
+        return `<div class="creaty-designs-list creaty-designs-list--expanded" data-email="${escapeHtml(email)}" title="${escapeHtml(fullTitle)}"><ul class="creaty-designs-list__items">${items}</ul>${toggleBtn}</div>`;
+    }
+
+    const firstName = String(designNames[0]);
+    const firstHtml = `<span class="creaty-designs-first" dir="ltr" title="${escapeHtml(firstName)}">${escapeHtml(firstName)}</span>`;
+    return `<div class="creaty-designs-list" data-email="${escapeHtml(email)}" title="${escapeHtml(fullTitle)}"><div class="creaty-designs-list__row">${firstHtml}${toggleBtn}</div></div>`;
+}
+
+function normalizeEmail(acc) {
+    if (typeof acc === 'string') return acc.trim();
+    return String(acc?.email || acc?.display_email || '').trim();
+}
+
+export function scheduleStorageKey(email) {
+    return `${CREATY_SCHEDULE_PREFIX}${String(email || '').trim().toLowerCase()}`;
+}
+
+export async function fetchCreatyJson(path, options = {}, timeoutMs = 3500) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const res = await fetch(creatyUrl(path), { ...options, signal: controller.signal });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+export async function loadAccountsFromStorage() {
+    return new Promise((resolve) => {
+        chrome.storage.local.get(['ap_accounts_teepublic', 'ap_accounts'], (data) => {
+            const list = Array.isArray(data.ap_accounts_teepublic)
+                ? data.ap_accounts_teepublic
+                : (Array.isArray(data.ap_accounts) ? data.ap_accounts : []);
+            resolve(list);
+        });
+    });
+}
+
+export async function loadScheduleMap(emails) {
+    const keys = emails.map((e) => scheduleStorageKey(e));
+    if (!keys.length) return {};
+    return new Promise((resolve) => {
+        chrome.storage.local.get(keys, (data) => resolve(data || {}));
+    });
+}
+
+export async function fetchServerStatus() {
+    try {
+        const [status, orchestrate] = await Promise.all([
+            fetchCreatyJson('/status'),
+            fetchCreatyJson('/orchestrate/status'),
+        ]);
+        return { online: true, status, orchestrate };
+    } catch (_) {
+        return { online: false, status: null, orchestrate: null };
+    }
+}
+
+export async function syncFromWebsiteIfToken() {
+    return new Promise((resolve) => {
+        chrome.storage.local.get(['creaty_website_api_base', 'creaty_website_token', 'nhp_auth_token'], async (data) => {
+            const base = String(data.creaty_website_api_base || '').replace(/\/$/, '');
+            const token = data.creaty_website_token || data.nhp_auth_token;
+            if (!base || !token) {
+                resolve({ synced: false, reason: 'no-token' });
+                return;
+            }
+            try {
+                const res = await fetch(`${base}/api/schedule-sync`, {
+                    method: 'GET',
+                    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const payload = await res.json();
+                const schedules = Array.isArray(payload?.schedules) ? payload.schedules : (Array.isArray(payload) ? payload : []);
+                const toSet = {};
+                schedules.forEach((row) => {
+                    const email = normalizeEmail(row);
+                    if (!email) return;
+                    toSet[scheduleStorageKey(email)] = { ...row, email, updatedAt: new Date().toISOString() };
+                });
+                if (Object.keys(toSet).length) {
+                    await new Promise((r) => chrome.storage.local.set(toSet, r));
+                }
+                resolve({ synced: true, count: Object.keys(toSet).length });
+            } catch (err) {
+                resolve({ synced: false, reason: err.message });
+            }
+        });
+    });
+}
+
+export function mergeAccountRows(accounts, scheduleMap, serverBundle) {
+    const orchestrateByEmail = new Map();
+    (serverBundle?.orchestrate?.accounts || []).forEach((row) => {
+        const email = normalizeEmail(row);
+        if (email) orchestrateByEmail.set(email.toLowerCase(), row);
+    });
+
+    const liveEmail = String(serverBundle?.status?.email || serverBundle?.orchestrate?.activeEmail || '').toLowerCase();
+    const livePhase = serverBundle?.status?.phase || serverBundle?.orchestrate?.activePhase;
+
+    return accounts.map((acc) => {
+        const email = normalizeEmail(acc);
+        const sk = scheduleStorageKey(email);
+        const stored = scheduleMap[sk] || {};
+        const orch = orchestrateByEmail.get(email.toLowerCase()) || {};
+        const isLive = liveEmail && liveEmail === email.toLowerCase();
+
+        let phase = stored.phase || orch.phase || (isLive ? livePhase : 'PENDING');
+        let stage = stored.stage || mapPhaseToStage(phase);
+        if (stored.stage && STAGE_KEYS.includes(stored.stage)) stage = stored.stage;
+        if (isLive && livePhase) stage = mapPhaseToStage(livePhase);
+
+        const designsTotal = Math.max(1, Number(stored.designsTotal ?? orch.designsTotal) || 5);
+        const designsUploaded = Math.min(
+            designsTotal,
+            Math.max(0, Number(stored.designsUploaded ?? orch.designsUploaded) || 0)
+        );
+        const designNames = extractDesignNames(stored, orch);
+
+        const isImported = !!(acc.emailcoreSource || acc.emailcoreSessionId || acc.sessionId || acc.cookie || acc.imported);
+        const source = acc.source || (isImported ? 'Imported' : 'Creaty');
+
+        return {
+            email,
+            stage,
+            phase: String(phase || '').toUpperCase(),
+            designsUploaded,
+            designsTotal,
+            designNames,
+            phases: Array.isArray(stored.phases) ? stored.phases : (Array.isArray(orch.phases) ? orch.phases : []),
+            storeProfileAppliedAt: stored.storeProfileAppliedAt || orch.storeProfileAppliedAt || null,
+            lastUpload: stored.lastUpload || orch.lastUpload || null,
+            remainingMs: stored.remainingMs ?? orch.remainingMs ?? null,
+            nextScheduled: stored.nextScheduled || orch.nextScheduled || null,
+            message: stored.message || orch.message || (isLive ? serverBundle?.status?.message : '') || '',
+            raw: acc,
+            source,
+        };
+    }).filter((r) => r.email);
+}
+
+export function formatRelativeTime(iso, lang, i18n) {
+    if (!iso) return i18n[lang]['creaty.time.never'];
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return String(iso);
+    const diff = Date.now() - d.getTime();
+    if (diff < 60000) return i18n[lang]['creaty.time.now'];
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return lang === 'ar' ? `منذ ${mins} د` : `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 48) return lang === 'ar' ? `منذ ${hrs} س` : `${hrs}h ago`;
+    return d.toLocaleDateString(lang === 'ar' ? 'ar-MA' : 'en-GB', { month: 'short', day: 'numeric' });
+}
+
+export function formatRemaining(ms, lang) {
+    if (ms == null || Number.isNaN(Number(ms))) return '—';
+    const n = Math.max(0, Number(ms));
+    const hrs = Math.floor(n / 3600000);
+    const mins = Math.floor((n % 3600000) / 60000);
+    if (hrs > 0) return lang === 'ar' ? `${hrs}س ${mins}د` : `${hrs}h ${mins}m`;
+    return lang === 'ar' ? `${mins} د` : `${mins}m`;
+}
+
+export function formatScheduled(iso, lang) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return String(iso);
+    return d.toLocaleString(lang === 'ar' ? 'ar-MA' : 'en-GB', {
+        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+    });
+}
+
+function phaseStatusMap(phases) {
+    const map = new Map();
+    (Array.isArray(phases) ? phases : []).forEach((phase) => {
+        if (phase?.id) map.set(phase.id, String(phase.status || 'pending'));
+    });
+    return map;
+}
+
+export function deriveWorkflowStageStatus(phases, stageDef) {
+    const statusById = phaseStatusMap(phases);
+    const statuses = (stageDef?.phaseIds || []).map((id) => statusById.get(id) || 'pending');
+    if (!statuses.length) return 'pending';
+    if (statuses.some((s) => s === 'failed' || s === 'error')) return 'error';
+    if (statuses.some((s) => s === 'in_progress' || s === 'running')) return 'running';
+    if (statuses.some((s) => s === 'stopped')) return 'stopped';
+    if (statuses.every((s) => s === 'done' || s === 'skipped')) return 'done';
+    return 'pending';
+}
+
+function stageStatusLabel(status, lang, i18n) {
+    const key = `creaty.dash.stage.status.${status}`;
+    return i18n[lang]?.[key] || i18n.en?.[key] || status;
+}
+
+export function renderStagesPanelHtml(row, lang, i18n) {
+    const phases = row.phases || [];
+    const startLabel = i18n[lang]?.['creaty.dash.stage.start'] || 'Start';
+    const stopLabel = i18n[lang]?.['creaty.dash.stage.stop'] || 'Stop';
+    const editLabel = i18n[lang]?.['creaty.dash.stage.edit'] || 'Edit';
+
+    const cards = DASH_UPLOAD_STAGES.map((stageDef, index) => {
+        const status = deriveWorkflowStageStatus(phases, stageDef);
+        const title = i18n[lang]?.[stageDef.titleKey] || stageDef.id;
+        const actions = i18n[lang]?.[stageDef.actionsKey] || '';
+        const statusText = stageStatusLabel(status, lang, i18n);
+        const isLast = index === DASH_UPLOAD_STAGES.length - 1;
+        return `<div class="creaty-stages-stepper__item creaty-stages-stepper__item--${escapeHtml(status)}" data-stage-id="${escapeHtml(stageDef.id)}">
+            <div class="creaty-stages-stepper__marker" aria-hidden="true">
+                <span class="creaty-stages-stepper__dot"></span>
+                ${isLast ? '' : '<span class="creaty-stages-stepper__line"></span>'}
+            </div>
+            <article class="creaty-stages-card creaty-stages-card--${escapeHtml(status)}">
+                <header class="creaty-stages-card__head">
+                    <h4 class="creaty-stages-card__title">${escapeHtml(title)}</h4>
+                    <span class="creaty-stages-card__status">${escapeHtml(statusText)}</span>
+                </header>
+                <p class="creaty-stages-card__desc">${escapeHtml(actions)}</p>
+                <div class="creaty-stages-card__actions">
+                    <button type="button" class="creaty-stage-action creaty-stage-action--start" data-action="stage-start" data-stage-id="${escapeHtml(stageDef.id)}" data-email="${escapeHtml(row.email)}" title="${escapeHtml(startLabel)}"><i class="fa-solid fa-play" aria-hidden="true"></i><span>${escapeHtml(startLabel)}</span></button>
+                    <button type="button" class="creaty-stage-action creaty-stage-action--stop" data-action="stage-stop" data-stage-id="${escapeHtml(stageDef.id)}" data-email="${escapeHtml(row.email)}" title="${escapeHtml(stopLabel)}"><i class="fa-solid fa-stop" aria-hidden="true"></i><span>${escapeHtml(stopLabel)}</span></button>
+                    <button type="button" class="creaty-stage-action creaty-stage-action--edit" data-action="stage-edit" data-stage-id="${escapeHtml(stageDef.id)}" data-email="${escapeHtml(row.email)}" title="${escapeHtml(editLabel)}"><i class="fa-solid fa-pen" aria-hidden="true"></i><span>${escapeHtml(editLabel)}</span></button>
+                </div>
+            </article>
+        </div>`;
+    }).join('');
+
+    const actionBox = `
+    <div class="creaty-row-actions-box">
+        <div class="creaty-row-actions-box__title">${lang === 'ar' ? 'الإجراءات المتاحة للحساب' : 'Available Account Actions'}</div>
+        <div class="creaty-row-actions-box__buttons">
+            <button type="button" class="creaty-btn creaty-imported-preview-btn" data-action="login-preview" data-login-preview-email="${escapeHtml(row.email)}" title="${escapeHtml(i18n[lang]['importedLoginPreview'] || 'Login Preview')}">
+                <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> <span>${escapeHtml(i18n[lang]['importedLoginPreview'] || 'Login Preview')}</span>
+            </button>
+            <button type="button" class="creaty-btn creaty-imported-session-card-btn" data-action="login-session-card" data-email="${escapeHtml(row.email)}" title="${lang === 'ar' ? 'فتح الجلسة مع بطاقة المعلومات العائمة' : 'Open Session with Floating Card'}">
+                <i class="fa-solid fa-address-card" aria-hidden="true"></i> <span>${lang === 'ar' ? 'فتح الجلسة بالبطاقة' : 'Login with Card'}</span>
+            </button>
+            <button type="button" class="creaty-btn creaty-imported-signup-btn" data-action="play" data-email="${escapeHtml(row.email)}" title="${escapeHtml(i18n[lang]['creaty.action.play'] || 'Start Signup')}">
+                <i class="fa-solid fa-play" aria-hidden="true"></i> <span>${escapeHtml(i18n[lang]['creaty.action.play'] || 'Play')}</span>
+            </button>
+            <button type="button" class="creaty-btn" data-action="stage-edit" data-stage-id="foundation" data-email="${escapeHtml(row.email)}" title="${escapeHtml(i18n[lang]['importedApplyStore'] || 'Store Generator')}">
+                <i class="fa-solid fa-store" aria-hidden="true"></i> <span>${escapeHtml(i18n[lang]['importedApplyStore'] || 'Store')}</span>
+            </button>
+            <button type="button" class="creaty-btn creaty-btn--danger" data-action="delete" data-email="${escapeHtml(row.email)}" title="${escapeHtml(i18n[lang]['creaty.action.delete'] || 'Reset Schedule')}">
+                <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> <span>${escapeHtml(i18n[lang]['creaty.action.delete'] || 'Reset')}</span>
+            </button>
+            <button type="button" class="creaty-btn creaty-btn--danger" data-action="delete-account" data-delete-email="${escapeHtml(row.email)}" title="${escapeHtml(i18n[lang]['importedDelete'] || 'Delete Account')}">
+                <i class="fa-solid fa-trash" aria-hidden="true"></i> <span>${escapeHtml(i18n[lang]['importedDelete'] || 'Delete')}</span>
+            </button>
+        </div>
+    </div>`;
+
+    return `<div class="creaty-stages-shell"><div class="creaty-stages-panel"><div class="creaty-stages-stepper" role="list">${cards}</div>${actionBox}</div></div>`;
+}
+
+function renderRowActionsHtml(row, lang, i18n) {
+    const email = escapeHtml(row.email);
+    const label = (key, fallback) => escapeHtml(i18n[lang]?.[key] || i18n.en?.[key] || fallback);
+    const loginLabel = label('importedLoginPreview', 'Open login');
+    const cardLabel = lang === 'ar' ? 'فتح الجلسة بالبطاقة' : 'Open session card';
+    const runLabel = label('creaty.action.play', 'Run / resume');
+    const resetLabel = label('creaty.action.delete', 'Reset');
+    const deleteLabel = label('importedDelete', 'Delete account');
+
+    return `<div class="creaty-row-actions-inline" role="group" aria-label="${lang === 'ar' ? 'إجراءات الحساب' : 'Account actions'}">
+        <button type="button" class="creaty-row-action-btn" data-action="login-preview" data-email="${email}" title="${loginLabel}"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i><span>${loginLabel}</span></button>
+        <button type="button" class="creaty-row-action-btn" data-action="login-session-card" data-email="${email}" title="${cardLabel}"><i class="fa-solid fa-address-card" aria-hidden="true"></i><span>${cardLabel}</span></button>
+        <button type="button" class="creaty-row-action-btn creaty-row-action-btn--primary" data-action="play" data-email="${email}" title="${runLabel}"><i class="fa-solid fa-play" aria-hidden="true"></i><span>${runLabel}</span></button>
+        <button type="button" class="creaty-row-action-btn" data-action="store-card" data-email="${email}" title="توليد المتجر"><i class="fa-solid fa-store" aria-hidden="true"></i><span>توليد المتجر</span></button>
+        <button type="button" class="creaty-row-action-btn creaty-row-action-btn--danger" data-action="reset-account" data-email="${email}" title="${resetLabel}"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i><span>${resetLabel}</span></button>
+        <button type="button" class="creaty-row-action-btn creaty-row-action-btn--danger" data-action="delete-account" data-email="${email}" title="${deleteLabel}"><i class="fa-solid fa-trash" aria-hidden="true"></i><span>${deleteLabel}</span></button>
+    </div>`;
+}
+export function renderDashboardTable(tbody, rows, filter, lang, i18n, expandedEmails = new Set(), expandedRowIds = new Set(), selectedEmails = new Set()) {
+    if (!tbody) return 0;
+    const filtered = filter === 'all'
+        ? rows
+        : rows.filter((r) => r.stage === filter);
+
+    if (!filtered.length) {
+        tbody.innerHTML = `<tr class="creaty-empty-row"><td colspan="${DASH_COL_COUNT}">${escapeHtml(i18n[lang]['creaty.dash.empty'])}</td></tr>`;
+        return 0;
+    }
+
+    const maxRows = 50;
+    const visibleRows = filtered.slice(0, maxRows);
+
+    let html = visibleRows.map((row) => {
+        const stageLabel = i18n[lang][`creaty.stage.${row.stage}`] || row.stage;
+        const emailKey = String(row.email).trim().toLowerCase().replace(/[^a-z0-9@._-]/g, '_');
+        const isChecked = selectedEmails.has(emailKey) ? ' checked' : '';
+
+        return `<tr data-email="${escapeHtml(row.email)}">
+            <td class="creaty-imported-cell creaty-imported-cell--select" style="text-align: center; vertical-align: middle;">
+                <input type="checkbox" class="creaty-imported-checkbox creaty-dash-row-check" data-select-email="${encodeURIComponent(row.email)}"${isChecked} aria-label="Select ${escapeHtml(row.email)}">
+            </td>
+            <td class="creaty-email-cell" title="${escapeHtml(row.email)}">${escapeHtml(row.email)}</td>
+            <td><span class="creaty-stage-badge creaty-stage-badge--${escapeHtml(row.stage)}">${escapeHtml(stageLabel)}</span></td>
+            <td class="creaty-actions-cell">
+                ${renderRowActionsHtml(row, lang, i18n)}
+            </td>
+        </tr>`;
+    }).join('');
+
+    if (filtered.length > maxRows) {
+        const remainingCount = filtered.length - maxRows;
+        html += `<tr class="creaty-load-more-row"><td colspan="4" style="text-align: center; padding: 0.5rem;"><button type="button" class="creaty-btn creaty-btn--compact" onclick="this.closest('tr').style.display='none'; const siblingRows=this.closest('tbody').querySelectorAll('.creaty-hidden-row'); siblingRows.forEach(r=>r.style.display='table-row');" style="margin: 0 auto; font-size: 0.7rem; padding: 0.25rem 0.5rem;">👇 عرض المتبقي (${remainingCount} حسابات إضافية)</button></td></tr>`;
+
+        const hiddenRows = filtered.slice(maxRows);
+        html += hiddenRows.map((row) => {
+            const stageLabel = i18n[lang][`creaty.stage.${row.stage}`] || row.stage;
+            const emailKey = String(row.email).trim().toLowerCase().replace(/[^a-z0-9@._-]/g, '_');
+            const isChecked = selectedEmails.has(emailKey) ? ' checked' : '';
+
+            return `<tr data-email="${escapeHtml(row.email)}" class="creaty-hidden-row" style="display: none;">
+                <td class="creaty-imported-cell creaty-imported-cell--select" style="text-align: center; vertical-align: middle;">
+                    <input type="checkbox" class="creaty-imported-checkbox creaty-dash-row-check" data-select-email="${encodeURIComponent(row.email)}"${isChecked} aria-label="Select ${escapeHtml(row.email)}">
+                </td>
+                <td class="creaty-email-cell" title="${escapeHtml(row.email)}">${escapeHtml(row.email)}</td>
+                <td><span class="creaty-stage-badge creaty-stage-badge--${escapeHtml(row.stage)}">${escapeHtml(stageLabel)}</span></td>
+                <td class="creaty-actions-cell">
+                    ${renderRowActionsHtml(row, lang, i18n)}
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    tbody.innerHTML = html;
+
+    return filtered.length;
+}
+
+export async function actionPlay(email, accountRaw) {
+    await chrome.runtime.sendMessage({ action: 'wake_creaty_server' }).catch(() => null);
+    const accountSource = typeof accountRaw === 'object' && accountRaw ? accountRaw : { email };
+    const body = { ...accountSource, fillOnly: false, manualSubmit: false };
+    await fetchCreatyJson('/orchestrate/advance-phase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+    }, 5000).catch(() => null);
+
+    return new Promise((resolve) => {
+        let settled = false;
+        const finish = (result) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            resolve(result || { success: false, error: 'Creaty returned no response' });
+        };
+        const timer = setTimeout(() => {
+            finish({ success: false, error: 'انتهت مهلة تشغيل الحساب — تحقق من Creaty Server 3020' });
+        }, 30000);
+
+        chrome.runtime.sendMessage({ action: 'CREATY_RUN_SIGNUP', account: body }, (response) => {
+            const runtimeError = chrome.runtime.lastError;
+            if (runtimeError) {
+                finish({ success: false, error: runtimeError.message });
+                return;
+            }
+            finish(response);
+        });
+    });
+}
+
+export async function actionDeleteSchedule(email) {
+    const key = scheduleStorageKey(email);
+    await fetchCreatyJson('/orchestrate/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+    }, 4000).catch(() => null);
+    return new Promise((resolve) => {
+        chrome.storage.local.remove(key, resolve);
+    });
+}
+
+export async function actionRunStage(email, stageId) {
+    const res = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({
+            action: 'CREATY_AI_RUN_STAGE',
+            email,
+            accountEmail: email,
+            stageId
+        }, (response) => {
+            const err = chrome.runtime.lastError;
+            if (err) {
+                resolve({ ok: false, error: err.message });
+            } else {
+                resolve(response);
+            }
+        });
+    });
+    if (res && res.success !== undefined && res.ok === undefined) {
+        res.ok = res.success;
+    }
+    return res;
+}
+
+export async function actionStopStage(email, stageId) {
+    const res = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({
+            action: 'CREATY_AI_STOP_STAGE',
+            email,
+            accountEmail: email,
+            stageId
+        }, (response) => {
+            const err = chrome.runtime.lastError;
+            if (err) {
+                resolve({ ok: false, error: err.message });
+            } else {
+                resolve(response);
+            }
+        });
+    });
+    if (res && res.success !== undefined && res.ok === undefined) {
+        res.ok = res.success;
+    }
+    return res;
+}
+
+export async function actionResetStage(email, stageId) {
+    const res = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({
+            action: 'CREATY_AI_RESET_PHASE',
+            email,
+            accountEmail: email,
+            stageId
+        }, (response) => {
+            const err = chrome.runtime.lastError;
+            if (err) {
+                resolve({ ok: false, error: err.message });
+            } else {
+                resolve(response);
+            }
+        });
+    });
+    if (res && res.success !== undefined && res.ok === undefined) {
+        res.ok = res.success;
+    }
+    return res;
+}
+
+export function applyI18n(root, lang, i18n) {
+    if (!root) return;
+    root.querySelectorAll('[data-i18n]').forEach((el) => {
+        const key = el.getAttribute('data-i18n');
+        const text = i18n[lang]?.[key];
+        if (text) el.textContent = text;
+    });
+}

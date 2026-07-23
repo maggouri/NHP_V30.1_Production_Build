@@ -1,0 +1,147 @@
+<div class="glass-card notes-root"
+    style="margin-bottom: 0.75rem; padding: 0.9375rem; background: linear-gradient(135deg, rgba(108, 99, 255, 0.1), rgba(167, 139, 250, 0.1)); display:flex; flex-direction:column; min-height: 0;">
+    <div class="notes-legacy-header notes-bottom-collapsed"
+        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.9375rem;">
+        <div>
+            <h2 style="font-size: 1rem; font-weight: 800; color: #fff; margin: 0;">📝 نوتة المهام والنيتشات</h2>
+            <span id="nc-stats" style="font-size: 0.625rem; color: var(--text-muted);">0 نيش</span>
+        </div>
+        <div style="display:flex; gap:0.3125rem;">
+            <button id="btn-import-analysis" class="btn"
+                style="padding: 0.3125rem 0.625rem; font-size: 0.625rem; background: linear-gradient(135deg, #10B981, #059669); border: none; color: white; border-radius: 0.375rem; cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 0.25rem;">
+                <i class="fa-solid fa-file-import" style="font-size: 0.5625rem;"></i> استيراد
+            </button>
+            <button id="btn-export-note" class="btn border border-border bg-surface2 text-[0.5rem] px-1.5 py-1"
+                title="تصدير الملاحظات (TXT)">
+                <i class="fa-solid fa-file-export"></i> تصدير
+            </button>
+            <button id="btn-import-note" class="btn border border-border bg-surface2 text-[0.5rem] px-1.5 py-1"
+                title="استيراد الملاحظات (TXT)">
+                <i class="fa-solid fa-file-import"></i> استيراد
+            </button>
+            <input type="file" id="nc-import-input" accept=".txt" class="hidden">
+            <button id="btn-clear-note" class="btn"
+                style="padding: 0.3125rem 0.5rem; font-size: 0.625rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; border-radius: 0.375rem; cursor: pointer; font-weight: 700;">
+                <i class="fa-solid fa-trash-can" style="font-size: 0.5625rem;"></i> حذف
+            </button>
+        </div>
+    </div>
+
+    <!-- note_tasks_fix_20260604: RTL grid — master col1 (يمين) + hunt col2 (يسار) -->
+    <div id="notes-master-detail" class="notes-master-detail-grid">
+        <aside class="nc-master-column" aria-label="النيشات المحفوظة">
+            <div id="nc-master-search-shell" class="nc-master-search-shell">
+                <input type="text" id="nc-search" class="modern-input nc-master-search-input"
+                    placeholder="بحث في الملاحظات…">
+            </div>
+            <div id="niche-container" class="nc-master-list-shell">
+                <div class="nc-master-split-row nc-master-split-row--single">
+                    <div class="nc-master-col-wrap nc-master-col-wrap--recent">
+                        <div class="nc-master-col-head" title="النيشات المحفوظة">النيشات المحفوظة</div>
+                        <div id="niche-col-0" class="task-list nc-master-list-col luxury-scroll"></div>
+                    </div>
+                </div>
+                <div id="niche-tail" class="nc-master-list-tail luxury-scroll" hidden></div>
+            </div>
+        </aside>
+
+        <aside id="note-image-hunt-column" class="note-image-hunt-column is-active" aria-label="صيد الصور">
+            <div id="note-image-hunt-panel" class="radar-block radar-image-hunt-panel note-image-hunt-panel">
+                <div class="note-image-hunt-query-row flex flex-wrap items-center gap-2 mb-2">
+                    <span class="note-image-hunt-label" dir="rtl">صيد الصور</span>
+                    <input type="text" id="note-image-hunt-query" class="modern-input flex-1 min-w-0 note-image-hunt-query-input"
+                        placeholder="نيتش البحث…" dir="auto" autocomplete="off" spellcheck="false">
+                    <button type="button" id="note-fetch-images" class="btn radar-icon-btn text-indigo-300" title="جلب الصور من المصادر المحددة">
+                        <i class="fa-solid fa-images"></i>
+                    </button>
+                    <button type="button" id="note-stop-image-hunt" class="btn radar-icon-btn text-rose-300" title="إيقاف جلب الصور الجاري" hidden disabled>
+                        <i class="fa-solid fa-stop"></i> إيقاف
+                    </button>
+                </div>
+                <div class="radar-source-chips mb-2" id="note-image-source-chips" role="tablist" aria-label="مصدر البحث">
+                    <button type="button" class="radar-source-chip" data-source="pinterest">Pinterest</button>
+                    <button type="button" class="radar-source-chip" data-source="google_images">Google Images 24h</button>
+                    <button type="button" class="radar-source-chip" data-source="google_ai">Google AI 24h</button>
+                    <button type="button" class="radar-source-chip is-active" data-source="aggregator">كل المصادر</button>
+                </div>
+                <div id="note-image-hunt-status" class="hidden mb-2 p-2 rounded bg-indigo-500/10 border border-indigo-500/20 text-[0.625rem] text-indigo-200 flex items-center gap-2">
+                    <div class="spinner-small" style="border-top-color: #818cf8"></div>
+                    <span id="note-image-hunt-status-text">جاري جلب الصور...</span>
+                </div>
+                <div class="radar-image-hunt-toolbar mb-2 flex flex-row flex-wrap items-center justify-between gap-2">
+                    <label class="text-[0.625rem] text-slate-300 flex flex-row items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" id="note-image-select-all" />
+                        تحديد الكل
+                    </label>
+                    <div class="radar-image-hunt-actions flex flex-row flex-wrap items-center gap-2">
+                        <button type="button" id="note-send-prompt-bag" class="btn border border-violet-500/30 bg-violet-500/15 text-violet-200 px-2 py-1 text-[0.625rem] rounded-lg font-bold" disabled>
+                            <i class="fa-solid fa-bag-shopping"></i> Prompt Bag
+                        </button>
+                        <button type="button" id="note-send-generate" class="btn border border-emerald-500/30 bg-emerald-500/15 text-emerald-200 px-2 py-1 text-[0.625rem] rounded-lg font-bold" disabled>
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Generate
+                        </button>
+                    </div>
+                </div>
+                <div id="note-image-hunt-grid" class="radar-image-hunt-grid luxury-scroll"></div>
+            </div>
+            <div class="radar-image-hunt-preview is-hidden" id="note-image-hunt-preview" role="dialog" aria-modal="true" aria-hidden="true" aria-label="معاينة صورة صيد الصور">
+                <button type="button" class="radar-image-hunt-preview-close" id="note-image-hunt-preview-close" aria-label="إغلاق">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <div class="radar-image-hunt-preview-backdrop" id="note-image-hunt-preview-backdrop"></div>
+                <button type="button" class="radar-image-hunt-preview-nav radar-image-hunt-preview-prev is-hidden" id="note-image-hunt-preview-prev" aria-label="الصورة السابقة">‹</button>
+                <button type="button" class="radar-image-hunt-preview-nav radar-image-hunt-preview-next is-hidden" id="note-image-hunt-preview-next" aria-label="الصورة التالية">›</button>
+                <img class="radar-image-hunt-preview-img" id="note-image-hunt-preview-img" alt="" decoding="async">
+                <div class="radar-image-hunt-preview-toolbar" id="note-image-hunt-preview-toolbar">
+                    <span class="radar-image-hunt-preview-source" id="note-image-hunt-preview-source" aria-live="polite"></span>
+                    <span class="radar-image-hunt-preview-counter is-hidden" id="note-image-hunt-preview-counter" aria-live="polite"></span>
+                    <button type="button" class="radar-image-hunt-preview-btn is-generate" id="note-image-hunt-preview-generate">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Generate
+                    </button>
+                    <button type="button" class="radar-image-hunt-preview-btn is-prompt" id="note-image-hunt-preview-prompt">
+                        <i class="fa-solid fa-bag-shopping"></i> Prompt Bag
+                    </button>
+                    <button type="button" class="radar-image-hunt-preview-btn is-dl" id="note-image-hunt-preview-dl">
+                        <i class="fa-solid fa-download"></i> تحميل
+                    </button>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <div id="nc-unofficial-panel" class="mt-4 pt-3 border-t border-white/10" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.625rem;">
+            <div class="field-label" style="margin:0;">Unofficial Trends</div>
+            <span id="nc-unofficial-stats" style="font-size:0.5625rem; color:var(--text-muted);">0 عنصر</span>
+        </div>
+        <div style="font-size:0.625rem; color:var(--text-muted); margin-bottom:0.5rem;">
+            إشارات Radar غير الرسمية ونتائج مرورها عبر USPTO وTeePublic.
+        </div>
+        <div id="unofficial-trends-container" class="task-list" style="max-height: 11.25rem; overflow-y: auto; padding-right: 0.125rem;">
+            <div class="text-center py-4 text-[0.625rem] text-white/20">لا توجد ترندات غير رسمية حالياً</div>
+        </div>
+    </div>
+
+    <div class="mt-4 pt-3 border-t border-white/10"
+        style="display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,0.7fr); gap:0.75rem; align-items:start;">
+        <div style="min-width:0;">
+            <div class="field-label mb-2" style="font-size:0.625rem;">إضافة نيشات يدوياً (كل نيتش في سطر)</div>
+            <textarea id="bulk-text" class="modern-input" style="height: 6.875rem; font-size: 0.6875rem; margin-bottom: 0.5rem;"
+                placeholder="قم بلصق النيشات هنا..."></textarea>
+            <button id="nc-update-bulk" class="btn action-btn-primary py-2 text-xs w-full">
+                <i class="fa-solid fa-sync"></i> تحديث القائمة
+            </button>
+        </div>
+
+        <div style="min-width:0; border-right:1px solid rgba(255,255,255,0.08); padding-right:0.625rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                <div class="field-label" style="margin:0; font-size:0.625rem;">🕒 H. HISTORIQUE (السجل)</div>
+                <span style="font-size:0.5625rem; color:var(--text-muted);">آخر 10 دفعات</span>
+            </div>
+            <div id="nc-history-list" style="max-height: 9.6875rem; overflow-y: auto; padding-right: 0.25rem;">
+                <!-- History items will be injected here -->
+                <div class="text-center py-4 text-[0.625rem] text-white/20">لا يوجد سجل حالياً</div>
+            </div>
+        </div>
+    </div>
+</div>

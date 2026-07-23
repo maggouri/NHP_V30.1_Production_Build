@@ -1,0 +1,77 @@
+<div class="trend-module-root">
+    <link rel="stylesheet" href="modules/trend/trend.css">
+
+    <!-- Mesh Gradient Background -->
+    <div class="tr-mesh-container">
+        <div class="tr-ball tr-ball-1"></div>
+        <div class="tr-ball tr-ball-2"></div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="trend-header" style="position: relative; z-index: 1;">
+        <div class="trend-title-group" style="display: flex; align-items: center; gap: 0.9375rem;">
+            <div
+                style="width: 2.8125rem; height: 2.8125rem; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; font-size: 1.375rem; color: var(--tr-primary);">
+                <i class="fa-solid fa-fire-flame-curved"></i>
+            </div>
+            <div>
+                <h2>ترندات اليوم الذكية</h2>
+                <p id="trend-last-update">آخر تحديث: في حالة سكون الآن</p>
+                <p id="trend-emailcore-sync" style="font-size:0.65rem;color:#94a3b8;margin:0.25rem 0 0;">مزامنة EmailCore: —</p>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 0.625rem;">
+            <button id="btn-full-auto" class="lux-btn btn-auto">
+                <i class="fa-solid fa-bolt"></i> ⚡ التحليل الآلي الشامل
+            </button>
+            <button id="trend-fetch-btn" class="lux-btn btn-primary">
+                <span class="btn-text">جلب الترندات</span>
+                <span class="spinner-small hidden"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Controls & List Section -->
+    <div class="trend-layout">
+
+        <!-- Search & Settings Panel -->
+        <div class="glass-panel" style="margin-bottom: 0;">
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem;">
+                <div style="position: relative; flex: 1;">
+                    <i class="fa-solid fa-magnifying-glass"
+                        style="position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%); font-size: 0.8125rem; color: var(--tr-text-dim);"></i>
+                    <input type="text" id="trend-filter-input" class="lux-input"
+                        placeholder="بحث في الترندات المكتشفة..." style="padding-left: 2.5rem;">
+                </div>
+                <button id="trend-copy-all-btn" class="lux-btn btn-outline" title="نسخ الكل">
+                    <i class="fa-solid fa-copy"></i>
+                </button>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.625rem; margin-bottom: 1.25rem;">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 0.75rem; border-radius: 0.75rem; border: 1px solid var(--tr-border);">
+                    <div>
+                        <span style="display: block; font-size: 0.6875rem; font-weight: 800; color: #fff;">تحويل تلقائي لـ
+                            USPTO</span>
+                        <span style="font-size: 0.5625rem; color: var(--tr-text-dim);">يتم نقل الكلمات المكتشفة لموديول الفحص
+                            تلقائياً</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-right-arrow-left" style="color: var(--tr-primary); opacity: 0.6;"></i>
+                </div>
+            </div>
+
+            <div id="trend-list-container" class="lux-scroll"
+                style="max-height: 25rem; overflow-y: auto; padding-right: 0.3125rem;">
+                <div class="empty-msg"
+                    style="text-align: center; padding: 2.5rem; font-size: 0.6875rem; color: var(--tr-text-dim);">
+                    <i class="fa-solid fa-radar"
+                        style="font-size: 1.875rem; display: block; margin-bottom: 0.9375rem; opacity: 0.2;"></i>
+                    اضغط على زر الجلب لبدء مراقبة نيشات TeePublic اليومية
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>

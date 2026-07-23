@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "screeeeenvme",
+  "version": "1.0.0",
+  "description": "Local-first screen capture and recorder for quick personal use.",
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "scripting",
+    "storage",
+    "tabs",
+    "desktopCapture",
+    "tabCapture"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "screeeeenvme",
+    "default_popup": "popup.html"
+  },
+  "icons": {
+    "128": "assets/icon.png"
+  },
+  "commands": {
+    "capture-visible": {
+      "suggested_key": {
+        "default": "Alt+Shift+V"
+      },
+      "description": "Capture visible area"
+    },
+    "capture-selected": {
+      "suggested_key": {
+        "default": "Alt+Shift+S"
+      },
+      "description": "Capture selected area"
+    },
+    "capture-full-page": {
+      "suggested_key": {
+        "default": "Alt+Shift+F"
+      },
+      "description": "Capture full page"
+    }
+  }
+}

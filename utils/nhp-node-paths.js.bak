@@ -1,0 +1,94 @@
+/**
+ * Cross-platform paths for Node servers (ai-bridge, ghost) — Windows native or WSL.
+ */
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+
+function isWslRuntime() {
+    if (process.env.NHP_BACKEND_MODE === 'wsl') return true;
+    if (process.platform !== 'linux') return false;
+    try {
+        if (fs.existsSync('/proc/version')) {
+            const v = fs.readFileSync('/proc/version', 'utf8');
+            return /microsoft|wsl/i.test(v);
+        }
+    } catch (_) { }
+    return !!process.env.WSL_DISTRO_NAME || !!process.env.WSLENV;
+}
+
+function resolveChromeExecutable() {
+    const fromEnv = String(process.env.NHP_CHROME_PATH || '').trim();
+    if (fromEnv && fs.existsSync(fromEnv)) return fromEnv;
+
+    const candidates = [];
+    if (process.platform === 'win32') {
+        candidates.push(
+            path.join(process.env.LOCALAPPDATA || '', 'Google', 'Chrome', 'Application', 'chrome.exe'),
+            'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+            'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'
+        );
+    } else {
+        candidates.push(
+            '/mnt/c/Program Files/Google/Chrome/Application/chrome.exe',
+            '/mnt/c/Program Files (x86)/Google/Chrome/Application/chrome.exe',
+            '/usr/bin/google-chrome',
+            '/usr/bin/google-chrome-stable',
+            '/usr/bin/chromium-browser',
+            '/usr/bin/chromium'
+        );
+    }
+
+    for (const candidate of candidates) {
+        if (candidate && fs.existsSync(candidate)) return candidate;
+    }
+    return candidates[0] || 'chrome';
+}
+
+function resolveChromeUserDataDir() {
+    const fromEnv = String(process.env.NHP_AI_CHROME_USER_DATA_DIR || '').trim();
+    if (fromEnv) return fromEnv;
+
+    if (process.platform === 'win32') {
+        return path.join(process.env.LOCALAPPDATA || '', 'Google', 'Chrome', 'User Data');
+    }
+    const winLocal = process.env.WINDOWS_LOCALAPPDATA
+        || '/mnt/c/Users/' + (process.env.USER || 'user') + '/AppData/Local';
+    return path.join(winLocal, 'Google', 'Chrome', 'User Data');
+}
+
+function resolveListenHost() {
+    const fromEnv = String(process.env.NHP_LISTEN_HOST || '').trim();
+    if (fromEnv) return fromEnv;
+    // WSL2: bind 0.0.0.0 so Windows Chrome can reach via localhost forwarding when needed
+    return isWslRuntime() ? '0.0.0.0' : '127.0.0.1';
+}
+
+function resolveExtraNodeModulePaths(rootDir) {
+    const paths = [path.join(rootDir, 'node_modules')];
+    const extra = String(process.env.NHP_EXTRA_NODE_PATHS || '')
+        .split(path.delimiter)
+        .map((p) => p.trim())
+        .filter(Boolean);
+    for (const dir of extra) {
+        if (fs.existsSync(dir)) paths.push(dir);
+    }
+    return paths.filter((dir, index, arr) => arr.indexOf(dir) === index);
+}
+
+function applyExtraNodeModulePaths(rootDir) {
+    const dirs = resolveExtraNodeModulePaths(rootDir);
+    if (!dirs.length) return dirs;
+    process.env.NODE_PATH = [process.env.NODE_PATH, ...dirs].filter(Boolean).join(path.delimiter);
+    require('module')._initPaths();
+    return dirs;
+}
+
+module.exports = {
+    isWslRuntime,
+    resolveChromeExecutable,
+    resolveChromeUserDataDir,
+    resolveListenHost,
+    resolveExtraNodeModulePaths,
+    applyExtraNodeModulePaths
+};

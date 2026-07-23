@@ -1,0 +1,152 @@
+<div class="markets-compact marketplaces-shell amazon-market-shell">
+    <div class="markets-header">مدير المنصات والأسواق</div>
+    <div class="markets-tabs" role="tablist" aria-label="Marketplaces">
+        <button class="markets-tab-btn markets-tab-active" data-markets-tab="amazon" type="button">Amazon</button>
+        <button class="markets-tab-btn" data-markets-tab="redbubble" type="button">Redbubble</button>
+        <button class="markets-tab-btn" data-markets-tab="pinterest" type="button">Pinterest</button>
+    </div>
+</div>
+
+<div class="glass-card mb-4" style="border-color: rgba(245, 158, 11, 0.2); background: rgba(15, 23, 42, 0.45);">
+    <div class="flex items-center justify-between gap-2 mb-1">
+        <h2 class="text-[0.8125rem] font-black text-white flex items-center gap-1">
+            <i class="fa-brands fa-amazon" style="color:#f59e0b;"></i>
+            قسم Amazon Merch
+        </h2>
+        <span class="text-[0.6875rem] font-black px-2 rounded-full border" style="height:1.375rem;line-height:1.25rem;color:#fde68a; border-color:rgba(245,158,11,0.25); background:rgba(245,158,11,0.08);">AMZ</span>
+    </div>
+
+    <div class="status-bar" style="border-color: rgba(245, 158, 11, 0.25); background: rgba(15, 23, 42, 0.55);">
+        <span id="amh-status-dot" class="status-dot active"></span>
+        <span id="amh-status-text" class="status-text">محرك Amazon مدمج وجاهز مع أدوات الأسواق والمنتجات</span>
+        <span id="amh-current-badge" class="current-badge" style="background:rgba(245,158,11,0.12); border-color:rgba(245,158,11,0.2); color:#fcd34d;">
+            0 حسابات
+        </span>
+    </div>
+
+    <div class="progress-wrap">
+        <div class="progress-header">
+            <span>جاهزية التشغيل</span>
+            <b id="amh-readiness-label">0%</b>
+        </div>
+        <div class="progress-bg">
+            <div id="amh-readiness-fill" class="progress-fill" style="width:0%; background:linear-gradient(90deg, #f59e0b, #fbbf24);"></div>
+        </div>
+    </div>
+</div>
+
+<div class="market-badges-row mb-4">
+    <div class="market-badge"><span id="amh-accounts-count">0</span><span>الحسابات</span></div>
+    <div class="market-badge"><span id="amh-queue-count">0</span><span>الطابور</span></div>
+    <div class="market-badge"><span id="amh-tools-state">ON</span><span>الأدوات</span></div>
+    <div class="market-badge"><span id="amh-engines-count">4</span><span>المحركات</span></div>
+</div>
+
+<div class="glass-card mb-4" style="border-color: rgba(245, 158, 11, 0.18);">
+    <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-bold flex items-center gap-2">
+            <i class="fa-solid fa-images" style="color:#fbbf24;"></i>
+            طابور SEO المشترك
+        </h3>
+        <button id="amh-open-seo" class="text-[0.625rem] px-3 py-1 rounded-full border" style="color:#fef3c7; border-color:rgba(245,158,11,0.25); background:rgba(245,158,11,0.08);">
+            فتح SEO
+        </button>
+    </div>
+    <div class="text-[0.6875rem] text-slate-400 leading-5 mb-3">
+        هذا القسم يقرأ نفس التصاميم ونفس بيانات SEO المستعملة في قسم SEO و Autopilot.
+    </div>
+    <div id="amh-queue-container" class="hidden p-2 bg-black/20 rounded-lg border border-white/5">
+        <div class="flex justify-between items-center mb-2">
+            <span class="text-[0.5625rem] uppercase font-black tracking-widest" style="color:#fbbf24;">Queue</span>
+            <div class="flex items-center gap-3">
+                <span class="text-[0.5625rem] text-slate-500" id="amh-shared-queue-count">0 ملفات</span>
+                <button id="amh-clear-queue-btn" class="text-[0.5625rem] text-red-400 hover:text-red-300 transition-colors" title="مسح الكل">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        <div id="amh-queue" class="queue-grid"></div>
+    </div>
+</div>
+
+<div id="amh-seo-preview" class="hidden glass-card mb-4" style="border-color: rgba(245, 158, 11, 0.18);">
+    <div class="flex items-center justify-between border-b border-white/5 pb-2 mb-3">
+        <div class="flex items-center gap-2 overflow-hidden">
+            <img id="amh-img-preview" src="#" style="width:2.875rem; height:2.875rem; object-fit:cover; border-radius:0.625rem; border:1px solid rgba(245,158,11,0.35);">
+            <div class="overflow-hidden">
+                <div id="amh-current-filename" class="text-[0.625rem] text-white truncate font-medium max-w-[9.375rem]">filename.png</div>
+                <div class="text-[0.5rem] uppercase font-bold" style="color:#fbbf24;">Amazon SEO Bridge</div>
+            </div>
+        </div>
+        <button id="amh-apply-all" class="copy-btn-modern" title="تطبيق على كل التصاميم" style="width:1.875rem; height:1.875rem; background:rgba(16,185,129,0.15); border-color:rgba(16,185,129,0.3); color:#10B981;">
+            <i class="fa-solid fa-clone"></i>
+        </button>
+    </div>
+
+    <div class="market-seo-row">
+        <div class="relative">
+            <input type="text" id="amh-seo-title" class="modern-input text-[0.6875rem]" placeholder="عنوان Amazon...">
+        </div>
+        <div class="relative">
+            <input type="text" id="amh-seo-main-tag" class="modern-input text-[0.6875rem]" placeholder="الكلمة المفتاحية الرئيسية...">
+        </div>
+        <div class="relative">
+            <textarea id="amh-seo-tags" class="modern-input text-[0.625rem] h-14" placeholder="النقاط أو الكلمات المفتاحية..."></textarea>
+        </div>
+        <div class="relative">
+            <textarea id="amh-seo-desc" class="modern-input text-[0.625rem] h-14" placeholder="وصف التصميم..."></textarea>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card mb-4" style="border-color: rgba(245, 158, 11, 0.18);">
+    <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-bold flex items-center gap-2">
+            <i class="fa-solid fa-bolt" style="color:#fbbf24;"></i>
+            إجراءات سريعة
+        </h3>
+        <span class="text-[0.625rem] text-slate-500">الوصول السريع لأدوات Amazon من داخل الإضافة</span>
+    </div>
+    <div class="market-actions-row">
+        <button id="amh-open-uploader" class="action-btn w-full py-2" style="background:linear-gradient(135deg,#f59e0b,#fbbf24); color:#1f2937; font-weight:900; border-radius:0.625rem;">
+            <i class="fa-solid fa-rocket"></i> فتح مدير الرفع على Amazon
+        </button>
+        <button id="amh-open-platform" class="btn border text-[0.6875rem]" style="border-color:rgba(245,158,11,0.25); background:rgba(255,255,255,0.03); color:#fef3c7;">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> فتح Merch by Amazon
+        </button>
+        <button id="amh-open-autopilot" class="btn border text-[0.6875rem]" style="border-color:rgba(245,158,11,0.25); background:rgba(255,255,255,0.03); color:#fef3c7;">
+            <i class="fa-solid fa-users-gear"></i> إدارة حسابات Amazon
+        </button>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 gap-3">
+    <details class="glass-card market-locked-details" style="border-color: rgba(245, 158, 11, 0.18);">
+        <summary>ما هو المفعّل هنا؟</summary>
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold flex items-center gap-2">
+                <i class="fa-solid fa-screwdriver-wrench" style="color:#fbbf24;"></i>
+                ما هو المفعّل هنا؟
+            </h3>
+            <span class="text-[0.625rem] font-black px-2 py-1 rounded-full" style="background:rgba(255,255,255,0.04); color:#fde68a;">Merch by Amazon</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-[0.6875rem]">
+            <div class="p-2 rounded-lg border border-white/5 bg-black/15 text-slate-200">
+                <div class="font-black mb-1">الوضع Normal</div>
+                <div class="text-slate-400">رفع مباشر للتصميم وملء الحقول الأساسية ثم الإرسال.</div>
+            </div>
+            <div class="p-2 rounded-lg border border-white/5 bg-black/15 text-slate-200">
+                <div class="font-black mb-1">الوضع Pro</div>
+                <div class="text-slate-400">اختيار الأسواق والمنتجات والألوان وإعدادات أكثر تقدماً.</div>
+            </div>
+            <div class="p-2 rounded-lg border border-white/5 bg-black/15 text-slate-200">
+                <div class="font-black mb-1">BSR & Filters</div>
+                <div class="text-slate-400">أدوات مساعدة للفلترة والاقتراحات والتحليل داخل أمازون.</div>
+            </div>
+            <div class="p-2 rounded-lg border border-white/5 bg-black/15 text-slate-200">
+                <div class="font-black mb-1">توافق مع الحسابات</div>
+                <div class="text-slate-400">يرتبط بحسابات المنصة المحفوظة داخل Autopilot.</div>
+            </div>
+        </div>
+    </details>
+</div>

@@ -1,0 +1,9 @@
+﻿# NHP production backups — skip Cursor indexing
+node_modules/
+**/node_modules/
+*.bak
+*.bak-*
+*.backup*
+profile_backups/
+CLIProxyAPI-main/
+_metadata/

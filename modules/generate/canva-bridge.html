@@ -1,0 +1,426 @@
+<div class="canva-bridge-shell studio-ui-shell" dir="rtl" lang="ar">
+
+  <div class="canva-bridge-root" id="canva-bridge-root">
+
+    <header class="canva-bridge-head">
+
+      <h3 class="canva-bridge-title"><i class="fa-brands fa-canva" aria-hidden="true"></i> Canva Bridge</h3>
+
+      <div class="canva-bridge-head-actions">
+        <button type="button" class="canva-bridge-icon-btn" id="canva-bridge-settings" title="إعدادات Canva" aria-label="إعدادات Canva">
+          <i class="fa-solid fa-gear" aria-hidden="true"></i>
+          <span class="canva-bridge-icon-btn-label">إعدادات</span>
+        </button>
+        <span class="canva-bridge-status-pill" id="canva-bridge-status-pill">Not connected</span>
+      </div>
+
+    </header>
+
+    <div class="canva-bridge-workspace">
+
+      <div class="canva-bridge-main">
+
+        <div class="canva-bridge-layout">
+
+          <section class="canva-bridge-zone canva-bridge-zone-library">
+
+            <div class="canva-bridge-library-head">
+              <h4>مكتبة التصاميم (Prompt Generator)</h4>
+              <div class="canva-bridge-library-tabs" id="canva-bridge-library-tabs" role="tablist" aria-label="عرض المكتبة">
+                <button type="button" class="canva-bridge-lib-tab is-active" id="canva-bridge-tab-all" role="tab" aria-selected="true" data-view="all">مكتبة التصاميم</button>
+                <button type="button" class="canva-bridge-lib-tab" id="canva-bridge-tab-edited" role="tab" aria-selected="false" data-view="edited">التصاميم المعدّلة</button>
+              </div>
+              <div class="canva-bridge-lib-pipeline-strip is-hidden" id="canva-bridge-lib-pipeline-strip" aria-hidden="true">
+                <div class="canva-bridge-lib-pipeline-strip-track">
+                  <div class="canva-bridge-lib-pipeline-strip-fill" id="canva-bridge-lib-pipeline-strip-fill"></div>
+                </div>
+                <span class="canva-bridge-lib-pipeline-strip-label" id="canva-bridge-lib-pipeline-strip-label"></span>
+              </div>
+            </div>
+
+            <div class="canva-bridge-library-toolbar" id="canva-bridge-library-toolbar">
+              <section class="canva-bridge-toolbar-group" data-toolbar-group="selection">
+                <button type="button" class="canva-bridge-toolbar-group-title" data-toolbar-toggle="selection" aria-expanded="false">
+                  <span class="canva-bridge-toolbar-group-icon" aria-hidden="true">📋</span>
+                  <span>Selection</span>
+                  <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                </button>
+                <div class="canva-bridge-toolbar-group-body">
+                  <button type="button" class="canva-bridge-lib-btn" id="canva-bridge-lib-select-visible" title="تحديد المعروض في هذا التبويب">
+                    <i class="fa-solid fa-check-double" aria-hidden="true"></i>
+                    <span>تحديد</span>
+                  </button>
+                  <label class="canva-bridge-lib-select-n" title="Enter لتحديد أول N تصميم">
+                    <i class="fa-solid fa-list-ol" aria-hidden="true"></i>
+                    <span>عدد</span>
+                    <input type="number" id="canva-bridge-lib-select-count" min="1" max="999" placeholder="N" aria-label="عدد التصاميم للتحديد">
+                  </label>
+                  <span class="canva-bridge-lib-selected-count" id="canva-bridge-lib-selection-count" title="عدد التصاميم المحددة" aria-live="polite">
+                    <i class="fa-solid fa-hashtag" aria-hidden="true"></i>
+                    <span class="canva-bridge-lib-count-text">0 محدد</span>
+                  </span>
+                  <button type="button" class="canva-bridge-lib-btn canva-bridge-lib-btn-download" id="canva-bridge-lib-download-selected" disabled title="تحميل التصاميم المحددة">
+                    <i class="fa-solid fa-download" aria-hidden="true"></i>
+                    <span>تحميل المحدد</span>
+                  </button>
+                  <button type="button" class="canva-bridge-lib-btn canva-bridge-lib-btn-download" id="canva-bridge-lib-download-all" disabled title="تحميل كل التصاميم في هذا العرض">
+                    <i class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></i>
+                    <span>تحميل الكل</span>
+                  </button>
+                </div>
+              </section>
+
+              <section class="canva-bridge-toolbar-group" data-toolbar-group="naming">
+                <button type="button" class="canva-bridge-toolbar-group-title" data-toolbar-toggle="naming" aria-expanded="false">
+                  <span class="canva-bridge-toolbar-group-icon" aria-hidden="true">🏷️</span>
+                  <span>Naming</span>
+                  <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                </button>
+                <div class="canva-bridge-toolbar-group-body">
+                  <button type="button" class="canva-bridge-lib-btn canva-bridge-lib-btn-rename" id="canva-bridge-lib-smart-rename" title="تسمية تلقائية بالذكاء — المحدد إن وُجد وإلا كل العرض الحالي">
+                    <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+                    <span>تسمية تلقائية</span>
+                  </button>
+                  <button type="button" class="canva-bridge-lib-btn canva-bridge-lib-btn-rename" id="canva-bridge-lib-rename-selected" disabled title="تسمية ذكية للتصاميم المحددة فقط">
+                    <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+                    <span>تسمية المحدد</span>
+                  </button>
+                  <button type="button" class="canva-bridge-lib-btn canva-bridge-lib-btn-rename" id="canva-bridge-lib-rename-all" title="تسمية ذكية لكل التصاميم في هذا العرض">
+                    <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+                    <span>تسمية الكل</span>
+                  </button>
+                  <button type="button" class="canva-bridge-lib-btn canva-bridge-lib-btn-notes" id="canva-bridge-lib-rename-notes" title="اختر اسمًا من قائمة Notes">
+                    <i class="fa-solid fa-note-sticky" aria-hidden="true"></i>
+                    <span>من Notes</span>
+                  </button>
+                </div>
+              </section>
+
+              <section class="canva-bridge-toolbar-group" data-toolbar-group="library">
+                <button type="button" class="canva-bridge-toolbar-group-title" data-toolbar-toggle="library" aria-expanded="false">
+                  <span class="canva-bridge-toolbar-group-icon" aria-hidden="true">📚</span>
+                  <span>Library</span>
+                  <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                </button>
+                <div class="canva-bridge-toolbar-group-body">
+                  <button type="button" class="canva-bridge-lib-btn canva-bridge-lib-btn-audit" id="canva-bridge-lib-audit-btn" title="فحص تطابق الفهرس مع الملفات على القرص">
+                    <i class="fa-solid fa-stethoscope" aria-hidden="true"></i>
+                    <span>فحص سلامة المكتبة</span>
+                  </button>
+                  <span class="canva-bridge-lib-audit-status" id="canva-bridge-lib-audit-status" aria-live="polite" hidden></span>
+                  <button type="button" class="canva-bridge-lib-btn" id="canva-bridge-lib-select-broken" disabled title="تحديد التصاميم التالفة فقط">
+                    <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                    <span>تحديد التالفة</span>
+                  </button>
+                  <button type="button" class="canva-bridge-lib-btn" id="canva-bridge-lib-reconcile-btn" disabled title="إصلاح أسماء الملفات في الفهرس من القرص">
+                    <i class="fa-solid fa-wrench" aria-hidden="true"></i>
+                    <span>إصلاح الفهرس</span>
+                  </button>
+                </div>
+              </section>
+
+              <section class="canva-bridge-toolbar-group" data-toolbar-group="processing">
+                <button type="button" class="canva-bridge-toolbar-group-title" data-toolbar-toggle="processing" aria-expanded="false">
+                  <span class="canva-bridge-toolbar-group-icon" aria-hidden="true">🛠️</span>
+                  <span>Processing</span>
+                  <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                </button>
+                <div class="canva-bridge-toolbar-group-body">
+                  <button type="button" class="canva-bridge-lib-btn canva-bridge-lib-btn-peel" id="canva-bridge-lib-send-studio" disabled title="Peel Banana → TeeMaster">
+                    <span class="canva-bridge-lib-btn-emoji" aria-hidden="true">🍌</span>
+                    <span>Peel</span>
+                  </button>
+                  <button type="button" class="canva-bridge-lib-btn canva-bridge-lib-btn-teemaster-send" id="canva-bridge-lib-teemaster-send-only" disabled title="إرسال الصور المحددة إلى TeeMaster فقط — بدون Peel وبدون متابعة تلقائية (انتظارك)">
+                    <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+                    <span>إرسال إلى TeeMaster فقط</span>
+                  </button>
+                  <button type="button" class="canva-bridge-lib-btn canva-bridge-lib-btn-teemaster" id="canva-bridge-lib-teemaster-edited" disabled title="TeeMaster → السحر الشامل → تكبير 5K — حفظ في التصاميم المعدّلة (بدون Peel)">
+                    <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+                    <span>معالجة TeeMaster</span>
+                  </button>
+                  <button type="button" class="canva-bridge-lib-btn canva-bridge-lib-btn-teemaster-path" id="canva-bridge-lib-teemaster-full-path" disabled title="TeeMaster → السحر الشامل → 5K → حفظ → SEO محلي (مكتبة) → Autopilot (بدون Peel وبدون RENAME AI)">
+                    <i class="fa-solid fa-route" aria-hidden="true"></i>
+                    <span>مسار TeeMaster</span>
+                  </button>
+                </div>
+              </section>
+
+              <section class="canva-bridge-toolbar-group" data-toolbar-group="publishing">
+                <button type="button" class="canva-bridge-toolbar-group-title" data-toolbar-toggle="publishing" aria-expanded="false">
+                  <span class="canva-bridge-toolbar-group-icon" aria-hidden="true">🚀</span>
+                  <span>Publishing</span>
+                  <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                </button>
+                <div class="canva-bridge-toolbar-group-body">
+                  <button type="button" class="canva-bridge-lib-btn canva-bridge-lib-btn-seo" id="canva-bridge-lib-send-seo" disabled title="إرسال التصاميم المحددة إلى قسم SEO">
+                    <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                    <span>إلى SEO</span>
+                  </button>
+                  <button type="button" class="canva-bridge-lib-btn canva-bridge-lib-btn-path" id="canva-bridge-lib-full-pipeline" disabled title="Peel → TeeMaster → السحر الشامل → RENAME AI → SEO → Autopilot">
+                    <i class="fa-solid fa-rocket" aria-hidden="true"></i>
+                    <span>مسار</span>
+                  </button>
+                </div>
+              </section>
+
+              <section class="canva-bridge-toolbar-group canva-bridge-toolbar-group-danger" data-toolbar-group="danger">
+                <button type="button" class="canva-bridge-lib-btn" id="canva-bridge-lib-upload-btn" title="إضافة صور من الحاسوب">
+                  <i class="fa-solid fa-upload" aria-hidden="true"></i>
+                  <span>إضافة من الحاسوب</span>
+                </button>
+                <input type="file" id="canva-bridge-lib-file-input" class="canva-bridge-lib-file-input" accept="image/png,image/jpeg,image/webp" multiple hidden>
+                <button type="button" class="canva-bridge-lib-btn canva-bridge-lib-btn-danger canva-bridge-lib-delete-direct" id="canva-bridge-lib-empty-tab" title="تفريغ التصاميم في هذا التبويب فقط">تفريغ المكتبة</button>
+                <button type="button" class="canva-bridge-lib-btn canva-bridge-lib-btn-danger canva-bridge-lib-delete-direct" id="canva-bridge-lib-delete-selected" disabled title="حذف التصاميم المحددة">
+                  <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+                  <span>حذف</span>
+                </button>
+              </section>
+            </div>
+
+            <div class="canva-bridge-library-wrap" id="canva-bridge-library-wrap">
+              <div class="canva-bridge-library" id="canva-bridge-library" aria-label="Library designs"></div>
+              <div class="canva-bridge-library-drop" id="canva-bridge-library-drop" aria-hidden="true">
+                <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+                <span>أفلت الصور هنا لإضافتها</span>
+              </div>
+            </div>
+
+          </section>
+
+          <section class="canva-bridge-zone canva-bridge-zone-preview">
+
+            <h4>معاينة التصميم</h4>
+
+            <div class="design-preview-viewer is-empty" id="canva-bridge-preview-viewer">
+
+              <div class="design-preview-viewer-stage">
+
+                <button type="button" class="generate-lightbox-nav generate-lightbox-prev is-hidden" id="canva-bridge-preview-prev" aria-label="التصميم السابق">‹</button>
+
+                <button type="button" class="generate-lightbox-nav generate-lightbox-next is-hidden" id="canva-bridge-preview-next" aria-label="التصميم التالي">›</button>
+
+                <div class="generate-lightbox-viewport" id="canva-bridge-preview-viewport" title="عجلة الماوس للتكبير · اسحب للتحريك · نقرتان لإعادة الحجم">
+
+                  <img class="generate-lightbox-img" id="canva-bridge-preview-img" alt="" decoding="async" draggable="false" hidden>
+
+                  <p class="design-preview-empty" id="canva-bridge-preview-empty">اختر تصميماً من المكتبة</p>
+
+                </div>
+
+              </div>
+
+              <div class="generate-lightbox-toolbar" id="canva-bridge-preview-toolbar">
+
+                <div class="canva-bridge-preview-toolbar-top">
+
+                  <div class="queue-lightbox-meta is-empty" id="canva-bridge-preview-meta">
+
+                    <div class="queue-lightbox-filename" id="canva-bridge-preview-filename">—</div>
+
+                    <div class="canva-bridge-preview-name-row is-hidden" id="canva-bridge-preview-name-row">
+                      <input type="text" class="canva-bridge-preview-name-input" id="canva-bridge-preview-name-input" placeholder="اسم التصميم..." autocomplete="off" spellcheck="false">
+                      <button type="button" class="canva-bridge-preview-name-notes" id="canva-bridge-preview-name-notes" title="اختر من Notes">
+                        <i class="fa-solid fa-note-sticky" aria-hidden="true"></i>
+                        <span>من Notes</span>
+                      </button>
+                    </div>
+
+                    <div class="queue-lightbox-seo-lines">
+
+                      <div class="queue-lightbox-seo-line" id="canva-bridge-preview-label">اختر تصميماً من المكتبة</div>
+
+                      <div class="queue-lightbox-seo-line is-hidden" id="canva-bridge-preview-badge-line">
+
+                        <span id="canva-bridge-preview-badge" class="design-preview-badge" title=""></span>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                  <div class="canva-bridge-preview-nav-controls" role="group" aria-label="تنقل وتكبير">
+
+                    <span class="generate-lightbox-counter is-hidden" id="canva-bridge-preview-counter" dir="ltr" aria-live="polite"></span>
+
+                    <div class="generate-lightbox-zoom" role="group" aria-label="تكبير الصورة">
+
+                      <button type="button" class="generate-lightbox-zoom-btn" id="canva-bridge-preview-zoom-out" aria-label="تصغير">−</button>
+
+                      <span class="generate-lightbox-zoom-level" id="canva-bridge-preview-zoom-level" aria-live="polite">100%</span>
+
+                      <button type="button" class="generate-lightbox-zoom-btn" id="canva-bridge-preview-zoom-in" aria-label="تكبير">+</button>
+
+                      <button type="button" class="generate-lightbox-zoom-btn generate-lightbox-zoom-reset is-hidden" id="canva-bridge-preview-zoom-reset" aria-label="إعادة الحجم الأصلي" title="إعادة الحجم">⟲</button>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+                <div class="queue-lightbox-actions canva-bridge-preview-actions-row">
+
+                  <button type="button" class="generate-lightbox-btn generate-lightbox-rename" id="canva-bridge-preview-auto-rename" title="تسمية تلقائية بالذكاء الاصطناعي" disabled>
+                    <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> تسمية تلقائية
+                  </button>
+
+                  <button type="button" class="generate-lightbox-btn generate-lightbox-canva" id="canva-bridge-preview-send-open" title="رفع التصميم وفتحه في Canva" disabled>
+
+                    <i class="fa-brands fa-canva" aria-hidden="true"></i> إرسال وفتح
+
+                  </button>
+
+                  <button type="button" class="generate-lightbox-btn generate-lightbox-seo" id="canva-bridge-preview-seo" title="إرسال التصميم إلى قائمة SEO" disabled>
+
+                    <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> إلى SEO
+
+                  </button>
+
+                  <button type="button" class="generate-lightbox-btn generate-lightbox-dl" id="canva-bridge-preview-dl" title="تحميل الصورة" disabled>
+
+                    <i class="fa-solid fa-download" aria-hidden="true"></i> تحميل
+
+                  </button>
+
+                  <button type="button" class="generate-lightbox-btn generate-lightbox-del" id="canva-bridge-preview-del" title="حذف من المكتبة" disabled>
+
+                    <i class="fa-solid fa-trash" aria-hidden="true"></i> حذف
+
+                  </button>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </section>
+
+        </div>
+
+      </div>
+
+      <aside class="canva-bridge-sidebar" aria-label="التحكم ومسار العمل">
+
+        <div class="canva-bridge-actions">
+
+          <button type="button" class="canva-bridge-btn canva-bridge-btn-primary" id="canva-bridge-send-open">إرسال وفتح في Canva</button>
+
+          <button type="button" class="canva-bridge-btn canva-bridge-btn-secondary" id="canva-bridge-open-blank" title="إنشاء لوحة فارغة 5000×5000 في Canva — أضف التصميم يدوياً من مصدر خارجي">فتح Canva فارغ 5000×5000</button>
+
+          <button type="button" class="canva-bridge-btn canva-bridge-btn-success" id="canva-bridge-import" title="يصدّر PNG شفاف 5000×5000 عبر Canva API (مكافئ لتنزيل → PNG → خلفية شفافة) ثم يحفظه في التصاميم المعدّلة">استيراد وحفظ نسخة معدّلة · Import &amp; Save Edited Version</button>
+
+          <button type="button" class="canva-bridge-btn canva-bridge-btn-success is-hidden" id="canva-bridge-seo" hidden aria-hidden="true">Send Edited Design to SEO</button>
+
+        </div>
+
+        <p class="canva-bridge-msg" id="canva-bridge-msg">Canva credentials not configured.</p>
+
+        <span class="canva-bridge-loading is-hidden" id="canva-bridge-loading">جاري المعالجة...</span>
+        <div class="canva-bridge-pipeline-progress is-hidden" id="canva-bridge-pipeline-progress" aria-hidden="true">
+          <div class="canva-bridge-pipeline-progress-track">
+            <div class="canva-bridge-pipeline-progress-fill" id="canva-bridge-pipeline-progress-fill"></div>
+          </div>
+        </div>
+
+        <div class="canva-bridge-sidebar-block">
+
+          <h5 class="canva-bridge-sidebar-title">مسار العمل</h5>
+
+          <div class="canva-bridge-steps" id="canva-bridge-steps" aria-label="Workflow steps"></div>
+
+        </div>
+
+      </aside>
+
+    </div>
+
+    <div class="canva-bridge-note-picker is-hidden" id="canva-bridge-note-picker" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="canva-bridge-note-picker-title">
+      <div class="canva-bridge-note-picker-backdrop" id="canva-bridge-note-picker-backdrop"></div>
+      <div class="canva-bridge-note-picker-panel">
+        <div class="canva-bridge-note-picker-head">
+          <h3 class="canva-bridge-note-picker-title" id="canva-bridge-note-picker-title">اختر من قائمة Notes</h3>
+          <button type="button" class="canva-bridge-note-picker-close" id="canva-bridge-note-picker-close" aria-label="إغلاق">×</button>
+        </div>
+        <input type="search" class="canva-bridge-note-picker-search" id="canva-bridge-note-picker-search" placeholder="بحث في الملاحظات..." autocomplete="off" enterkeyhint="search">
+        <ul class="canva-bridge-note-picker-list" id="canva-bridge-note-picker-list"></ul>
+        <p class="canva-bridge-note-picker-empty is-hidden" id="canva-bridge-note-picker-empty">لا توجد ملاحظات في القائمة — أضف نيتشات من تبويب Notes أولاً.</p>
+      </div>
+    </div>
+
+    <div class="canva-bridge-settings-modal is-hidden" id="canva-bridge-settings-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="canva-bridge-settings-title">
+
+      <button type="button" class="canva-bridge-settings-backdrop" id="canva-bridge-settings-backdrop" aria-label="إغلاق"></button>
+
+      <div class="canva-bridge-settings-box">
+
+        <h4 class="canva-bridge-settings-title" id="canva-bridge-settings-title">
+          <i class="fa-solid fa-gear" aria-hidden="true"></i> إعدادات Canva API
+        </h4>
+
+        <p class="canva-bridge-settings-hint">تُحفظ بيانات الاعتماد في ملف <code dir="ltr">.env</code> المحلي عبر Ghost Server — لا تُخزَّن في الإضافة.</p>
+
+        <section class="canva-bridge-settings-section" aria-label="اتصال Canva والمكتبة">
+          <h5 class="canva-bridge-settings-section-title">اتصال Canva والمكتبة</h5>
+          <div class="canva-bridge-settings-connect-actions">
+            <button type="button" class="canva-bridge-btn canva-bridge-btn-secondary canva-bridge-btn-compact" id="canva-bridge-connect-api" title="فتح Canva Developers (Connect API)">
+              <i class="fa-brands fa-canva" aria-hidden="true"></i> دخول لمطوري Canva (Connect API)
+            </button>
+            <button type="button" class="canva-bridge-btn canva-bridge-btn-primary canva-bridge-btn-compact" id="canva-bridge-connect">Connect Canva</button>
+            <button type="button" class="canva-bridge-btn canva-bridge-btn-secondary canva-bridge-btn-compact" id="canva-bridge-disconnect" title="حذف التوكن وإعادة الربط بعد تغيير الصلاحيات">قطع الاتصال</button>
+            <button type="button" class="canva-bridge-btn canva-bridge-btn-warn canva-bridge-btn-compact" id="canva-bridge-reconnect" title="مسح التوكن القديم وفتح OAuth مباشرة">إعادة الربط</button>
+            <button type="button" class="canva-bridge-btn canva-bridge-btn-secondary canva-bridge-btn-compact" id="canva-bridge-refresh">Refresh Library Designs</button>
+            <button type="button" class="canva-bridge-btn canva-bridge-btn-secondary canva-bridge-btn-compact" id="canva-bridge-select">Select Design</button>
+          </div>
+        </section>
+
+        <label class="canva-bridge-field canva-bridge-field-checkbox" for="canva-bridge-settings-auto-connect">
+          <span class="canva-bridge-checkbox-row">
+            <input type="checkbox" class="canva-bridge-checkbox" id="canva-bridge-settings-auto-connect" checked>
+            <span class="canva-bridge-field-label">ربط تلقائي</span>
+          </span>
+          <span class="canva-bridge-field-note canva-bridge-checkbox-hint">عند فتح اللوحة: ربط Canva تلقائياً والنقر على «سماح» في صفحة OAuth (يجب تسجيل الدخول إلى Canva في المتصفح)</span>
+        </label>
+
+        <label class="canva-bridge-field">
+          <span class="canva-bridge-field-label">Client ID</span>
+          <div class="canva-bridge-field-row">
+            <input type="text" class="canva-bridge-input" id="canva-bridge-settings-client-id" dir="ltr" autocomplete="off" placeholder="OC-AZ8LCwZlJ92z" spellcheck="false">
+            <button type="button" class="canva-bridge-copy-btn" id="canva-bridge-copy-client-id" title="نسخ Client ID">نسخ</button>
+          </div>
+        </label>
+
+        <label class="canva-bridge-field">
+          <span class="canva-bridge-field-label">Client Secret</span>
+          <input type="password" class="canva-bridge-input" id="canva-bridge-settings-client-secret" dir="ltr" autocomplete="new-password" placeholder="أدخل Client Secret">
+        </label>
+
+        <label class="canva-bridge-field">
+          <span class="canva-bridge-field-label">Redirect URI <span class="canva-bridge-field-note">(افتراضي — للقراءة فقط)</span></span>
+          <div class="canva-bridge-field-row">
+            <textarea class="canva-bridge-input canva-bridge-input-uri is-readonly" id="canva-bridge-settings-redirect-uri" dir="ltr" readonly rows="2" spellcheck="false" aria-label="Redirect URI"></textarea>
+            <button type="button" class="canva-bridge-copy-btn" id="canva-bridge-copy-redirect-uri" title="نسخ Redirect URI">نسخ</button>
+          </div>
+        </label>
+
+        <div class="canva-bridge-env-template">
+          <span class="canva-bridge-field-label">قالب .env</span>
+          <pre class="canva-bridge-env-pre" id="canva-bridge-env-template" dir="ltr"></pre>
+          <button type="button" class="canva-bridge-copy-btn canva-bridge-copy-env" id="canva-bridge-copy-env-template">نسخ القالب</button>
+        </div>
+
+        <p class="canva-bridge-settings-msg" id="canva-bridge-settings-msg" aria-live="polite"></p>
+
+        <div class="canva-bridge-settings-actions">
+          <button type="button" class="canva-bridge-btn canva-bridge-btn-secondary" id="canva-bridge-settings-cancel">إلغاء</button>
+          <button type="button" class="canva-bridge-btn canva-bridge-btn-primary" id="canva-bridge-settings-save">حفظ</button>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

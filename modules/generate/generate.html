@@ -1,0 +1,655 @@
+<div class="generate-root studio-ui-shell" dir="rtl" lang="ar">
+
+  <div class="gen-pipeline-top-bar is-hidden" id="generate-pipeline-overlay" aria-hidden="true" role="status" aria-live="polite">
+
+    <div class="gen-pipeline-top-bar-track" aria-hidden="true">
+
+      <div class="gen-pipeline-top-bar-fill" id="generate-pipeline-fill"></div>
+
+    </div>
+
+    <div class="gen-pipeline-top-bar-strip">
+
+      <p class="gen-pipeline-top-bar-text" id="generate-pipeline-text">🚀 مسار الرفع الكامل</p>
+
+      <button type="button" class="gen-pipeline-top-bar-cancel" id="generate-pipeline-cancel" aria-label="إلغاء المسار">إلغاء</button>
+
+      <button type="button" class="gen-pipeline-top-bar-dismiss is-hidden" id="generate-pipeline-dismiss" aria-label="إغلاق">×</button>
+
+    </div>
+
+  </div>
+
+
+
+  <header class="generate-header">
+
+    <div class="generate-title-block">
+
+      <span class="generate-shell-icon" aria-hidden="true"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+
+      <div>
+
+        <h2 class="generate-title">توليد التصاميم</h2>
+
+        <p class="generate-sub">Generate — T-shirt designs via Ghost Server</p>
+
+      </div>
+
+    </div>
+
+    <div class="generate-header-actions">
+
+      <button type="button" class="generate-btn-ghost" id="generate-clear-chat" title="تبويب جديد">
+
+        <i class="fa-solid fa-plus"></i>
+
+        <span>جديد</span>
+
+      </button>
+
+      <span class="generate-queue-badge" id="generate-queue-badge" hidden></span>
+
+      <span class="generate-status-pill" id="generate-server-pill">Ghost 3019</span>
+
+    </div>
+
+  </header>
+
+
+
+  <nav class="generate-tab-bar" id="generate-tab-bar" aria-label="تبويبات المحادثة">
+
+    <div class="generate-tab-list" id="generate-tab-list" role="tablist"></div>
+
+    <button type="button" class="generate-tab-close-all" id="generate-tab-close-all" title="إغلاق الكل" aria-label="إغلاق الكل">
+
+      <i class="fa-solid fa-xmarks-lines" aria-hidden="true"></i>
+
+    </button>
+
+    <button type="button" class="generate-tab-add" id="generate-tab-add" title="تبويب جديد" aria-label="تبويب جديد">
+
+      <i class="fa-solid fa-plus"></i>
+
+    </button>
+
+  </nav>
+
+
+
+  <nav class="generate-section-tabs" id="generate-section-tabs" aria-label="أقسام التوليد">
+
+    <button type="button" class="generate-section-tab is-active" data-generate-section="chat" aria-selected="true">محادثة</button>
+
+    <button type="button" class="generate-section-tab" data-generate-section="library" aria-selected="false">مكتبة</button>
+
+    <button type="button" class="generate-section-tab" data-generate-section="history" aria-selected="false">سجل</button>
+
+  </nav>
+
+
+
+  <div class="generate-section-panels">
+
+    <section class="generate-section-panel is-active" data-generate-section="chat" id="generate-section-chat">
+
+      <div class="generate-chat-wrap">
+
+        <div class="generate-chat" id="generate-chat" aria-label="محادثة التوليد" role="log" aria-live="polite">
+
+          <div class="generate-welcome" id="generate-welcome">
+
+            <div class="generate-welcome-icon"><i class="fa-solid fa-shirt"></i></div>
+
+            <p class="generate-welcome-title">مرحباً — صِف التصميم أو ارفع صورة</p>
+
+            <p class="generate-welcome-hint">اكتب وصفاً، أو أرفق صوراً (مشبك / سحب / Ctrl+V) ثم اضغط إرسال — Enter للإرسال، Shift+Enter سطر جديد</p>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+
+      <footer class="generate-composer">
+
+        <div class="generate-settings-bar" id="generate-settings-bar" hidden>
+
+          <label class="generate-setting generate-setting-mode">
+
+            <span>الوضع</span>
+
+            <select id="generate-mode" title="اختيار مزوّد الذكاء الاصطناعي للتوليد">
+
+              <option value="auto" selected>تلقائي</option>
+
+              <option value="gemini">Gemini</option>
+
+              <option value="chatgpt">ChatGPT</option>
+
+            </select>
+
+          </label>
+
+          <label class="generate-setting">
+
+            <span>العدد</span>
+
+            <select id="generate-count">
+
+              <option value="2" selected>2 (صف واحد)</option>
+
+              <option value="4">4 (دفعة واحدة — 2×2)</option>
+
+              <option value="8">8 (دفعتان)</option>
+
+              <option value="12">12 (3 دفعات)</option>
+
+            </select>
+
+          </label>
+
+          <label class="generate-setting">
+
+            <span>الجودة</span>
+
+            <select id="generate-quality">
+
+              <option value="fast">سريع</option>
+
+              <option value="balanced" selected>متوازن</option>
+
+              <option value="premium">مميز</option>
+
+            </select>
+
+          </label>
+
+          <label class="generate-setting">
+
+            <span>تزامن الطابور</span>
+
+            <select id="generate-queue-concurrency" title="عدد طلبات POST /api/generate المتزامنة عالمياً">
+
+              <option value="2" selected>2 (آمن — Render)</option>
+
+              <option value="3">3 (أسرع)</option>
+
+            </select>
+
+          </label>
+
+          <label class="generate-setting generate-setting-checkbox" id="generate-auto-fallback-wrap">
+
+            <input type="checkbox" id="generate-auto-fallback-gemini" checked title="في الوضع «تلقائي» فقط: عند فشل ChatGPT/gpt-image-2 جرّب Gemini قبل عرض الخطأ">
+
+            <span>تراجع Gemini تلقائي (الوضع «تلقائي» فقط)</span>
+
+          </label>
+
+          <div class="generate-setting generate-setting-gemini-block">
+
+            <span class="generate-setting-gemini-title">إعدادات Gemini</span>
+
+            <label class="generate-setting-field" for="generate-gemini-api-key">
+
+              <span>مفتاح Gemini API</span>
+
+              <input type="password" id="generate-gemini-api-key" class="generate-setting-input" autocomplete="off" placeholder="AIza... (اختياري)" title="مفتاح Google AI Studio — يُستخدم عند وضع Gemini أو اختبار Gemini">
+
+            </label>
+
+            <label class="generate-setting-field" for="generate-gemini-base-url">
+
+              <span>Google Base URL</span>
+
+              <input type="text" id="generate-gemini-base-url" class="generate-setting-input" dir="ltr" spellcheck="false" placeholder="https://generativelanguage.googleapis.com أو http://127.0.0.1:8317/v1" title="عنوان Google API أو قاعدة CLIProxy المحلية">
+
+            </label>
+
+            <p class="generate-setting-gemini-hint">اختياري: عند اختيار وضع <strong>Gemini</strong> أو زر «اختبار Gemini»، يُستخدم هذا المفتاح وعنوان Google Base بدلاً من مفتاح NHP API العام (SEO). لـ CLIProxy المحلي استخدم <code dir="ltr">http://127.0.0.1:8317/v1</code> — اترك الحقول فارغة لاستخدام إعدادات SEO الافتراضية.</p>
+
+          </div>
+
+          <div class="generate-setting generate-setting-test-block">
+
+            <span class="generate-setting-test-title">اختبار مولّد الصور</span>
+
+            <p class="generate-setting-test-hint">يتحقق أولاً من <strong>مفتاح SEO</strong> (نفس <code>nhpGptApiKey</code> + <code>nhpProxyBaseUrl</code> على Render) ثم يختبر التوليد عبر Ghost: Gemini يستخدم <code>/v1/chat/completions</code> (modalities) وChatGPT يستخدم <code>/v1/images/generations</code>. إذا ظهر خطأ مع «المسار المُستخدَم» فالمفتاح سليم لكن المصادقة أو النموذج غير متاح على CLIProxy.</p>
+
+            <div class="generate-test-actions">
+
+              <button type="button" class="generate-btn-ghost generate-test-btn" id="generate-test-gemini" title="اختبار نموذج Gemini عبر CLIProxy">
+
+                🧪 اختبار Gemini
+
+              </button>
+
+              <button type="button" class="generate-btn-ghost generate-test-btn" id="generate-test-chatgpt" title="اختبار نموذج ChatGPT (gpt-image) عبر CLIProxy">
+
+                🧪 اختبار ChatGPT
+
+              </button>
+
+              <button type="button" class="generate-btn-ghost generate-test-btn" id="generate-restart-ghost" title="إعادة تشغيل Ghost Server على المنفذ 3019">
+
+                🔄 إعادة تشغيل Ghost Server (3019)
+
+              </button>
+
+            </div>
+
+            <p class="generate-test-status" id="generate-restart-status" aria-live="polite" hidden></p>
+
+            <p class="generate-test-status" id="generate-test-status" aria-live="polite">لم يُجرَ اختبار بعد</p>
+
+            <img class="generate-test-preview is-hidden" id="generate-test-preview" alt="معاينة اختبار التوليد" hidden>
+
+          </div>
+
+          <div class="generate-setting generate-setting-prompt-block">
+
+            <div class="generate-setting-prompt-head">
+
+              <span class="generate-setting-prompt-title">البرومبت الداخلي للتوليد</span>
+
+              <button type="button" class="generate-btn-ghost generate-system-prompt-reset" id="generate-system-prompt-reset" title="استعادة البرومبت الافتراضي من الخادم">استعادة الافتراضي</button>
+
+            </div>
+
+            <textarea id="generate-system-prompt" class="generate-system-prompt-input" rows="5" spellcheck="true" dir="ltr" lang="en"
+
+              placeholder="تعليمات النظام (مثل حقل Instructions في ChatGPT GPT) — اتركه فارغاً لاستخدام الافتراضي المدمج في Ghost…"></textarea>
+
+            <p class="generate-system-prompt-hint">يُدمج مع كل طلب توليد (نص أو صورة). يُحفظ محلياً في المتصفح. عند مرجع فيه كتابة (مثل SPURS أو اسم لاعب)، اضغط «استعادة الافتراضي» إن كان البرومبت القديم يحذف النص.</p>
+
+          </div>
+
+          <label class="generate-setting generate-setting-style">
+
+            <span class="generate-setting-style-head">
+
+              <span>الأسلوب</span>
+
+              <button type="button" class="generate-btn-ghost generate-style-manage-btn" id="generate-style-manage-btn" title="إضافة أساليب، مفضلة، إخفاء">إدارة الأساليب</button>
+
+            </span>
+
+            <select id="generate-style">
+
+              <option value="auto" selected>تلقائي</option>
+
+            </select>
+
+            <div class="generate-style-manager" id="generate-style-manager" hidden>
+
+              <p class="generate-style-manager-hint">المفضلة تظهر أعلى القائمة. الأساليب المدمجة يمكن إخفاؤها فقط.</p>
+
+              <ul class="generate-style-manager-list" id="generate-style-manager-list"></ul>
+
+              <div class="generate-style-manager-add">
+
+                <input type="text" id="generate-style-add-input" class="generate-style-add-input" dir="auto" spellcheck="true" maxlength="80" placeholder="اسم أسلوب جديد…" autocomplete="off">
+
+                <button type="button" class="generate-btn-ghost" id="generate-style-add-btn">إضافة</button>
+
+              </div>
+
+            </div>
+
+          </label>
+
+        </div>
+
+
+
+        <div class="generate-input-shell">
+
+          <div class="generate-attach-row is-hidden" id="generate-attach-row">
+
+            <div class="generate-attach-chips" id="generate-attach-chips" aria-label="صور مرفقة"></div>
+
+          </div>
+
+
+
+          <div class="generate-input-row">
+
+            <button type="button" class="generate-icon-btn" id="generate-settings-toggle" title="الإعدادات" aria-expanded="false" aria-controls="generate-settings-bar">
+
+              <i class="fa-solid fa-gear"></i>
+
+            </button>
+
+            <label class="generate-icon-btn generate-attach-label" title="إرفاق صورة">
+
+              <i class="fa-solid fa-paperclip"></i>
+
+              <input type="file" id="generate-image-input" accept="image/png,image/jpeg,image/webp" multiple hidden>
+
+            </label>
+
+            <textarea id="generate-prompt" class="generate-input" rows="1" spellcheck="true"
+
+              placeholder="اكتب وصف التصميم هنا..."></textarea>
+
+            <button type="button" class="generate-send-btn" id="generate-submit" title="توليد" aria-label="إرسال">
+
+              <i class="fa-solid fa-arrow-up"></i>
+
+            </button>
+
+          </div>
+
+        </div>
+
+
+
+        <p class="generate-legal" id="generate-legal">
+
+          يجب أن تملك حقوق الصور المرفوعة. لا تُنشئ تصاميم تنتهك العلامات التجارية أو حقوق النشر.
+
+          <span class="generate-legal-hint">ملاحظة: الواجهة تدعم عدة صور؛ الخادم حالياً يستخدم الصورة الأولى فقط للتوليد.</span>
+
+        </p>
+
+        <div class="generate-status is-hidden" id="generate-status" aria-live="polite"></div>
+
+      </footer>
+
+    </section>
+
+
+
+    <section class="generate-section-panel" data-generate-section="library" id="generate-section-library" hidden>
+
+      <div class="generate-library-panel" id="generate-library-panel">
+
+        <div class="generate-library-head">
+
+          <span class="generate-library-head-title"><i class="fa-solid fa-folder-open"></i> المكتبة</span>
+
+          <button type="button" class="generate-btn-ghost generate-library-refresh" id="generate-refresh-library" title="تحديث المكتبة">
+
+            <i class="fa-solid fa-rotate"></i>
+
+          </button>
+
+        </div>
+
+        <div class="generate-library-filters" id="generate-library-filters">
+
+          <div class="generate-lib-filter-period" role="group" aria-label="تصفية بالتاريخ">
+
+            <button type="button" class="generate-lib-filter-btn" data-lib-period="today">اليوم</button>
+
+            <button type="button" class="generate-lib-filter-btn" data-lib-period="week">هذا الأسبوع</button>
+
+            <button type="button" class="generate-lib-filter-btn is-active" data-lib-period="all">الكل</button>
+
+          </div>
+
+          <input type="search" class="generate-lib-search" id="generate-lib-search" placeholder="بحث بالاسم أو البرومبت..." aria-label="بحث في المكتبة">
+
+          <label class="generate-lib-studio-filter is-hidden" id="generate-lib-studio-filter-wrap" title="إظهار المرسلة لـ Studio فقط">
+
+            <input type="checkbox" id="generate-lib-studio-filter">
+
+            <span>مرسل لـ Studio</span>
+
+          </label>
+
+        </div>
+
+        <div class="generate-library-toolbar">
+
+          <div class="gen-lib-toolbar-group gen-lib-toolbar-group--selection">
+
+            <button type="button" class="generate-btn-ghost gen-lib-toolbar-btn" id="generate-lib-select-visible" title="تحديد المعروض">
+
+              <i class="fa-solid fa-check-double" aria-hidden="true"></i>
+
+              <span class="gen-lib-btn-label">تحديد</span>
+
+            </button>
+
+            <span class="generate-lib-selected-count" id="generate-lib-selected-count" title="عدد التصاميم المحددة">
+
+              <i class="fa-solid fa-hashtag" aria-hidden="true"></i>
+
+              <span class="gen-lib-count-text">0 محدد</span>
+
+            </span>
+
+          </div>
+
+          <span class="gen-lib-toolbar-sep" aria-hidden="true"></span>
+
+          <div class="gen-lib-toolbar-group gen-lib-toolbar-group--download">
+
+            <button type="button" class="generate-btn-ghost gen-lib-toolbar-btn" id="generate-lib-download-selected" disabled title="تحميل المحدد">
+
+              <i class="fa-solid fa-download" aria-hidden="true"></i>
+
+              <span class="gen-lib-btn-label">تحميل المحدد</span>
+
+            </button>
+
+            <button type="button" class="generate-btn-ghost gen-lib-toolbar-btn" id="generate-lib-download-all" title="تحميل الكل">
+
+              <i class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></i>
+
+              <span class="gen-lib-btn-label">تحميل الكل</span>
+
+            </button>
+
+          </div>
+
+          <span class="gen-lib-toolbar-sep" aria-hidden="true"></span>
+
+          <div class="gen-lib-toolbar-group gen-lib-toolbar-group--primary">
+
+            <button type="button" class="generate-btn-ghost gen-lib-toolbar-btn" id="generate-lib-smart-rename" title="تسمية ذكية بالذكاء الاصطناعي (من الملاحظات + التحليل البصري)">
+
+              <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+
+              <span class="gen-lib-btn-label">تسمية ذكية</span>
+
+            </button>
+
+            <button type="button" class="generate-btn-ghost gen-lib-toolbar-btn generate-lib-send-studio-btn" id="generate-lib-send-studio" disabled title="Peel Banana → TeeMaster">
+
+              <span class="gen-lib-btn-emoji" aria-hidden="true">🍌</span>
+
+              <span class="gen-lib-btn-label">Peel</span>
+
+            </button>
+
+            <button type="button" class="generate-btn-ghost gen-lib-toolbar-btn generate-lib-full-pipeline-btn" id="generate-lib-full-pipeline" disabled title="Peel → TeeMaster → السحر الشامل → RENAME AI → SEO → Autopilot">
+
+              <i class="fa-solid fa-rocket" aria-hidden="true"></i>
+
+              <span class="gen-lib-btn-label">مسار</span>
+
+            </button>
+
+          </div>
+
+          <span class="gen-lib-toolbar-sep" aria-hidden="true"></span>
+
+          <div class="gen-lib-toolbar-group gen-lib-toolbar-group--delete">
+
+            <button type="button" class="generate-btn-ghost gen-lib-toolbar-btn generate-lib-delete-btn" id="generate-lib-delete-selected" disabled title="حذف المحدد">
+
+              <i class="fa-solid fa-trash" aria-hidden="true"></i>
+
+              <span class="gen-lib-btn-label">حذف</span>
+
+            </button>
+
+          </div>
+
+          <details class="gen-lib-more-menu">
+
+            <summary class="generate-btn-ghost gen-lib-toolbar-btn gen-lib-more-summary" id="generate-lib-more">المزيد ▾</summary>
+
+            <div class="gen-lib-more-dropdown">
+
+              <button type="button" class="generate-btn-ghost gen-lib-toolbar-btn" id="generate-lib-select-none">إلغاء التحديد</button>
+
+              <label class="generate-lib-select-n" title="Enter لتحديد أول N تصميم">
+
+                <i class="fa-solid fa-list-ol" aria-hidden="true"></i>
+
+                <span class="gen-lib-btn-label">عدد</span>
+
+                <input type="number" id="generate-lib-select-count" min="1" max="999" placeholder="N" aria-label="عدد التصاميم للتحديد">
+
+              </label>
+
+              <button type="button" class="generate-btn-ghost gen-lib-toolbar-btn generate-lib-delete-btn generate-lib-delete-all-btn" id="generate-lib-delete-all" title="تفريغ المكتبة">تفريغ المكتبة</button>
+
+              <button type="button" class="generate-btn-ghost gen-lib-toolbar-btn" id="generate-lib-select-all" title="تحديد الكل">تحديد الكل</button>
+
+            </div>
+
+          </details>
+
+        </div>
+
+        <div class="generate-library-grid" id="generate-library-grid" aria-label="مكتبة التصاميم المحلية"></div>
+
+        <div class="generate-library-preview is-hidden" id="generate-library-preview" aria-hidden="true">
+
+          <div class="generate-library-preview-head">
+
+            <p class="generate-library-preview-title" id="generate-library-preview-title"></p>
+
+            <button type="button" class="generate-attach-remove" id="generate-library-preview-close" aria-label="إغلاق">
+
+              <i class="fa-solid fa-xmark"></i>
+
+            </button>
+
+          </div>
+
+          <img class="generate-library-preview-img" id="generate-library-preview-img" alt="" loading="lazy">
+
+          <div class="generate-library-preview-actions" id="generate-library-preview-actions"></div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <section class="generate-section-panel" data-generate-section="history" id="generate-section-history" hidden>
+
+      <div class="generate-history-panel" id="generate-history-panel">
+
+        <div class="generate-history-head">
+
+          <span class="generate-history-head-title"><i class="fa-solid fa-clock-rotate-left"></i> التوليدات السابقة</span>
+
+          <input type="search" class="generate-lib-search generate-history-search" id="generate-history-search" placeholder="بحث في السجل..." aria-label="بحث في السجل" autocomplete="off">
+
+          <button type="button" class="generate-btn-ghost generate-history-clear" id="generate-clear-gallery" title="تفريغ السجل">تفريغ السجل</button>
+
+          <button type="button" class="generate-btn-ghost generate-history-refresh" id="generate-refresh-gallery" title="تحديث السجل">
+
+            <i class="fa-solid fa-rotate"></i>
+
+          </button>
+
+        </div>
+
+        <div class="generate-library-grid generate-history-grid" id="generate-gallery" aria-label="سجل التوليدات"></div>
+
+      </div>
+
+    </section>
+
+  </div>
+
+
+
+  <textarea id="generate-auto-prompt" hidden aria-hidden="true" tabindex="-1"></textarea>
+
+
+
+  <div class="generate-confirm-modal is-hidden" id="generate-confirm-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="generate-confirm-text">
+
+    <button type="button" class="generate-confirm-backdrop" id="generate-confirm-backdrop" aria-label="إلغاء"></button>
+
+    <div class="generate-confirm-box">
+
+      <p class="generate-confirm-text" id="generate-confirm-text"></p>
+
+      <div class="generate-confirm-actions">
+
+        <button type="button" class="generate-btn-ghost" id="generate-confirm-cancel">إلغاء</button>
+
+        <button type="button" class="generate-confirm-ok" id="generate-confirm-ok">تأكيد</button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="generate-lightbox is-hidden" id="generate-lightbox" role="dialog" aria-modal="true" aria-hidden="true" aria-label="معاينة الصورة">
+
+    <button type="button" class="generate-lightbox-close" id="generate-lightbox-close" aria-label="إغلاق">
+
+      <i class="fa-solid fa-xmark"></i>
+
+    </button>
+
+    <div class="generate-lightbox-backdrop" id="generate-lightbox-backdrop"></div>
+
+    <button type="button" class="generate-lightbox-nav generate-lightbox-prev is-hidden" id="generate-lightbox-prev" aria-label="الصورة السابقة">‹</button>
+
+    <button type="button" class="generate-lightbox-nav generate-lightbox-next is-hidden" id="generate-lightbox-next" aria-label="الصورة التالية">›</button>
+
+    <div class="generate-lightbox-viewport" id="generate-lightbox-viewport" title="عجلة الماوس للتكبير · اسحب للتحريك · نقرتان لإعادة الحجم">
+      <img class="generate-lightbox-img" id="generate-lightbox-img" alt="" decoding="async" draggable="false">
+    </div>
+
+    <div class="generate-lightbox-toolbar" id="generate-lightbox-toolbar">
+
+      <div class="generate-lightbox-zoom" id="generate-lightbox-zoom" role="group" aria-label="تكبير الصورة">
+        <button type="button" class="generate-lightbox-zoom-btn" id="generate-lightbox-zoom-out" aria-label="تصغير">−</button>
+        <span class="generate-lightbox-zoom-level" id="generate-lightbox-zoom-level" aria-live="polite">100%</span>
+        <button type="button" class="generate-lightbox-zoom-btn" id="generate-lightbox-zoom-in" aria-label="تكبير">+</button>
+        <button type="button" class="generate-lightbox-zoom-btn generate-lightbox-zoom-reset is-hidden" id="generate-lightbox-zoom-reset" aria-label="إعادة الحجم الأصلي" title="إعادة الحجم">⟲</button>
+      </div>
+
+      <span class="generate-lightbox-counter is-hidden" id="generate-lightbox-counter" aria-live="polite"></span>
+
+      <button type="button" class="generate-lightbox-btn generate-lightbox-dl" id="generate-lightbox-dl">
+
+        <i class="fa-solid fa-download" aria-hidden="true"></i> تحميل
+
+      </button>
+
+      <button type="button" class="generate-lightbox-btn generate-lightbox-del is-hidden" id="generate-lightbox-del">
+
+        <i class="fa-solid fa-trash" aria-hidden="true"></i> حذف
+
+      </button>
+
+    </div>
+
+  </div>
+
+
+
+</div>
+

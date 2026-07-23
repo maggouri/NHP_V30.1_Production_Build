@@ -1,0 +1,41 @@
+# Copy to config.yaml and set your secrets locally (config.yaml is gitignored).
+host: "127.0.0.1"
+port: 8317
+
+tls:
+  enable: false
+  cert: ""
+  key: ""
+
+remote-management:
+  allow-remote: false
+  secret-key: "CHANGE-ME-management-key"
+  disable-control-panel: false
+  disable-auto-update-panel: true
+
+auth-dir: "./auths"
+
+api-keys:
+  - "nhp-local-cliproxy-key"
+  - "nhp-local-cli-proxy-key"
+
+debug: false
+
+pprof:
+  enable: false
+  addr: "127.0.0.1:8316"
+
+commercial-mode: false
+logging-to-file: true
+logs-max-total-size-mb: 64
+error-logs-max-files: 5
+usage-statistics-enabled: false
+redis-usage-queue-retention-seconds: 60
+
+proxy-url: ""
+force-model-prefix: false
+passthrough-headers: false
+request-retry: 2
+max-retry-credentials: 0
+max-retry-interval: 30
+disable-cooling: false

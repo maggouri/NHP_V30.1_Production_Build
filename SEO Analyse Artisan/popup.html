@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEO Analyse Artisan</title>
+    <link rel="stylesheet" href="popup.css">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <div class="hero-card">
+            <div class="header">
+                <div class="logo">✨</div>
+                <div>
+                    <div class="eyebrow">Artisan SEO</div>
+                    <h1>SEO Analyse Artisan</h1>
+                </div>
+            </div>
+            <p class="hero-text">
+                مساعد سريع لتحليل النيتشات وتوليد 25 Tag ذكي لـ TeePublic مع حفظ مفتاح Gemini بشكل محلي.
+            </p>
+        </div>
+
+        <div class="status-card">
+            <div class="status-indicator active"></div>
+            <div>
+                <strong>حالة المستشار: جاهز</strong>
+                <p>اللوحة التفاعلية تعمل على المتصفح ويمكن استخدامها مباشرة من نافذة الإضافة.</p>
+            </div>
+        </div>
+
+        <div class="api-section">
+            <label for="gemini-api-key">مفتاح Gemini المخصص</label>
+            <input type="password" id="gemini-api-key" placeholder="ألصق مفتاح Gemini هنا إذا أردت تخصيصه">
+            <button id="save-api-key" class="secondary-btn">حفظ المفتاح</button>
+            <div id="api-status" class="api-status" style="display:block;">النظام جاهز ويعمل بالمفتاح الافتراضي أو المفتاح المحفوظ.</div>
+        </div>
+
+        <div class="features-list">
+            <div class="feature-item"><span class="icon">🔍</span><span>تحليل بصري سريع للنيتش</span></div>
+            <div class="feature-item"><span class="icon">🤖</span><span>صياغة أوامر قوية لـ Gemini</span></div>
+            <div class="feature-item"><span class="icon">🛡️</span><span>مساعدة في فحص الكلمات الحساسة</span></div>
+            <div class="feature-item"><span class="icon">📈</span><span>استخراج Tags مناسبة للبحث</span></div>
+        </div>
+
+        <div class="tags-generator-card">
+            <h3><span class="icon">🏷️</span> مولد 25 Tag ذكي</h3>
+            <p class="helper-text">أدخل اسم النيتش ثم دع الأداة تولد قائمة Tags جاهزة للنسخ.</p>
+
+            <div class="input-group">
+                <input type="text" id="tp-niche-input" placeholder="أدخل اسم النيتش، مثال: funny cat">
+                <button id="generate-tags-btn" class="action-btn">توليد</button>
+            </div>
+
+            <div id="gen-loading" class="gen-loading hidden">جاري التحليل والتوليد...</div>
+
+            <div id="tags-result-area" class="result-area hidden">
+                <div class="tags-header">
+                    <span>النتائج</span>
+                    <button id="copy-all-btn" class="copy-btn">نسخ الكل</button>
+                </div>
+                <div id="tags-list" class="tags-list"></div>
+            </div>
+        </div>
+
+        <button id="guide-btn" class="main-btn">كيفية الاستخدام</button>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

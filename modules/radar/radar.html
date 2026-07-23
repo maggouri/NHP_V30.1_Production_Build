@@ -1,0 +1,951 @@
+<!-- Rising Star Detector Only -->
+<div class="glass-card radar-ui-shell radar-compact"
+    style="padding: 0.9375rem; background: linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(108, 99, 255, 0.05));">
+    <style>
+        .radar-ui-shell {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            border: 1px solid rgba(236, 72, 153, 0.18);
+            border-radius: 0.875rem;
+            min-height: 0;
+            height: 100%;
+            overflow: hidden;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.28);
+        }
+        .radar-ui-shell.radar-onepage {
+            gap: 0.5rem;
+        }
+        .radar-ui-shell .radar-block {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 0.75rem;
+            padding: 0.625rem;
+        }
+        .radar-ui-shell.radar-onepage .radar-block {
+            padding: 0.5rem;
+        }
+        .radar-ui-shell.radar-onepage .mb-4 {
+            margin-bottom: 0.375rem !important;
+        }
+        /* يملأ ارتفاع الـ shell (مع overflow مخفي) حتى يتمدد شبكة الرادار وعمود النتائج */
+        .radar-ui-shell .radar-top-split {
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+        .radar-top-split {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 0.625rem;
+            align-items: stretch;
+        }
+        /* Single-column mode: hide Unofficial side and let results fill full width */
+        .radar-top-split.single-column {
+            grid-template-columns: minmax(0, 1fr) !important;
+        }
+        .radar-top-split.single-column #lab-unofficial-stack {
+            display: none !important;
+        }
+        .radar-top-split > .radar-block {
+            margin-bottom: 0 !important;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        .radar-top-split > .radar-primary-stack {
+            height: 100%;
+        }
+        .radar-primary-stack {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            align-self: stretch;
+        }
+        .radar-primary-stack > #lab-scan-results {
+            flex: 1 1 auto;
+            min-height: 16.25rem;
+        }
+        .radar-top-split #lab-unofficial-stack {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            gap: 0.625rem;
+            width: 100%;
+        }
+        /* ممتد: يملأ خلايا الشبكة ويعطي قسم النتائج مساحة للتمرير */
+        .radar-top-split #lab-unofficial-stack:not(.is-collapsed) {
+            align-self: stretch;
+            height: 100%;
+        }
+        /* مطوي: لا تمتد لارتفاع العمود الأطول — يزيل الفراغ الداكن الفارغ */
+        .radar-top-split #lab-unofficial-stack.is-collapsed {
+            align-self: start;
+            height: auto;
+        }
+        .radar-top-split #lab-unofficial-results {
+            max-height: none !important;
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto !important;
+            display: flex;
+            flex-direction: column;
+        }
+        .radar-ui-shell .radar-action-row {
+            display: grid !important;
+            grid-template-columns: 1fr auto auto;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .radar-ui-shell #lab-controls {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: rgba(8, 8, 16, 0.92);
+            border: 1px solid rgba(236, 72, 153, 0.2);
+            border-radius: 0.75rem;
+            padding: 0.5rem 0.625rem !important;
+            backdrop-filter: blur(5px);
+        }
+        .radar-ui-shell #lab-scan-results {
+            max-height: none !important;
+            min-height: 16.25rem;
+            flex: 1;
+            align-content: start;
+            border: 1px solid rgba(236, 72, 153, 0.14);
+            border-radius: 0.75rem;
+            padding: 0.625rem;
+            background: rgba(6, 6, 14, 0.45);
+            overflow-y: auto !important;
+        }
+        .radar-ui-shell #lab-unofficial-panel {
+            flex-shrink: 0;
+            overflow: visible;
+            max-height: none;
+        }
+        .radar-ui-shell #lab-unofficial-results {
+            border: 1px solid rgba(245, 158, 11, 0.22);
+            background: rgba(8, 8, 18, 0.55);
+        }
+        .radar-ui-shell #lab-unofficial-stack.is-collapsed #lab-unofficial-results {
+            display: none !important;
+        }
+        .radar-ui-shell #lab-unofficial-stack.is-collapsed #lab-unofficial-panel {
+            max-height: 7.5rem;
+            overflow: hidden;
+        }
+        .radar-ui-shell #lab-unofficial-stack.is-collapsed #lab-unofficial-ai-message {
+            display: none !important;
+        }
+        .radar-ui-shell.radar-onepage #lab-unofficial-results .unofficial-scroll {
+            max-height: 12.5rem;
+            overflow-y: auto;
+        }
+        .unofficial-today-likely {
+            border-radius: 0.75rem;
+            border: 1px solid rgba(245, 158, 11, 0.24);
+            background: linear-gradient(165deg, rgba(245, 158, 11, 0.09) 0%, rgba(8, 8, 18, 0.55) 42%, rgba(8, 8, 18, 0.85) 100%);
+            overflow: hidden;
+        }
+        .unofficial-today-likely-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.625rem;
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+            background: rgba(0, 0, 0, 0.35);
+        }
+        .unofficial-clean-scroll {
+            max-height: 13.75rem;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .unofficial-clean-card {
+            padding: 0.625rem 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .unofficial-clean-card:last-child {
+            border-bottom: none;
+        }
+        .unofficial-clean-card:hover {
+            background: rgba(255, 255, 255, 0.035);
+        }
+        .unofficial-clean-card-actions {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.375rem;
+            margin-top: 0.625rem;
+            padding-top: 0.625rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.07);
+        }
+        .unofficial-clean-card-actions .btn {
+            font-size: 0.5625rem !important;
+            padding: 0.375rem 0.25rem !important;
+            line-height: 1.2;
+            justify-content: center;
+            white-space: nowrap;
+        }
+        .unofficial-clean-score {
+            flex-shrink: 0;
+            font-size: 0.625rem;
+            font-weight: 900;
+            font-variant-numeric: tabular-nums;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.5rem;
+            background: rgba(245, 158, 11, 0.14);
+            color: #fcd34d;
+            border: 1px solid rgba(245, 158, 11, 0.28);
+            text-align: center;
+            min-width: 3.25rem;
+        }
+        .unofficial-clean-count-badge {
+            flex-shrink: 0;
+            font-size: 0.625rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            padding: 0.25rem 0.6875rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.06);
+            color: #cbd5e1;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .unofficial-raw-feed {
+            border-radius: 0.75rem;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            background: linear-gradient(165deg, rgba(148, 163, 184, 0.07) 0%, rgba(8, 8, 18, 0.52) 40%, rgba(8, 8, 18, 0.88) 100%);
+            overflow: hidden;
+        }
+        .unofficial-raw-feed-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.625rem;
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+            background: rgba(0, 0, 0, 0.32);
+        }
+        .unofficial-raw-scroll {
+            max-height: 13.75rem;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .unofficial-raw-card {
+            padding: 0.625rem 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .unofficial-raw-card:last-child {
+            border-bottom: none;
+        }
+        .unofficial-raw-card:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .unofficial-raw-card-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .unofficial-raw-score {
+            font-size: 0.625rem;
+            font-weight: 900;
+            font-variant-numeric: tabular-nums;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.5rem;
+            background: rgba(56, 189, 248, 0.1);
+            color: #7dd3fc;
+            border: 1px solid rgba(56, 189, 248, 0.22);
+            text-align: center;
+            min-width: 2.75rem;
+        }
+        .unofficial-raw-card .lab-unofficial-raw-copy {
+            font-size: 0.5625rem !important;
+            padding: 0.375rem 0.625rem !important;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+        .radar-ui-shell #radar-ai-insight,
+        .radar-ui-shell #lab-related-tags-container {
+            max-height: 8.75rem;
+            overflow-y: auto;
+        }
+        .radar-ui-shell .mb-4 {
+            margin-bottom: 0.625rem !important;
+        }
+        /* === RADAR Compact Dashboard v1 === */
+        #panel-lab.radar-compact .radar-ui-shell.radar-compact {
+            gap: 0.5rem;
+            box-shadow: none;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            background: rgba(6, 10, 22, 0.82) !important;
+            padding: 0.5rem !important;
+        }
+        #panel-lab.radar-compact .radar-ui-shell.radar-compact .radar-block {
+            box-shadow: none !important;
+            background: rgba(15, 23, 42, 0.45);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 0.5rem;
+        }
+        #panel-lab.radar-compact .radar-compact-header {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            min-height: 2rem;
+            padding: 0.25rem 0.375rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            background: rgba(15, 23, 42, 0.7);
+        }
+        #panel-lab.radar-compact #lab-controls {
+            position: sticky;
+            top: 0;
+            z-index: 4;
+            backdrop-filter: none !important;
+            background: rgba(15, 23, 42, 0.9) !important;
+            padding: 0.25rem 0.375rem !important;
+        }
+        #panel-lab.radar-compact .radar-title {
+            font-size: 0.9375rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
+        }
+        #panel-lab.radar-compact .radar-compact-controls {
+            margin-inline-start: auto;
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            min-width: 0;
+            flex-wrap: nowrap;
+        }
+        #panel-lab.radar-compact .radar-compact-header .field-label {
+            display: none;
+        }
+        #panel-lab.radar-compact .radar-compact-header .modern-input {
+            height: 1.75rem;
+            min-width: 8.125rem;
+            width: auto;
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+        }
+        #panel-lab.radar-compact .radar-icon-btn {
+            width: 1.75rem;
+            height: 1.75rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.375rem;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            background: transparent !important;
+            box-shadow: none !important;
+            transition: background-color 100ms ease, border-color 100ms ease, color 100ms ease;
+        }
+        #panel-lab.radar-compact .radar-icon-btn:hover {
+            background: rgba(99, 102, 241, 0.15) !important;
+            border-color: rgba(129, 140, 248, 0.45);
+        }
+        #panel-lab.radar-compact #lab-col-count {
+            font-size: 0.6875rem;
+            min-width: 0.875rem;
+        }
+        #panel-lab.radar-compact #lab-scan-results {
+            gap: 0.25rem !important;
+            padding: 0.375rem;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 0.5rem;
+            background: rgba(2, 6, 23, 0.58);
+        }
+        #panel-lab.radar-compact .radar-card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            padding: 0.375rem;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 0.5rem;
+            background: rgba(15, 23, 42, 0.58);
+            box-shadow: none !important;
+            overflow: hidden;
+            min-height: 0;
+        }
+        #panel-lab.radar-compact .radar-card-img {
+            position: relative;
+            height: 6.5rem;
+            border-radius: 0.375rem;
+            overflow: hidden;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            background: rgba(2, 6, 23, 0.85);
+        }
+        #panel-lab.radar-compact .radar-card-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 0.125rem;
+        }
+        #panel-lab.radar-compact .radar-card-stats {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.375rem;
+            font-size: 0.6875rem;
+            line-height: 1;
+            white-space: nowrap;
+            font-weight: 700;
+        }
+        #panel-lab.radar-compact .radar-card-name {
+            font-size: 0.6875rem;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #cbd5e1;
+        }
+        #panel-lab.radar-compact .radar-card-actions {
+            position: absolute;
+            left: 0.375rem;
+            right: 0.375rem;
+            bottom: 0.375rem;
+            display: flex;
+            gap: 0.25rem;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(0.25rem);
+            transition: opacity 100ms ease, transform 100ms ease;
+        }
+        #panel-lab.radar-compact .radar-card:hover .radar-card-actions {
+            opacity: 1;
+            pointer-events: auto;
+            transform: none;
+        }
+        #panel-lab.radar-compact .radar-card-actions .btn-send-radar-gemini,
+        #panel-lab.radar-compact .radar-card-actions .btn-send-radar-gpt {
+            flex: 1;
+            min-width: 0;
+            border-radius: 0.375rem;
+            font-size: 0.625rem;
+            line-height: 1;
+            padding: 0.25rem 0.375rem;
+            box-shadow: none !important;
+        }
+        #panel-lab.radar-compact .radar-card-actions .btn-check-radar-niche {
+            flex: 0 0 auto;
+            width: 1.5rem;
+            min-width: 1.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.625rem;
+            line-height: 1;
+            padding: 0.25rem;
+            box-shadow: none !important;
+        }
+        @media (max-width: 56.25rem) {
+            .radar-ui-shell .radar-action-row {
+                grid-template-columns: 1fr;
+            }
+            .radar-top-split {
+                grid-template-columns: 1fr;
+            }
+        }
+        .radar-image-hunt-panel {
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            background: rgba(15, 23, 42, 0.55);
+        }
+        .radar-source-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.375rem;
+        }
+        .radar-source-chip {
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.04);
+            color: #cbd5e1;
+            font-size: 0.625rem;
+            font-weight: 700;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+        }
+        .radar-source-chip.is-active {
+            border-color: rgba(236, 72, 153, 0.55);
+            background: rgba(236, 72, 153, 0.18);
+            color: #fce7f3;
+        }
+        .radar-image-hunt-toolbar {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .radar-image-hunt-actions {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            flex: 0 0 auto;
+            min-width: 0;
+        }
+        .radar-image-hunt-actions .btn,
+        #note-send-prompt-bag,
+        #note-send-generate,
+        #lab-send-prompt-bag,
+        #lab-send-generate {
+            flex: 0 0 auto;
+            width: auto;
+            max-width: none;
+            white-space: nowrap;
+        }
+        .radar-image-hunt-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+            grid-auto-rows: minmax(7rem, auto);
+            align-items: start;
+            gap: 0.375rem;
+            max-height: 14rem;
+            overflow-y: auto;
+            padding: 0.375rem;
+            border: 1px dashed rgba(148, 163, 184, 0.2);
+            border-radius: 0.625rem;
+            background: rgba(6, 6, 14, 0.35);
+        }
+        .radar-image-hunt-card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: visible;
+            border: 2px solid transparent;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            background: transparent;
+        }
+        .radar-image-hunt-thumb {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            overflow: hidden;
+            border-radius: 0.5rem;
+            background: #0f172a;
+            flex: 0 0 auto;
+        }
+        .radar-image-hunt-card.is-selected {
+            border-color: rgba(236, 72, 153, 0.85);
+            box-shadow: 0 0 0 1px rgba(236, 72, 153, 0.35);
+        }
+        .radar-image-hunt-card.is-thumb-loading .radar-image-hunt-thumb img,
+        .radar-card-img.is-thumb-loading img {
+            opacity: 0.45;
+            filter: grayscale(0.35);
+        }
+        .radar-image-hunt-card.is-thumb-error .radar-image-hunt-thumb img,
+        .radar-card-img.is-thumb-error img {
+            opacity: 0.55;
+        }
+        .radar-image-hunt-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            cursor: zoom-in;
+        }
+        .radar-image-hunt-preview {
+            position: fixed;
+            inset: 0;
+            z-index: 10045;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2.5rem 1rem 4.5rem;
+            box-sizing: border-box;
+        }
+        .radar-image-hunt-preview.is-hidden {
+            display: none;
+        }
+        .radar-image-hunt-preview .is-hidden {
+            display: none !important;
+        }
+        .radar-image-hunt-preview-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.88);
+            cursor: zoom-out;
+        }
+        .radar-image-hunt-preview-img {
+            position: relative;
+            z-index: 1;
+            max-width: min(90vw, calc(100vw - 5rem));
+            max-height: calc(100vh - 7rem);
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 0.5rem;
+            box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.55);
+            pointer-events: none;
+        }
+        .radar-image-hunt-preview-close {
+            position: absolute;
+            top: 0.75rem;
+            inset-inline-end: 0.75rem;
+            z-index: 3;
+            display: grid;
+            place-items: center;
+            width: 2.25rem;
+            height: 2.25rem;
+            border: 1px solid rgba(236, 72, 153, 0.35);
+            border-radius: 50%;
+            background: rgba(30, 10, 50, 0.88);
+            color: #fce7f3;
+            cursor: pointer;
+            font-size: 1.125rem;
+        }
+        .radar-image-hunt-preview-nav {
+            position: absolute;
+            top: 50%;
+            z-index: 2;
+            transform: translateY(-50%);
+            display: grid;
+            place-items: center;
+            width: 2.5rem;
+            height: 2.5rem;
+            border: 1px solid rgba(99, 102, 241, 0.35);
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.88);
+            color: #c7d2fe;
+            cursor: pointer;
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+        .radar-image-hunt-preview-nav:hover:not(:disabled) {
+            background: rgba(67, 56, 202, 0.92);
+            color: #fff;
+        }
+        .radar-image-hunt-preview-nav:disabled {
+            opacity: 0.35;
+            cursor: default;
+        }
+        .radar-image-hunt-preview-prev {
+            inset-inline-start: 0.75rem;
+        }
+        .radar-image-hunt-preview-next {
+            inset-inline-end: 0.75rem;
+        }
+        .radar-image-hunt-preview-toolbar {
+            position: absolute;
+            inset-inline: 0;
+            bottom: 0;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            padding: 0.75rem 1rem;
+            background: linear-gradient(180deg, rgba(15, 8, 28, 0) 0%, rgba(30, 27, 75, 0.95) 40%, rgba(15, 23, 42, 0.98) 100%);
+            border-top: 1px solid rgba(99, 102, 241, 0.28);
+        }
+        .radar-image-hunt-preview-counter {
+            min-width: 3.5rem;
+            text-align: center;
+            font-size: 0.6875rem;
+            font-weight: 800;
+            color: #a5b4fc;
+        }
+        .radar-image-hunt-preview-source {
+            font-size: 0.625rem;
+            font-weight: 800;
+            padding: 0.25rem 0.5rem;
+            border-radius: 999px;
+            background: rgba(0, 0, 0, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: #e2e8f0;
+            white-space: nowrap;
+            max-width: 8rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .radar-image-hunt-preview-source.is-src-pinterest {
+            border-color: rgba(230, 0, 35, 0.45);
+            color: #fecdd3;
+        }
+        .radar-image-hunt-preview-source.is-src-google_images {
+            border-color: rgba(66, 133, 244, 0.45);
+            color: #bfdbfe;
+        }
+        .radar-image-hunt-preview-source.is-src-google_ai {
+            border-color: rgba(168, 85, 247, 0.45);
+            color: #e9d5ff;
+        }
+        .radar-image-hunt-preview-source.is-src-teepublic {
+            border-color: rgba(45, 212, 191, 0.45);
+            color: #ccfbf1;
+        }
+        .radar-image-hunt-preview-btn {
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(255, 255, 255, 0.06);
+            color: #e2e8f0;
+            font-size: 0.6875rem;
+            font-weight: 800;
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+        .radar-image-hunt-preview-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+        }
+        .radar-image-hunt-preview-btn:disabled {
+            opacity: 0.45;
+            cursor: default;
+        }
+        .radar-image-hunt-preview-btn.is-generate {
+            border-color: rgba(16, 185, 129, 0.35);
+            background: rgba(16, 185, 129, 0.15);
+            color: #a7f3d0;
+        }
+        .radar-image-hunt-preview-btn.is-prompt {
+            border-color: rgba(139, 92, 246, 0.35);
+            background: rgba(139, 92, 246, 0.15);
+            color: #ddd6fe;
+        }
+        .radar-image-hunt-preview-btn.is-dl {
+            border-color: rgba(99, 102, 241, 0.35);
+            background: rgba(99, 102, 241, 0.15);
+            color: #c7d2fe;
+        }
+        .radar-image-hunt-card input {
+            position: absolute;
+            top: 0.25rem;
+            left: 0.25rem;
+            z-index: 3;
+            width: 0.875rem;
+            height: 0.875rem;
+        }
+        .radar-image-source-badge {
+            position: absolute;
+            right: 0;
+            left: 0;
+            bottom: 0;
+            font-size: 0.5rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 0.125rem 0.25rem;
+            color: #fff;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.82));
+            text-align: center;
+            pointer-events: none;
+        }
+        .radar-classic-toolbar {
+            display: grid !important;
+            grid-template-columns: 1fr auto auto auto auto auto auto auto auto;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        @media (max-width: 56.25rem) {
+            .radar-classic-toolbar {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <div id="lab-controls" class="radar-compact-header radar-block radar-controls-bar mb-2">
+        <h2 class="radar-title text-white m-0">RADAR</h2>
+        <div class="radar-compact-controls">
+            <select id="lab-note-select" class="modern-input bg-slate-900 border-white/10 text-white" title="اختر نيتش من المفكرة">
+                <option value="">اختر نيتش من المفكرة</option>
+            </select>
+            <input type="text" id="lab-scan-query" class="modern-input" placeholder="أدخل نيتش يدوي" title="أدخل نيتش يدوي">
+            <button id="lab-sync-notes" class="btn radar-icon-btn text-slate-300" title="تحديث المفكرة">
+                <i class="fa-solid fa-rotate"></i>
+            </button>
+        </div>
+    </div>
+
+    <div id="lab-classic-toolbar" class="radar-compact-header radar-block radar-classic-toolbar mb-2">
+        <span class="text-[0.625rem] font-black text-pink-300 uppercase tracking-wider whitespace-nowrap">الفحص الكلاسيكي</span>
+        <div class="radar-compact-controls" style="margin-inline-start: auto;">
+                    <button id="lab-start-scan" class="btn radar-icon-btn text-pink-400" title="فحص">
+                        <i class="fa-solid fa-radar"></i>
+                    </button>
+                    <button id="lab-global-hunter" class="btn radar-icon-btn text-indigo-400" title="Hunter">
+                        <i class="fa-solid fa-crosshairs"></i>
+                    </button>
+                    <button id="lab-ai-audit" class="btn radar-icon-btn hidden text-fuchsia-400" title="تحليل AI للمنافسة">
+                        <i class="fa-solid fa-palette"></i>
+                    </button>
+                    <button id="lab-view-grid" class="radar-icon-btn text-pink-500" title="Gallery View">
+                        <i class="fa-solid fa-table-cells"></i>
+                    </button>
+                    <button id="lab-view-list" class="radar-icon-btn text-slate-400" title="List View">
+                        <i class="fa-solid fa-list"></i>
+                    </button>
+                    <button id="lab-zoom-out" class="radar-icon-btn text-slate-400" title="أعمدة أقل">
+                        <i class="fa-solid fa-minus text-[0.625rem]"></i>
+                    </button>
+                    <span id="lab-col-count" class="text-pink-500 text-center">6</span>
+                    <button id="lab-zoom-in" class="radar-icon-btn text-slate-400" title="أعمدة أكثر">
+                        <i class="fa-solid fa-plus text-[0.625rem]"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="radar-top-split mb-0 flex-1 min-h-0">
+        <div class="radar-primary-stack">
+            <div id="lab-hunter-status"
+                class="hidden mb-3 p-2 rounded bg-indigo-500/10 border border-indigo-500/20 text-[0.625rem] text-indigo-300 italic flex items-center gap-2">
+                <div class="spinner-small" style="border-top-color: #6366f1"></div>
+                <span id="lab-hunter-status-text">جاري صيد الترندات الحية من أحدث التصاميم...</span>
+            </div>
+
+            <div id="lab-scan-status"
+                class="hidden mb-3 p-2 rounded bg-white/5 text-[0.625rem] text-pink-300 italic flex items-center gap-2">
+                <div class="spinner-small" style="border-top-color: #ec4899"></div>
+                <span id="lab-scan-status-text">جاري تحليل البيانات ومقارنة النتائج...</span>
+            </div>
+
+            <!-- --- NEW: Related Tags Section --- -->
+            <div id="lab-related-tags-container"
+                class="hidden mb-4 p-3 bg-indigo-900/20 border border-indigo-500/30 rounded-xl">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[0.5625rem] uppercase font-black text-indigo-400 tracking-widest">الكلمات المفتاحية المقترحة
+                        (Related Tags)</span>
+                    <button id="lab-copy-tags"
+                        class="text-[0.5625rem] bg-indigo-500/30 hover:bg-indigo-500/50 text-indigo-200 px-2 py-1 rounded transition-colors font-bold">
+                        <i class="fa-solid fa-copy"></i> نسخ الكل
+                    </button>
+                </div>
+                <div id="lab-related-tags" class="flex flex-wrap gap-1.5 mt-2">
+                    <!-- Tags will be injected here -->
+                </div>
+            </div>
+
+            <!-- AI Radar Insights Container -->
+            <div id="radar-ai-insight" class="hidden mb-4 p-3 bg-pink-500/10 border border-pink-500/30 rounded-xl radar-block">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[0.5625rem] uppercase font-black text-pink-400 tracking-widest">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> رؤى الرادار الذكية (AI Insights)
+                    </span>
+                    <span id="radar-star-prob" class="text-[0.5625rem] font-bold text-pink-200 bg-pink-600/40 px-2 py-0.5 rounded-full">الاحتمالية: 0%</span>
+                </div>
+                <div id="radar-ai-text" style="font-size: 0.625rem; color: #cecece; line-height: 1.4;"></div>
+                <div id="radar-gap-miner" style="margin-top: 0.5rem; font-size: 0.5625rem; color: #f9a8d4; border-top: 1px dashed rgba(236,72,153,0.2); padding-top: 0.3125rem;"></div>
+            </div>
+
+            <div id="lab-scan-results"
+                class="grid grid-cols-6 gap-2 max-h-[31.25rem] overflow-y-auto pr-1 transition-all duration-300">
+                <!-- Results will be injected here -->
+                <div class="text-center py-8 text-slate-500 text-[0.6875rem] italic border border-dashed border-white/10 rounded-xl">
+                    اختر نيش أو أدخل واحداً واضغط على زر الفحص للبدء
+                </div>
+            </div>
+        </div>
+
+        <div id="lab-unofficial-stack">
+            <div id="lab-unofficial-panel" class="p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 radar-block">
+                <div class="flex items-center justify-between gap-3 mb-2">
+                    <div>
+                        <div class="text-[0.6875rem] font-black text-amber-300 tracking-wide uppercase">Unofficial Trend Signals</div>
+                        <div class="text-[0.625rem] text-slate-400">Autocomplete + TeePublic live pages + AI fusion inside Radar.</div>
+                    </div>
+                    <div class="flex gap-2 flex-wrap justify-end">
+                        <button id="lab-unofficial-toggle" class="btn border border-white/15 bg-white/5 text-white px-2 py-1 text-[0.625rem] rounded-lg font-bold">طي</button>
+                        <button id="lab-unofficial-scan" class="btn bg-amber-600 text-white px-3 py-1 text-[0.625rem] rounded-lg font-bold">Scan</button>
+                        <button id="lab-unofficial-ai" class="btn border border-sky-500/20 bg-sky-500/10 text-sky-300 px-3 py-1 text-[0.625rem] rounded-lg font-bold">AI</button>
+                        <button id="lab-unofficial-save" class="btn border border-emerald-500/20 bg-emerald-500/10 text-emerald-300 px-3 py-1 text-[0.625rem] rounded-lg font-bold">Save</button>
+                        <button id="lab-unofficial-send" class="btn border border-pink-500/20 bg-pink-500/10 text-pink-300 px-3 py-1 text-[0.625rem] rounded-lg font-bold">USPTO</button>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between text-[0.625rem] text-slate-400 mb-2">
+                    <div>
+                        <span id="lab-unofficial-status">جاهز للمسح</span>
+                        <span id="lab-unofficial-meta" class="ml-2"></span>
+                    </div>
+                    <div id="lab-unofficial-progress-text">0 / 30</div>
+                </div>
+                <div class="w-full h-2 rounded-full bg-white/5 overflow-hidden mb-3">
+                    <div id="lab-unofficial-progress-bar" class="h-full rounded-full" style="width:0%; background:linear-gradient(90deg,#f59e0b,#ec4899);"></div>
+                </div>
+                <div class="grid grid-cols-4 gap-2 mb-3">
+                    <div class="p-2 rounded-lg bg-white/5 border border-white/5">
+                        <div class="text-[0.5625rem] text-slate-500 uppercase">Raw</div>
+                        <div id="lab-unofficial-raw-count" class="text-sm font-black text-white">0</div>
+                    </div>
+                    <div class="p-2 rounded-lg bg-white/5 border border-white/5">
+                        <div class="text-[0.5625rem] text-slate-500 uppercase">Clean</div>
+                        <div id="lab-unofficial-clean-count" class="text-sm font-black text-white">0</div>
+                    </div>
+                    <div class="p-2 rounded-lg bg-white/5 border border-white/5">
+                        <div class="text-[0.5625rem] text-slate-500 uppercase">AI</div>
+                        <div id="lab-unofficial-ai-count" class="text-sm font-black text-white">0</div>
+                    </div>
+                    <div class="p-2 rounded-lg bg-white/5 border border-white/5">
+                        <div class="text-[0.5625rem] text-slate-500 uppercase">Fail</div>
+                        <div id="lab-unofficial-failure-count" class="text-sm font-black text-white">0</div>
+                    </div>
+                </div>
+                <div id="lab-unofficial-message" class="mb-2 p-2 rounded-lg border border-dashed border-amber-500/20 bg-white/5 text-[0.625rem] text-slate-300">
+                    ابدأ المسح للحصول على إشارات اليوم غير الرسمية من TeePublic.
+                </div>
+                <div id="lab-unofficial-ai-message" class="mb-0 p-2 rounded-lg border border-dashed border-sky-500/20 bg-sky-500/5 text-[0.625rem] text-sky-200">
+                    أفكار AI ستظهر هنا بعد اكتمال المسح.
+                </div>
+            </div>
+
+            <div id="lab-unofficial-results" class="p-3 rounded-xl radar-block unofficial-heavy">
+                <div class="field-label mb-2 text-amber-200/90">نتائج Unofficial Trend Signals</div>
+                <p class="text-[0.625rem] text-slate-500 mb-3 m-0">الجداول والقوائم الناتجة عن المسح وـ AI تظهر هنا منفصلة عن لوحة التحكم.</p>
+
+                <div class="mb-3 unofficial-scroll">
+                    <div class="unofficial-today-likely">
+                        <div class="unofficial-today-likely-head">
+                            <div class="min-w-0">
+                                <div class="text-[0.625rem] font-black text-amber-200 uppercase tracking-wider">Today-Likely Niches</div>
+                                <div class="text-[0.5625rem] text-slate-500 mt-0.5 leading-tight">قائمة مرشّحة · أمثلة مختصرة · Today = درجة اليوم</div>
+                            </div>
+                            <span id="lab-unofficial-clean-list-meta" class="unofficial-clean-count-badge" title="عدد النيشات النظيفة">0</span>
+                        </div>
+                        <div class="unofficial-clean-scroll">
+                            <div id="lab-unofficial-clean-body">
+                                <div class="px-3 py-8 text-center text-slate-500 text-[0.625rem] unofficial-clean-empty leading-relaxed">
+                                    لا توجد نيشات نظيفة بعد.<br><span class="text-slate-600">شغّل Scan ثم راجع النتائج هنا.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3 unofficial-scroll">
+                    <div class="text-[0.625rem] font-black text-sky-200 uppercase tracking-wider mb-2">AI Fusion Niches</div>
+                    <div id="lab-unofficial-ai-wrap" class="max-h-[13.75rem] overflow-y-auto space-y-2">
+                        <div class="p-3 rounded-lg border border-white/5 bg-white/5 text-[0.625rem] text-slate-500">Run a scan, then generate AI ideas from the clean signals.</div>
+                    </div>
+                </div>
+
+                <div class="unofficial-scroll">
+                    <div class="unofficial-raw-feed">
+                        <div class="unofficial-raw-feed-head">
+                            <div class="min-w-0">
+                                <div class="text-[0.625rem] font-black text-slate-200 uppercase tracking-wider">Raw Live Feed</div>
+                                <div class="text-[0.5625rem] text-slate-500 mt-0.5 leading-tight">إشارات خام مباشرة · Score · يُعرض حتى 40 صفاً مع تمرير</div>
+                            </div>
+                            <span id="lab-unofficial-raw-list-meta" class="unofficial-clean-count-badge" title="عدد الإشارات المعروضة / الإجمالي">0</span>
+                        </div>
+                        <div class="unofficial-raw-scroll">
+                            <div id="lab-unofficial-raw-body">
+                                <div class="px-3 py-8 text-center text-slate-500 text-[0.625rem] unofficial-raw-empty leading-relaxed">
+                                    لا توجد بيانات خام بعد.<br><span class="text-slate-600">شغّل Scan لعرض التغذية الحية.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

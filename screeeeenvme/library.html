@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>screeeeenvme Library</title>
+    <script src="../extension-theme-boot.js"></script>
+    <link rel="stylesheet" href="../extension-theme.css">
+    <link rel="stylesheet" href="styles/library.css">
+  </head>
+  <body>
+    <main class="library-shell">
+      <header class="library-header">
+        <div>
+          <div class="eyebrow">Recent Local History</div>
+          <h1>screeeeenvme</h1>
+          <p>Latest captures and recordings saved on this machine.</p>
+        </div>
+        <div class="header-actions">
+          <button id="openDownloads" class="light-btn">Downloads folder</button>
+          <button id="clearHistory" class="danger-btn">Clear history</button>
+        </div>
+      </header>
+
+      <section id="emptyState" class="empty-state" hidden>
+        No recent local items yet.
+      </section>
+
+      <section id="itemsGrid" class="items-grid"></section>
+    </main>
+
+    <script src="scripts/library.js"></script>
+  </body>
+</html>

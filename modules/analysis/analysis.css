@@ -1,0 +1,592 @@
+/* Analysis Module - Luxury Dark Mode */
+
+:root {
+      font-size: 100%; /* NHP: 1rem = 16px default */
+    --ana-bg: #050508;
+    --ana-surface: rgba(15, 15, 20, 0.7);
+    --ana-border: rgba(255, 255, 255, 0.06);
+    --ana-primary: #6C63FF;
+    --ana-secondary: #00D2FF;
+    --ana-excellent: #10B981;
+    --ana-medium: #F59E0B;
+    --ana-saturated: #EF4444;
+    --ana-empty: #6B7280;
+    --ana-text: #E0E0FF;
+    --ana-text-dim: #8A8AA3;
+    --glass-blur: 1rem;
+}
+
+#panel-teepublic #tp-detailList,
+#panel-teepublic .ana-list {
+    contain: layout style;
+}
+
+body.nhp-light-mode #panel-teepublic .tp-detail-row,
+body.nhp-light-mode #panel-teepublic .ana-item {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 2rem;
+}
+
+.analysis-module-root {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: var(--ana-bg);
+    min-height: clamp(32.5rem, 62vh, 55rem);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    padding: 1.25rem;
+    font-family: 'Tajawal', sans-serif;
+    color: var(--ana-text);
+}
+
+/* Mesh Gradient */
+.mesh-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    filter: blur(100px);
+    opacity: 0.3;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.mesh-ball {
+    position: absolute;
+    border-radius: 50%;
+    animation: ana-move 30s infinite alternate ease-in-out;
+}
+
+.ball-1 {
+    width: 25rem;
+    height: 25rem;
+    background: radial-gradient(circle, #7000FF 0%, transparent 70%);
+    top: -6.25rem;
+    right: -6.25rem;
+}
+
+.ball-2 {
+    width: 31.25rem;
+    height: 31.25rem;
+    background: radial-gradient(circle, #0075FF 0%, transparent 70%);
+    bottom: -9.375rem;
+    left: -9.375rem;
+    animation-delay: -5s;
+}
+
+@keyframes ana-move {
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+
+    50% {
+        transform: translate(6.25rem, -3.125rem) scale(1.1);
+    }
+
+    100% {
+        transform: translate(-3.125rem, 3.125rem) scale(1);
+    }
+}
+
+/* Layout: top row = controls + results; bottom row grows to fill viewport dead space */
+.analysis-layout {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr;
+    gap: 1.25rem;
+    position: relative;
+    z-index: 1;
+}
+
+.analysis-layout>.glass-panel:nth-child(1) {
+    grid-row: 1;
+}
+
+.analysis-layout>.glass-panel:nth-child(2) {
+    grid-row: 2;
+}
+
+.analysis-layout>.ana-bottom-panel {
+    grid-row: 3;
+    min-height: 0;
+}
+
+@media (min-width: 68.75rem) {
+    .analysis-layout {
+        grid-template-columns: 1fr 1.2fr;
+        grid-template-rows: auto 1fr;
+    }
+
+    .analysis-layout>.glass-panel:nth-child(1) {
+        grid-column: 1;
+        grid-row: 1;
+        align-self: start;
+    }
+
+    .analysis-layout>.glass-panel:nth-child(2) {
+        grid-column: 2;
+        grid-row: 1;
+        align-self: start;
+    }
+
+    .analysis-layout>.ana-bottom-panel {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+}
+
+/* Glass Panels */
+.glass-panel {
+    background: var(--ana-surface);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--ana-border);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Results column stretches with viewport so quad lists gain height */
+.ana-results-column {
+    display: flex;
+    flex-direction: column;
+    min-height: 17.5rem;
+}
+
+.ana-results-column .ana-results-grid {
+    flex: 1;
+    min-height: 0;
+}
+
+.ana-res-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+/* Bottom detail panel */
+.ana-bottom-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    min-height: 11.25rem;
+    border-color: rgba(108, 99, 255, 0.12);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(108, 99, 255, 0.06) inset;
+}
+
+.ana-bottom-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.ana-bottom-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 800;
+    color: #fff;
+}
+
+.ana-bottom-title i {
+    color: var(--ana-secondary);
+}
+
+.ana-bottom-copy-btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.625rem;
+}
+
+.ana-bottom-meta {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--ana-text-dim);
+    line-height: 1.5;
+}
+
+.ana-bottom-time {
+    margin: 0;
+    font-size: 0.625rem;
+    color: var(--ana-text-dim);
+    opacity: 0.85;
+}
+
+.ana-detail-search {
+    margin: 0;
+    padding: 0.625rem 0.875rem;
+    font-size: 0.75rem;
+}
+
+.ana-detail-list,
+.tp-detail-list {
+    flex: 1;
+    min-height: 7.5rem;
+    margin: 0;
+    padding: 0.25rem 0;
+    list-style: none;
+    overflow-y: auto;
+}
+
+.ana-detail-row,
+.tp-detail-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    padding: 0.5rem 0.625rem;
+    margin-bottom: 0.25rem;
+    border-radius: 0.625rem;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    font-size: 0.75rem;
+    color: var(--ana-text);
+}
+
+.ana-detail-badge,
+.tp-detail-badge {
+    flex-shrink: 0;
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.5625rem;
+    font-weight: 800;
+    white-space: nowrap;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tp-detail-badge--excel {
+    color: var(--ana-excellent);
+    border-color: rgba(16, 185, 129, 0.35);
+    background: rgba(16, 185, 129, 0.08);
+}
+
+.tp-detail-badge--med {
+    color: var(--ana-medium);
+    border-color: rgba(245, 158, 11, 0.35);
+    background: rgba(245, 158, 11, 0.08);
+}
+
+.tp-detail-badge--sat {
+    color: var(--ana-saturated);
+    border-color: rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.tp-detail-badge--emp {
+    color: var(--ana-empty);
+    border-color: rgba(107, 114, 128, 0.35);
+    background: rgba(107, 114, 128, 0.08);
+}
+
+.ana-detail-name,
+.tp-detail-name {
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+}
+
+.ana-bottom-hint {
+    margin: 0;
+    font-size: 0.6875rem;
+    color: var(--ana-text-dim);
+    text-align: center;
+    padding: 0.75rem 0.5rem;
+}
+
+.ana-bottom-hint.hidden {
+    display: none;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Stats */
+.luxury-stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.625rem;
+    margin-bottom: 1.25rem;
+}
+
+.ana-stat-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 0.75rem;
+    padding: 0.625rem 0.3125rem;
+    text-align: center;
+}
+
+.ana-stat-value {
+    display: block;
+    font-size: 1.125rem;
+    font-weight: 900;
+}
+
+.ana-stat-label {
+    display: block;
+    font-size: 0.5rem;
+    text-transform: uppercase;
+    color: var(--ana-text-dim);
+    margin-top: 0.25rem;
+}
+
+/* Legend */
+.luxury-legend {
+    display: flex;
+    gap: 0.9375rem;
+    padding: 0.625rem 0.9375rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 0.75rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.leg-item {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.625rem;
+    color: var(--ana-text-dim);
+}
+
+.leg-dot {
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 50%;
+}
+
+/* Status & Progress */
+.ana-status-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.625rem 0.9375rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 0.75rem;
+    margin-bottom: 0.9375rem;
+}
+
+.ana-progress-wrap {
+    margin-bottom: 1.25rem;
+}
+
+.ana-progress-bg {
+    height: 0.375rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 0.625rem;
+    overflow: hidden;
+}
+
+.ana-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10B981, #00D2FF);
+    width: 0%;
+    transition: width 0.4s ease;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+.ana-single-niche-panel {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ana-single-input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#tp-singleNicheInput {
+    flex: 1;
+    min-width: 0;
+}
+
+.ana-single-result-card {
+    margin-top: 0.625rem;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ana-single-result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.ana-single-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.625rem;
+    font-weight: 800;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--ana-text);
+}
+
+.ana-single-badge--excel {
+    color: var(--ana-excellent);
+    border-color: rgba(16, 185, 129, 0.35);
+    background: rgba(16, 185, 129, 0.08);
+}
+
+.ana-single-badge--med {
+    color: var(--ana-medium);
+    border-color: rgba(245, 158, 11, 0.35);
+    background: rgba(245, 158, 11, 0.08);
+}
+
+.ana-single-badge--sat {
+    color: var(--ana-saturated);
+    border-color: rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.ana-single-badge--emp,
+.ana-single-badge--unknown {
+    color: var(--ana-empty);
+    border-color: rgba(107, 114, 128, 0.35);
+    background: rgba(107, 114, 128, 0.08);
+}
+
+.ana-single-status-text {
+    font-size: 0.6875rem;
+    font-weight: 800;
+    color: #fff;
+}
+
+.ana-single-summary {
+    font-size: 0.6875rem;
+    line-height: 1.55;
+    color: var(--ana-text-dim);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Result Cards Grid */
+.ana-results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+
+.ana-res-header {
+    padding: 0.5rem 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ana-res-title {
+    font-size: 0.6875rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 0.3125rem;
+}
+
+.ana-res-list {
+    flex: 1;
+    min-height: 4.5rem;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+/* UI Elements */
+.luxury-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: #fff;
+    font-size: 0.8125rem;
+    transition: all 0.3s ease;
+}
+
+.luxury-input:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(108, 99, 255, 0.5);
+    box-shadow: 0 0 20px rgba(108, 99, 255, 0.15);
+}
+
+.luxury-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+.btn-primary:not(:disabled):hover {
+    filter: brightness(1.1);
+    transform: translateY(-0.125rem);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--ana-border);
+    color: var(--ana-text);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-1px);
+}
+
+/* Scrollbar */
+.luxury-scroll::-webkit-scrollbar {
+    width: 0.1875rem;
+}
+
+.luxury-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 0.625rem;
+}

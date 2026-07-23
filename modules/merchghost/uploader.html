@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MerchGhost - Auto Uploader</title>
+    <style>
+        :root {
+      font-size: 100%; /* NHP: 1rem = 16px default */
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --primary: #10b981;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --border-color: #334155;
+            --input-bg: #0b1120;
+        }
+
+        body {
+            margin: 0;
+            padding: 1.25rem;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+        }
+
+        .container {
+            max-width: 62.5rem;
+            margin: 0 auto;
+            padding-bottom: 3rem;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.125rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .subtle {
+            color: var(--text-dim);
+            font-size: 0.8125rem;
+        }
+
+        .status-box {
+            margin-bottom: 1.25rem;
+            padding: 0.875rem 1rem;
+            border-radius: 0.625rem;
+            border: 1px solid var(--border-color);
+            background: rgba(15, 23, 42, 0.75);
+            color: var(--text-main);
+            font-size: 0.875rem;
+            line-height: 1.6;
+        }
+
+        .status-box.is-success {
+            border-color: rgba(16, 185, 129, 0.55);
+            background: rgba(6, 95, 70, 0.25);
+        }
+
+        .status-box.is-error {
+            border-color: rgba(239, 68, 68, 0.55);
+            background: rgba(127, 29, 29, 0.25);
+        }
+
+        .status-box.is-working {
+            border-color: rgba(245, 158, 11, 0.55);
+            background: rgba(120, 53, 15, 0.25);
+        }
+
+        .tabs-nav {
+            display: flex;
+            gap: 0.625rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 0.9375rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-dim);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 700;
+            text-align: center;
+            transition: all 0.25s ease;
+            user-select: none;
+        }
+
+        .tab-btn:hover {
+            background: #2a3b52;
+            color: white;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.24s ease;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .upload-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 1.25rem;
+        }
+
+        .image-upload-area {
+            background: var(--input-bg);
+            border: 0.125rem dashed var(--border-color);
+            border-radius: 0.625rem;
+            padding: 1.75rem 1.25rem;
+            text-align: center;
+            cursor: pointer;
+            min-height: 15.625rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: border-color 0.25s ease;
+        }
+
+        .image-upload-area:hover {
+            border-color: var(--primary);
+        }
+
+        .image-preview {
+            max-width: 100%;
+            max-height: 15.625rem;
+            display: none;
+            border-radius: 0.5rem;
+            margin-bottom: 0.625rem;
+        }
+
+        .form-group {
+            margin-bottom: 0.9375rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.375rem;
+            font-size: 0.875rem;
+            color: var(--text-dim);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            color: white;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        textarea.form-control {
+            min-height: 6.875rem;
+            resize: vertical;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 0.75rem 1.5625rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 0.9375rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            margin-top: 0.625rem;
+        }
+
+        .btn:hover {
+            background: #059669;
+        }
+
+        .btn:disabled {
+            opacity: 0.72;
+            cursor: wait;
+        }
+
+        .btn-amazon {
+            background: #f59e0b;
+            color: #111827;
+        }
+
+        .btn-amazon:hover {
+            background: #d97706;
+        }
+
+        .btn-redbubble {
+            background: #e11d48;
+        }
+
+        .btn-redbubble:hover {
+            background: #be123c;
+        }
+
+        .btn-teepublic {
+            background: #0284c7;
+        }
+
+        .btn-teepublic:hover {
+            background: #0369a1;
+        }
+
+        .help-text {
+            margin-top: 0.5rem;
+            color: var(--text-dim);
+            font-size: 0.75rem;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(0.25rem);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 5rem) {
+            .upload-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs-nav {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="assets/icon.png" alt="Logo" width="40">
+            <div>
+                <h1>\u0645\u062f\u064a\u0631 \u0627\u0644\u0631\u0641\u0639 \u0627\u0644\u062a\u0644\u0642\u0627\u0626\u064a</h1>
+                <div class="subtle">MerchGhost Auto Uploader</div>
+            </div>
+        </div>
+
+        <div id="uploader-status" class="status-box">
+            \u0627\u062e\u062a\u0631 \u0635\u0648\u0631\u0629 \u0648\u0627\u0645\u0644\u0623 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a\u060c \u062b\u0645 \u0627\u0636\u063a\u0637 \u0632\u0631 \u0627\u0644\u0631\u0641\u0639. \u0633\u0648\u0641 \u064a\u062a\u0645 \u0641\u062a\u062d \u0635\u0641\u062d\u0629 \u0627\u0644\u0645\u0646\u0635\u0629 \u0648\u0628\u062f\u0621 \u0627\u0644\u0623\u062a\u0645\u062a\u0629 \u0645\u0628\u0627\u0634\u0631\u0629.
+        </div>
+
+        <div class="tabs-nav">
+            <div class="tab-btn active" data-target="amazon">Amazon Merch</div>
+            <div class="tab-btn" data-target="redbubble">Redbubble</div>
+            <div class="tab-btn" data-target="teepublic">TeePublic</div>
+        </div>
+
+        <div id="amazon" class="tab-content active">
+            <div class="card upload-grid">
+                <div class="image-section">
+                    <input type="file" id="img-amazon" accept="image/png" hidden>
+                    <div class="image-upload-area" onclick="document.getElementById('img-amazon').click()">
+                        <img id="preview-amazon" class="image-preview" src="" alt="Preview">
+                        <div id="text-amazon">
+                            <span style="font-size: 1.875rem;">&#128193;</span><br>
+                            <span>\u0627\u0636\u063a\u0637 \u0644\u0631\u0641\u0639 \u0627\u0644\u0635\u0648\u0631\u0629 (PNG)</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="seo-section">
+                    <div class="form-group">
+                        <label>Brand</label>
+                        <input id="amazon-brand" type="text" class="form-control" placeholder="\u0623\u062f\u062e\u0644 \u0627\u0633\u0645 \u0627\u0644\u0639\u0644\u0627\u0645\u0629 \u0627\u0644\u062a\u062c\u0627\u0631\u064a\u0629...">
+                    </div>
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input id="amazon-title" type="text" class="form-control" placeholder="\u0623\u062f\u062e\u0644 \u0639\u0646\u0648\u0627\u0646 \u0627\u0644\u062a\u0635\u0645\u064a\u0645...">
+                    </div>
+                    <div class="form-group">
+                        <label>Bullet Point 1</label>
+                        <input id="amazon-bullet-1" type="text" class="form-control" placeholder="\u0648\u0635\u0641 \u0627\u0644\u0645\u064a\u0632\u0629 \u0627\u0644\u0623\u0648\u0644\u0649...">
+                    </div>
+                    <div class="form-group">
+                        <label>Bullet Point 2</label>
+                        <input id="amazon-bullet-2" type="text" class="form-control" placeholder="\u0648\u0635\u0641 \u0627\u0644\u0645\u064a\u0632\u0629 \u0627\u0644\u062b\u0627\u0646\u064a\u0629...">
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="amazon-description" class="form-control" placeholder="\u0623\u062f\u062e\u0644 \u0648\u0635\u0641\u0627 \u0644\u0644\u062a\u0635\u0645\u064a\u0645..."></textarea>
+                    </div>
+                    <button id="btn-amazon-start" class="btn btn-amazon">&#128640; \u0628\u062f\u0621 \u0627\u0644\u0631\u0641\u0639 \u0639\u0644\u0649 Amazon Merch</button>
+                    <div class="help-text">\u0633\u064a\u062a\u0645 \u0641\u062a\u062d Merch by Amazon \u0648\u0625\u0631\u0633\u0627\u0644 \u0627\u0644\u062a\u0635\u0645\u064a\u0645 \u0625\u0644\u0649 \u0645\u062d\u0631\u0631 \u0627\u0644\u0631\u0641\u0639.</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="redbubble" class="tab-content">
+            <div class="card upload-grid">
+                <div class="image-section">
+                    <input type="file" id="img-rb" accept="image/png" hidden>
+                    <div class="image-upload-area" onclick="document.getElementById('img-rb').click()">
+                        <img id="preview-rb" class="image-preview" src="" alt="Preview">
+                        <div id="text-rb">
+                            <span style="font-size: 1.875rem;">&#128193;</span><br>
+                            <span>\u0627\u0636\u063a\u0637 \u0644\u0631\u0641\u0639 \u0627\u0644\u0635\u0648\u0631\u0629 (PNG)</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="seo-section">
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input id="rb-title" type="text" class="form-control" placeholder="\u0623\u062f\u062e\u0644 \u0639\u0646\u0648\u0627\u0646 \u0627\u0644\u062a\u0635\u0645\u064a\u0645...">
+                    </div>
+                    <div class="form-group">
+                        <label>Tags</label>
+                        <input id="rb-tags" type="text" class="form-control" placeholder="\u0643\u0644\u0645\u06291, \u0643\u0644\u0645\u06292, \u0643\u0644\u0645\u06293">
+                        <div class="help-text">\u0627\u0641\u0635\u0644 \u0627\u0644\u062a\u0627\u063a\u0627\u062a \u0628\u0641\u0648\u0627\u0635\u0644.</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="rb-description" class="form-control" placeholder="\u0623\u062f\u062e\u0644 \u0648\u0635\u0641\u0627 \u0644\u0644\u062a\u0635\u0645\u064a\u0645..."></textarea>
+                    </div>
+                    <button id="btn-rb-start" class="btn btn-redbubble">&#128640; \u0628\u062f\u0621 \u0627\u0644\u0631\u0641\u0639 \u0639\u0644\u0649 Redbubble</button>
+                    <div class="help-text">\u0633\u064a\u0641\u062a\u062d Redbubble \u0639\u0644\u0649 \u0635\u0641\u062d\u0629 \u0627\u0644\u0631\u0641\u0639 \u0648\u064a\u0628\u062f\u0623 \u0627\u0644\u0645\u0644\u0621 \u062a\u0644\u0642\u0627\u0626\u064a\u0627.</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="teepublic" class="tab-content">
+            <div class="card upload-grid">
+                <div class="image-section">
+                    <input type="file" id="img-tp" accept="image/png" hidden>
+                    <div class="image-upload-area" onclick="document.getElementById('img-tp').click()">
+                        <img id="preview-tp" class="image-preview" src="" alt="Preview">
+                        <div id="text-tp">
+                            <span style="font-size: 1.875rem;">&#128193;</span><br>
+                            <span>\u0627\u0636\u063a\u0637 \u0644\u0631\u0641\u0639 \u0627\u0644\u0635\u0648\u0631\u0629 (PNG)</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="seo-section">
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input id="tp-title" type="text" class="form-control" placeholder="\u0623\u062f\u062e\u0644 \u0639\u0646\u0648\u0627\u0646 \u0627\u0644\u062a\u0635\u0645\u064a\u0645...">
+                    </div>
+                    <div class="form-group">
+                        <label>Main Tag</label>
+                        <input id="tp-main-tag" type="text" class="form-control" placeholder="\u0627\u0644\u062a\u0627\u063a \u0627\u0644\u0631\u0626\u064a\u0633\u064a">
+                    </div>
+                    <div class="form-group">
+                        <label>Supporting Tags</label>
+                        <input id="tp-supporting-tags" type="text" class="form-control" placeholder="\u0643\u0644\u0645\u06291, \u0643\u0644\u0645\u06292, \u0643\u0644\u0645\u06293">
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="tp-description" class="form-control" placeholder="\u0623\u062f\u062e\u0644 \u0648\u0635\u0641\u0627 \u0644\u0644\u062a\u0635\u0645\u064a\u0645..."></textarea>
+                    </div>
+                    <button id="btn-tp-start" class="btn btn-teepublic">&#128640; \u0628\u062f\u0621 \u0627\u0644\u0631\u0641\u0639 \u0639\u0644\u0649 TeePublic</button>
+                    <div class="help-text">\u0633\u064a\u0641\u062a\u062d TeePublic \u0639\u0644\u0649 \u0635\u0641\u062d\u0629 \u0627\u0644\u0625\u0646\u0634\u0627\u0621 \u0648\u064a\u0628\u062f\u0623 \u0627\u0644\u0631\u0641\u0639 \u062f\u0627\u062e\u0644 \u0627\u0644\u062a\u0628\u0648\u064a\u0628 \u0627\u0644\u062c\u062f\u064a\u062f.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+            const requestedPlatform = new URLSearchParams(window.location.search).get('platform');
+            const statusBox = document.getElementById('uploader-status');
+            const fileState = {
+                amazon: { file: null, dataUrl: '' },
+                redbubble: { file: null, dataUrl: '' },
+                teepublic: { file: null, dataUrl: '' }
+            };
+
+            const PLATFORM_URLS = {
+                amazon: 'https://merch.amazon.com/designs/new',
+                redbubble: 'https://www.redbubble.com/portfolio/images/new?auto=1',
+                teepublic: 'https://www.teepublic.com/design/quick_create?auto=1'
+            };
+
+            const CONTENT_BRIDGE_FILE = 'modules/merchghost/content.40ff0a94.js';
+            const REDBUBBLE_FILE = 'modules/merchghost/redbubble.9b402b2d.js';
+
+            function setStatus(message, type = '') {
+                if (!statusBox) return;
+                statusBox.textContent = message;
+                statusBox.className = 'status-box';
+                if (type) {
+                    statusBox.classList.add(type);
+                }
+            }
+
+            function setButtonBusy(button, isBusy, busyText) {
+                if (!button) return;
+                if (!button.dataset.originalText) {
+                    button.dataset.originalText = button.textContent;
+                }
+                button.disabled = isBusy;
+                button.textContent = isBusy ? busyText : button.dataset.originalText;
+            }
+
+            function activateTab(targetId) {
+                tabButtons.forEach((button) => button.classList.remove('active'));
+                tabContents.forEach((content) => content.classList.remove('active'));
+
+                const targetButton = document.querySelector(`.tab-btn[data-target="${targetId}"]`);
+                const targetContent = document.getElementById(targetId);
+
+                if (targetButton) targetButton.classList.add('active');
+                if (targetContent) targetContent.classList.add('active');
+            }
+
+            function sleep(ms) {
+                return new Promise((resolve) => setTimeout(resolve, ms));
+            }
+
+            function readFileAsDataUrl(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = () => reject(new Error('Failed to read image file.'));
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            function cleanValue(id) {
+                return (document.getElementById(id)?.value || '').trim();
+            }
+
+            function parseTagList(raw) {
+                return raw.split(',').map((tag) => tag.trim()).filter(Boolean);
+            }
+
+            async function createTab(url) {
+                return chrome.tabs.create({ url, active: true });
+            }
+
+            async function getTab(tabId) {
+                return chrome.tabs.get(tabId);
+            }
+
+            async function injectFiles(tabId, files) {
+                if (!files?.length) return;
+                await chrome.scripting.executeScript({
+                    target: { tabId },
+                    files
+                });
+            }
+
+            async function sendMessage(tabId, message) {
+                return chrome.tabs.sendMessage(tabId, message);
+            }
+
+            async function waitForTabComplete(tabId, maxAttempts = 30) {
+                for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+                    const tab = await getTab(tabId);
+                    if (tab?.status === 'complete') {
+                        await sleep(1200);
+                        return tab;
+                    }
+                    await sleep(1000);
+                }
+
+                throw new Error('Timed out while waiting for the upload page to load.');
+            }
+
+            async function sendMessageWithRetry(tabId, message, injectFilesList = []) {
+                let lastError = null;
+
+                for (let attempt = 0; attempt < 6; attempt += 1) {
+                    try {
+                        if (attempt > 0 && injectFilesList.length) {
+                            await injectFiles(tabId, injectFilesList);
+                            await sleep(900);
+                        }
+
+                        const response = await sendMessage(tabId, message);
+                        if (!response || response.success !== false) {
+                            return response || { success: true };
+                        }
+
+                        lastError = new Error(response.error || 'Upload script returned an unknown error.');
+                    } catch (error) {
+                        lastError = error;
+                    }
+
+                    await sleep(1200);
+                }
+
+                throw lastError || new Error('Could not contact the automation script.');
+            }
+
+            function getPlatformImage(platform) {
+                const current = fileState[platform];
+                if (!current?.dataUrl) {
+                    throw new Error('Please choose a PNG image first.');
+                }
+                return current.dataUrl;
+            }
+
+            function buildAmazonPayload() {
+                const title = cleanValue('amazon-title');
+                const brand = cleanValue('amazon-brand');
+
+                if (!title) throw new Error('Amazon title is required.');
+                if (!brand) throw new Error('Amazon brand is required.');
+
+                return [{
+                    id: `amazon-${Date.now()}`,
+                    title,
+                    brand,
+                    bullet_point_1: cleanValue('amazon-bullet-1'),
+                    bullet_point_2: cleanValue('amazon-bullet-2'),
+                    description: cleanValue('amazon-description'),
+                    image: getPlatformImage('amazon'),
+                    is_live: true,
+                    is_normal_upload: true
+                }];
+            }
+
+            function buildRedbubblePayload() {
+                const title = cleanValue('rb-title');
+                const tags = parseTagList(cleanValue('rb-tags'));
+
+                if (!title) throw new Error('Redbubble title is required.');
+                if (!tags.length) throw new Error('Add at least one Redbubble tag.');
+
+                const imageData = getPlatformImage('redbubble');
+
+                return {
+                    id: `redbubble-${Date.now()}`,
+                    title,
+                    description: cleanValue('rb-description'),
+                    main_tag: tags[0],
+                    supporting_tags: tags.slice(1).join(', '),
+                    image_url: imageData,
+                    imageBase64: imageData
+                };
+            }
+
+            function buildTeePublicPayload() {
+                const title = cleanValue('tp-title');
+                const primaryTag = cleanValue('tp-main-tag');
+
+                if (!title) throw new Error('TeePublic title is required.');
+                if (!primaryTag) throw new Error('TeePublic main tag is required.');
+
+                return [{
+                    id: `teepublic-${Date.now()}`,
+                    title,
+                    description: cleanValue('tp-description'),
+                    primary_tag: primaryTag,
+                    supporting_tags: cleanValue('tp-supporting-tags'),
+                    adult_content: false,
+                    image_url: getPlatformImage('teepublic')
+                }];
+            }
+
+            async function startAmazonUpload(button) {
+                setButtonBusy(button, true, 'Starting...');
+                setStatus('\u062c\u0627\u0631\u064a \u0641\u062a\u062d \u0635\u0641\u062d\u0629 Amazon Merch \u0648\u062a\u062c\u0647\u064a\u0632 \u0627\u0644\u0631\u0641\u0639...', 'is-working');
+
+                try {
+                    const payload = buildAmazonPayload();
+                    const tab = await createTab(PLATFORM_URLS.amazon);
+                    await waitForTabComplete(tab.id);
+                    await injectFiles(tab.id, [CONTENT_BRIDGE_FILE]);
+                    await sleep(1000);
+                    await sendMessageWithRetry(tab.id, {
+                        action: 'uploadDesign',
+                        value: payload
+                    }, [CONTENT_BRIDGE_FILE]);
+
+                    setStatus('\u062a\u0645 \u0625\u0631\u0633\u0627\u0644 \u0627\u0644\u062a\u0635\u0645\u064a\u0645 \u0625\u0644\u0649 Amazon Merch. \u0631\u0627\u0642\u0628 \u0627\u0644\u062a\u0628\u0648\u064a\u0628 \u0627\u0644\u062c\u062f\u064a\u062f \u0644\u0645\u062a\u0627\u0628\u0639\u0629 \u0627\u0644\u0631\u0641\u0639.', 'is-success');
+                } catch (error) {
+                    console.error('[MerchGhost][Amazon]', error);
+                    setStatus(`\u062a\u0639\u0630\u0631 \u0628\u062f\u0621 \u0631\u0641\u0639 Amazon: ${error.message}`, 'is-error');
+                } finally {
+                    setButtonBusy(button, false, '');
+                }
+            }
+
+            async function startRedbubbleUpload(button) {
+                setButtonBusy(button, true, 'Starting...');
+                setStatus('\u062c\u0627\u0631\u064a \u0641\u062a\u062d Redbubble \u0648\u062a\u062d\u0636\u064a\u0631 \u0633\u0643\u0631\u0628\u062a \u0627\u0644\u0631\u0641\u0639...', 'is-working');
+
+                try {
+                    const payload = buildRedbubblePayload();
+                    const tab = await createTab(PLATFORM_URLS.redbubble);
+                    await waitForTabComplete(tab.id);
+
+                    try {
+                        await sendMessageWithRetry(tab.id, {
+                            action: 'uploadDesign',
+                            ...payload
+                        });
+                    } catch (error) {
+                        await sendMessageWithRetry(tab.id, {
+                            action: 'uploadDesign',
+                            ...payload
+                        }, [REDBUBBLE_FILE]);
+                    }
+
+                    setStatus('\u062a\u0645 \u0628\u062f\u0621 \u0631\u0641\u0639 Redbubble. \u0627\u0644\u0623\u062a\u0645\u062a\u0629 \u062a\u0639\u0645\u0644 \u0627\u0644\u0622\u0646 \u062f\u0627\u062e\u0644 \u0627\u0644\u062a\u0628\u0648\u064a\u0628 \u0627\u0644\u062c\u062f\u064a\u062f.', 'is-success');
+                } catch (error) {
+                    console.error('[MerchGhost][Redbubble]', error);
+                    setStatus(`\u062a\u0639\u0630\u0631 \u0628\u062f\u0621 \u0631\u0641\u0639 Redbubble: ${error.message}`, 'is-error');
+                } finally {
+                    setButtonBusy(button, false, '');
+                }
+            }
+
+            async function startTeePublicUpload(button) {
+                setButtonBusy(button, true, 'Starting...');
+                setStatus('\u062c\u0627\u0631\u064a \u0641\u062a\u062d TeePublic \u0648\u062a\u062c\u0647\u064a\u0632 \u0637\u0627\u0628\u0648\u0631 \u0627\u0644\u0631\u0641\u0639...', 'is-working');
+
+                try {
+                    const payload = buildTeePublicPayload();
+                    const tab = await createTab(PLATFORM_URLS.teepublic);
+                    await waitForTabComplete(tab.id);
+                    await injectFiles(tab.id, [CONTENT_BRIDGE_FILE]);
+                    await sleep(1000);
+                    await sendMessageWithRetry(tab.id, {
+                        action: 'uploadTeePublicDesign',
+                        value: payload
+                    }, [CONTENT_BRIDGE_FILE]);
+
+                    setStatus('\u062a\u0645 \u0628\u062f\u0621 \u0631\u0641\u0639 TeePublic. \u0633\u0648\u0641 \u062a\u0638\u0647\u0631 \u0627\u0644\u0645\u0631\u0627\u062d\u0644 \u062f\u0627\u062e\u0644 \u0627\u0644\u062a\u0628\u0648\u064a\u0628 \u0627\u0644\u062c\u062f\u064a\u062f.', 'is-success');
+                } catch (error) {
+                    console.error('[MerchGhost][TeePublic]', error);
+                    setStatus(`\u062a\u0639\u0630\u0631 \u0628\u062f\u0621 \u0631\u0641\u0639 TeePublic: ${error.message}`, 'is-error');
+                } finally {
+                    setButtonBusy(button, false, '');
+                }
+            }
+
+            async function setupImagePreview(platform, inputId, previewId, textId) {
+                const input = document.getElementById(inputId);
+                const preview = document.getElementById(previewId);
+                const text = document.getElementById(textId);
+
+                if (!input || !preview || !text) return;
+
+                input.addEventListener('change', async function onChange() {
+                    const file = this.files?.[0];
+                    if (!file) return;
+
+                    try {
+                        const dataUrl = await readFileAsDataUrl(file);
+                        fileState[platform] = { file, dataUrl };
+                        preview.src = dataUrl;
+                        preview.style.display = 'block';
+                        text.style.display = 'none';
+                        setStatus('\u062a\u0645 \u062a\u062d\u0645\u064a\u0644 \u0627\u0644\u0635\u0648\u0631\u0629 \u0628\u0646\u062c\u0627\u062d. \u0623\u0643\u0645\u0644 \u0627\u0644\u062d\u0642\u0648\u0644 \u062b\u0645 \u0627\u0628\u062f\u0623 \u0627\u0644\u0631\u0641\u0639.', 'is-success');
+                    } catch (error) {
+                        console.error('[MerchGhost][Image]', error);
+                        setStatus('\u062a\u0639\u0630\u0631 \u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u0635\u0648\u0631\u0629.', 'is-error');
+                    }
+                });
+            }
+
+            tabButtons.forEach((button) => {
+                button.addEventListener('click', function onTabClick() {
+                    activateTab(this.getAttribute('data-target'));
+                });
+            });
+
+            if (requestedPlatform && document.getElementById(requestedPlatform)) {
+                activateTab(requestedPlatform);
+            }
+
+            setupImagePreview('amazon', 'img-amazon', 'preview-amazon', 'text-amazon');
+            setupImagePreview('redbubble', 'img-rb', 'preview-rb', 'text-rb');
+            setupImagePreview('teepublic', 'img-tp', 'preview-tp', 'text-tp');
+
+            document.getElementById('btn-amazon-start')?.addEventListener('click', () => {
+                startAmazonUpload(document.getElementById('btn-amazon-start'));
+            });
+
+            document.getElementById('btn-rb-start')?.addEventListener('click', () => {
+                startRedbubbleUpload(document.getElementById('btn-rb-start'));
+            });
+
+            document.getElementById('btn-tp-start')?.addEventListener('click', () => {
+                startTeePublicUpload(document.getElementById('btn-tp-start'));
+            });
+        });
+    </script>
+</body>
+
+</html>

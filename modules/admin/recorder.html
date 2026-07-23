@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>مسجل الشاشة المحلي</title>
+  <style>
+    :root {
+      font-size: 100%; /* NHP: 1rem = 16px default */
+      color-scheme: dark;
+      --bg: #07131f;
+      --bg-soft: #0c1d2f;
+      --panel: rgba(7, 18, 31, 0.88);
+      --panel-strong: rgba(5, 12, 22, 0.96);
+      --line: rgba(148, 163, 184, 0.2);
+      --text: #eef6ff;
+      --muted: #8fa7bf;
+      --accent: #4ade80;
+      --accent-strong: #22c55e;
+      --danger: #fb7185;
+      --warning: #fbbf24;
+      --shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.32);
+      --radius-xl: 1.75rem;
+      --radius-lg: 1.375rem;
+      --radius-md: 1rem;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(74, 222, 128, 0.16), transparent 24%),
+        radial-gradient(circle at bottom left, rgba(56, 189, 248, 0.18), transparent 28%),
+        linear-gradient(180deg, #07111b 0%, #091625 100%);
+    }
+
+    body {
+      padding: 1rem;
+    }
+
+    .shell {
+      width: min(77.5rem, 100%);
+      margin: 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 2rem;
+      background: rgba(4, 11, 20, 0.78);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      overflow: hidden;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1.125rem;
+      padding: 1.375rem 1.5rem 1rem;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.375rem 0.625rem;
+      border-radius: 999px;
+      border: 1px solid rgba(74, 222, 128, 0.25);
+      background: rgba(74, 222, 128, 0.1);
+      color: #b8f7cd;
+      font-size: 0.6875rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0.75rem 0 0.5rem;
+      font-size: 1.9375rem;
+      line-height: 1.18;
+    }
+
+    .lead {
+      margin: 0;
+      max-width: 47.5rem;
+      color: var(--muted);
+      line-height: 1.85;
+      font-size: 0.875rem;
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.625rem;
+      min-width: 22.5rem;
+      flex: 0 0 26.25rem;
+    }
+
+    .stat-card {
+      padding: 0.875rem;
+      border-radius: 1.125rem;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .stat-label {
+      font-size: 0.6875rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.375rem;
+    }
+
+    .stat-value {
+      font-size: 0.9375rem;
+      font-weight: 700;
+      line-height: 1.5;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 22.5rem minmax(0, 1fr);
+      gap: 1.125rem;
+      padding: 1.125rem 1.5rem 1.5rem;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      background: var(--panel);
+      padding: 1.125rem;
+    }
+
+    .stack {
+      display: grid;
+      gap: 0.875rem;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .section-head h2,
+    .section-head h3 {
+      margin: 0;
+      font-size: 0.9375rem;
+    }
+
+    .section-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+
+    .status-panel {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+    }
+
+    .status-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.625rem;
+      margin-bottom: 0.625rem;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 5.75rem;
+      padding: 0.4375rem 0.75rem;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.12);
+      color: #dce8f4;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .status-pill.recording {
+      background: rgba(74, 222, 128, 0.16);
+      color: #c3f9d5;
+    }
+
+    .status-pill.paused {
+      background: rgba(251, 191, 36, 0.18);
+      color: #fde68a;
+    }
+
+    .status-pill.error {
+      background: rgba(251, 113, 133, 0.18);
+      color: #fecdd3;
+    }
+
+    .timer {
+      font-size: 1.875rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .status-copy {
+      color: var(--muted);
+      font-size: 0.8125rem;
+      line-height: 1.8;
+      min-height: 3rem;
+    }
+
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.625rem;
+    }
+
+    button,
+    select,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      border-radius: 1rem;
+      padding: 0.75rem 0.875rem;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.18s ease, opacity 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #04110a;
+    }
+
+    .btn-neutral {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    .btn-danger {
+      background: rgba(251, 113, 133, 0.16);
+      color: #ffd4dc;
+      border: 1px solid rgba(251, 113, 133, 0.2);
+    }
+
+    .settings-grid {
+      display: grid;
+      gap: 0.625rem;
+    }
+
+    .option-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.8125rem 0.875rem;
+      border-radius: 1.125rem;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .option-title {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .option-desc {
+      color: var(--muted);
+      font-size: 0.6875rem;
+      line-height: 1.65;
+    }
+
+    .select-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.625rem;
+    }
+
+    .field {
+      display: grid;
+      gap: 0.5rem;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    select,
+    input[type="range"],
+    textarea {
+      width: 100%;
+    }
+
+    select,
+    textarea {
+      border: 1px solid var(--line);
+      border-radius: 0.875rem;
+      background: rgba(3, 10, 18, 0.95);
+      color: var(--text);
+      padding: 0.6875rem 0.75rem;
+      outline: none;
+    }
+
+    input[type="checkbox"],
+    input[type="color"] {
+      accent-color: var(--accent);
+    }
+
+    input[type="range"] {
+      accent-color: var(--accent);
+    }
+
+    .hint-list {
+      margin: 0;
+      padding: 0 1.125rem 0 0;
+      color: var(--muted);
+      font-size: 0.75rem;
+      line-height: 1.9;
+    }
+
+    .preview-panel {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .preview-shell {
+      position: relative;
+      border-radius: 1.875rem;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(10, 18, 31, 0.96), rgba(3, 8, 15, 0.98));
+      min-height: 38.75rem;
+    }
+
+    .preview-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.875rem;
+      padding: 0.875rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      background: rgba(2, 7, 14, 0.48);
+    }
+
+    .preview-title {
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    .preview-subtitle {
+      color: var(--muted);
+      font-size: 0.75rem;
+      line-height: 1.7;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: flex-end;
+    }
+
+    .chip {
+      padding: 0.4375rem 0.625rem;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.04);
+      color: #d7e7f7;
+      font-size: 0.6875rem;
+      font-weight: 700;
+    }
+
+    .stage-wrap {
+      position: relative;
+      min-height: 34.25rem;
+      background:
+        radial-gradient(circle at center, rgba(56, 189, 248, 0.08), transparent 30%),
+        #02060b;
+    }
+
+    #stage-canvas,
+    #preview-video {
+      width: 100%;
+      height: 100%;
+      min-height: 34.25rem;
+      display: block;
+      background: #02060b;
+      object-fit: contain;
+    }
+
+    #source-video {
+      display: none;
+    }
+
+    .preview-video.hidden,
+    .stage-canvas.hidden,
+    .preview-overlay.hidden,
+    .floating-toolbar.hidden,
+    .text-editor.hidden,
+    .toolbar-dock.hidden {
+      display: none;
+    }
+
+    .preview-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 1.5rem;
+      background: linear-gradient(180deg, rgba(4, 10, 18, 0.18), rgba(4, 10, 18, 0.36));
+    }
+
+    .overlay-card {
+      max-width: 32.5rem;
+      padding: 1.375rem;
+      border-radius: 1.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(4, 10, 18, 0.72);
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.22);
+    }
+
+    .overlay-title {
+      font-size: 1.375rem;
+      font-weight: 800;
+      margin-bottom: 0.625rem;
+    }
+
+    .overlay-copy {
+      color: var(--muted);
+      line-height: 1.8;
+      font-size: 0.8125rem;
+    }
+
+    .floating-toolbar {
+      position: absolute;
+      top: 1.125rem;
+      left: 1.125rem;
+      display: grid;
+      gap: 0.625rem;
+      width: min(100% - 2.25rem, 55rem);
+      padding: 0.75rem;
+      border-radius: 1.375rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(4, 10, 18, 0.8);
+      box-shadow: 0 18px 32px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(14px);
+      z-index: 4;
+    }
+
+    .toolbar-grip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0 0.125rem 0.125rem;
+      color: var(--muted);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: move;
+      user-select: none;
+    }
+
+    .toolbar-grip strong {
+      color: var(--text);
+      letter-spacing: normal;
+      text-transform: none;
+      font-size: 0.75rem;
+    }
+
+    .toolbar-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-spacer {
+      flex: 1 1 auto;
+    }
+
+    .toolbar-btn,
+    .tool-btn {
+      border-radius: 0.875rem;
+      padding: 0.625rem 0.75rem;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      min-width: 3rem;
+    }
+
+    .toolbar-btn.is-live {
+      background: rgba(74, 222, 128, 0.16);
+      border-color: rgba(74, 222, 128, 0.18);
+      color: #d3ffe2;
+    }
+
+    .toolbar-btn.is-danger {
+      background: rgba(251, 113, 133, 0.16);
+      border-color: rgba(251, 113, 133, 0.2);
+      color: #ffd5dc;
+    }
+
+    .tool-btn.active {
+      background: rgba(56, 189, 248, 0.16);
+      border-color: rgba(56, 189, 248, 0.24);
+      color: #d7f2ff;
+    }
+
+    .toolbar-label {
+      color: var(--muted);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .toolbar-color {
+      width: 2.625rem;
+      height: 2.625rem;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 0.75rem;
+      overflow: hidden;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .toolbar-range {
+      width: 6.875rem;
+    }
+
+    .toolbar-select {
+      width: 7rem;
+      padding: 0.625rem 0.625rem;
+    }
+
+    .toolbar-dock {
+      position: absolute;
+      top: 1.125rem;
+      left: 1.125rem;
+      z-index: 4;
+    }
+
+    .dock-btn {
+      border-radius: 999px;
+      padding: 0.625rem 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(4, 10, 18, 0.82);
+      color: var(--text);
+      box-shadow: 0 16px 28px rgba(0, 0, 0, 0.28);
+    }
+
+    .text-editor {
+      position: absolute;
+      width: min(16.25rem, calc(100% - 2.5rem));
+      min-height: 5.75rem;
+      resize: none;
+      z-index: 5;
+      box-shadow: 0 18px 24px rgba(0, 0, 0, 0.28);
+    }
+
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.625rem;
+    }
+
+    .fact {
+      padding: 0.875rem;
+      border-radius: 1.125rem;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .fact-label {
+      font-size: 0.6875rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.375rem;
+    }
+
+    .fact-value {
+      font-size: 0.875rem;
+      font-weight: 700;
+      line-height: 1.6;
+      word-break: break-word;
+    }
+
+    .tool-tip-box {
+      display: grid;
+      gap: 0.5rem;
+      padding: 0.875rem;
+      border-radius: 1.125rem;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.5rem;
+    }
+
+    .tool-chip {
+      padding: 0.625rem 0.75rem;
+      border-radius: 0.875rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: #d7e7f7;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    @media (max-width: 7rem) {
+      .topbar,
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        display: grid;
+      }
+
+      .hero-stats {
+        min-width: 0;
+        flex: initial;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 47.5rem) {
+      body {
+        padding: 0.5rem;
+      }
+
+      .shell {
+        border-radius: 1.25rem;
+      }
+
+      .topbar,
+      .layout {
+        padding: 0.875rem;
+      }
+
+      .hero-stats,
+      .facts,
+      .actions-grid,
+      .select-row,
+      .tool-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .preview-shell {
+        min-height: 30rem;
+      }
+
+      .stage-wrap,
+      #stage-canvas,
+      #preview-video {
+        min-height: 26.25rem;
+      }
+
+      .floating-toolbar {
+        width: calc(100% - 1.25rem);
+        left: 0.625rem;
+        top: 0.625rem;
+      }
+    }
+  </style>
+  <script src="../../extension-theme-boot.js"></script>
+  <link rel="stylesheet" href="../../extension-theme.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">NHP Local Recorder</div>
+        <h1>مسجل شاشة محلي مع شريط شرح عائم</h1>
+        <p class="lead">
+          هذه الواجهة أصبحت موجهة للاستخدام السريع: ابدأ التسجيل، اشرح فوق الشاشة أثناء العمل، ثم احفظ الملف محليًا مباشرة.
+          لا يوجد رفع سحابي أو اعتماد خارجي، وكل شيء يبقى داخل جهازك.
+        </p>
+      </div>
+
+      <div class="hero-stats">
+        <div class="stat-card">
+          <div class="stat-label">الوضع</div>
+          <div class="stat-value">تسجيل محلي خاص</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">الناتج</div>
+          <div id="last-output-label" class="stat-value">Downloads/NHP Recordings</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">أثناء التسجيل</div>
+          <div class="stat-value">شريط عائم + قلم + سهم + مربع + نص</div>
+        </div>
+      </div>
+    </header>
+
+    <section class="layout">
+      <aside class="stack">
+        <section class="panel status-panel">
+          <div class="section-head">
+            <h2>الحالة المباشرة</h2>
+            <p class="section-note">أوامر المسجل الأساسية في متناولك</p>
+          </div>
+          <div class="status-line">
+            <span id="status-pill" class="status-pill">جاهز</span>
+            <span id="recording-timer" class="timer">00:00:00</span>
+          </div>
+          <div id="status-note" class="status-copy">
+            اضغط بدء التسجيل ثم اختر الشاشة أو التبويب من نافذة كروم. بعد ذلك سيظهر لك شريط عائم داخل المعاينة مع أدوات الشرح.
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="section-head">
+            <h2>أوامر سريعة</h2>
+            <p class="section-note">نفس الأوامر ستظهر أيضًا داخل الشريط العائم</p>
+          </div>
+          <div class="actions-grid">
+            <button id="btn-start-recording" class="btn-primary">بدء التسجيل</button>
+            <button id="btn-pause-recording" class="btn-neutral" disabled>إيقاف مؤقت</button>
+            <button id="btn-stop-recording" class="btn-danger" disabled>إيقاف وحفظ</button>
+            <button id="btn-download-last" class="btn-neutral" disabled>تنزيل آخر فيديو</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="section-head">
+            <h2>إعدادات التسجيل</h2>
+            <p class="section-note">تُحفظ محليًا داخل الإضافة</p>
+          </div>
+          <div class="settings-grid">
+            <label class="option-card">
+              <div>
+                <div class="option-title">الميكروفون</div>
+                <div class="option-desc">أضف تعليقك الصوتي إذا كانت صلاحية الميكروفون متاحة.</div>
+              </div>
+              <input id="opt-microphone" type="checkbox" checked>
+            </label>
+            <label class="option-card">
+              <div>
+                <div class="option-title">صوت النظام أو التبويب</div>
+                <div class="option-desc">يُسجَّل فقط إذا شاركته من نافذة كروم عند البدء.</div>
+              </div>
+              <input id="opt-system-audio" type="checkbox" checked>
+            </label>
+            <label class="option-card">
+              <div>
+                <div class="option-title">اسألني عن مكان الحفظ</div>
+                <div class="option-desc">عند التفعيل سيظهر مربع الحفظ بدل التنزيل المباشر.</div>
+              </div>
+              <input id="opt-save-as" type="checkbox">
+            </label>
+          </div>
+
+          <div class="select-row" style="margin-top: 0.75rem;">
+            <div class="field">
+              <label for="opt-quality">الجودة</label>
+              <select id="opt-quality">
+                <option value="720">HD 720p</option>
+                <option value="1080" selected>Full HD 1080p</option>
+                <option value="1440">QHD 1440p</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="opt-fps">عدد الإطارات</label>
+              <select id="opt-fps">
+                <option value="24">24 FPS</option>
+                <option value="30" selected>30 FPS</option>
+                <option value="60">60 FPS</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="section-head">
+            <h2>أدوات الشرح المدمجة</h2>
+            <p class="section-note">تظهر داخل الشريط العائم أثناء التسجيل</p>
+          </div>
+          <div class="tool-tip-box">
+            <div class="tool-grid">
+              <div class="tool-chip">قلم حر</div>
+              <div class="tool-chip">سهم</div>
+              <div class="tool-chip">مربع</div>
+              <div class="tool-chip">دائرة</div>
+              <div class="tool-chip">نص</div>
+              <div class="tool-chip">خطوة مرقمة</div>
+              <div class="tool-chip">Spotlight</div>
+              <div class="tool-chip">تحريك</div>
+              <div class="tool-chip">تراجع</div>
+              <div class="tool-chip">مسح الكل</div>
+            </div>
+            <ul class="hint-list">
+              <li>التكبير الحالي يقرّب مساحة المعاينة ويسجلها داخل الفيديو نفسه.</li>
+              <li>يمكنك الإيقاف المؤقت ثم الرسم أو الكتابة ثم المتابعة.</li>
+              <li>عند الإنهاء سيظهر آخر فيديو مباشرة داخل هذه الصفحة.</li>
+            </ul>
+          </div>
+        </section>
+      </aside>
+
+      <section class="preview-panel">
+        <div class="preview-shell">
+          <div class="preview-top">
+            <div>
+              <div class="preview-title">منطقة التسجيل والمعاينة</div>
+              <div class="preview-subtitle">المعاينة المباشرة تظهر هنا، ومعها الشريط العائم للشرح أثناء التسجيل.</div>
+            </div>
+            <div class="chip-row">
+              <span class="chip">محلي بالكامل</span>
+              <span class="chip">شرح داخل الفيديو</span>
+              <span class="chip">مناسب للعمل السريع</span>
+            </div>
+          </div>
+
+          <div class="stage-wrap" id="stage-wrap">
+            <video id="source-video" autoplay muted playsinline></video>
+            <canvas id="stage-canvas" class="stage-canvas hidden"></canvas>
+            <video id="preview-video" class="preview-video hidden" autoplay playsinline controls></video>
+
+            <div id="preview-overlay" class="preview-overlay">
+              <div class="overlay-card">
+                <div class="overlay-title">المسجل جاهز</div>
+                <div class="overlay-copy">
+                  عند بدء التسجيل ستظهر هنا الشاشة التي اخترتها، وسيظهر فوقها شريط عائم فيه البدء والإيقاف المؤقت والإيقاف
+                  وأدوات الرسم والكتابة والتكبير.
+                </div>
+              </div>
+            </div>
+
+            <div id="floating-toolbar" class="floating-toolbar hidden">
+              <div id="toolbar-grip" class="toolbar-grip">
+                <span>اسحب الشريط من هنا</span>
+                <strong>أدوات التسجيل والشرح</strong>
+              </div>
+              <div class="toolbar-row">
+                <button id="btn-toolbar-start" class="toolbar-btn is-live">بدء</button>
+                <button id="btn-toolbar-pause" class="toolbar-btn" disabled>إيقاف مؤقت</button>
+                <button id="btn-toolbar-stop" class="toolbar-btn is-danger" disabled>إيقاف</button>
+                <div class="toolbar-spacer"></div>
+                <span class="toolbar-label">الأداة</span>
+                <button class="tool-btn active" data-tool="pen">قلم</button>
+                <button class="tool-btn" data-tool="arrow">سهم</button>
+                <button class="tool-btn" data-tool="rectangle">مربع</button>
+                <button class="tool-btn" data-tool="ellipse">دائرة</button>
+                <button class="tool-btn" data-tool="text">نص</button>
+                <button class="tool-btn" data-tool="step">Step</button>
+                <button class="tool-btn" data-tool="spotlight">Spotlight</button>
+                <button class="tool-btn" data-tool="pan">تحريك</button>
+              </div>
+
+              <div class="toolbar-row">
+                <span class="toolbar-label">اللون</span>
+                <input id="tool-color" class="toolbar-color" type="color" value="#ffde59">
+                <span class="toolbar-label">السماكة</span>
+                <input id="tool-size" class="toolbar-range" type="range" min="2" max="18" step="1" value="4">
+                <span id="tool-size-value" class="toolbar-label">0.25rem</span>
+                <span class="toolbar-label">التكبير</span>
+                <select id="tool-zoom" class="toolbar-select">
+                  <option value="1">100%</option>
+                  <option value="1.15">115%</option>
+                  <option value="1.3">130%</option>
+                  <option value="1.5">150%</option>
+                </select>
+                <div class="toolbar-spacer"></div>
+                <button id="btn-undo-annotation" class="toolbar-btn">تراجع</button>
+                <button id="btn-clear-annotations" class="toolbar-btn">مسح الكل</button>
+                <button id="btn-toggle-toolbar" class="toolbar-btn">تصغير</button>
+              </div>
+            </div>
+
+            <div id="toolbar-dock" class="toolbar-dock hidden">
+              <button id="btn-expand-toolbar" class="dock-btn">إظهار الشريط</button>
+            </div>
+
+            <textarea
+              id="text-editor"
+              class="text-editor hidden"
+              placeholder="اكتب النص ثم اضغط Ctrl+Enter للتثبيت أو Esc للإلغاء"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="facts">
+          <div class="fact">
+            <div class="fact-label">آخر حالة</div>
+            <div id="last-status-value" class="fact-value">جاهز للبدء</div>
+          </div>
+          <div class="fact">
+            <div class="fact-label">آخر ملف</div>
+            <div id="last-file-value" class="fact-value">لا يوجد بعد</div>
+          </div>
+          <div class="fact">
+            <div class="fact-label">نوع الحفظ</div>
+            <div id="save-mode-value" class="fact-value">تنزيل مباشر</div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="./recorder.js"></script>
+</body>
+</html>

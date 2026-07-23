@@ -1,0 +1,106 @@
+<div class="pnggen-root" dir="rtl">
+  <header class="pnggen-header">
+    <div>
+      <p class="pnggen-kicker">NHP Image Lab</p>
+      <h2>Generat PNG</h2>
+    </div>
+    <span class="pnggen-pill" id="pnggen-model-pill">auto</span>
+  </header>
+
+  <section class="pnggen-layout">
+    <div class="pnggen-panel pnggen-source-panel">
+      <div class="pnggen-panel-title">Source</div>
+      <label class="pnggen-drop" id="pnggen-drop">
+        <input type="file" id="pnggen-image-input" accept="image/png,image/jpeg,image/webp">
+        <span id="pnggen-drop-text">Drop image here or click to select</span>
+      </label>
+      <div class="pnggen-preview" id="pnggen-source-preview">No image selected</div>
+      <div class="pnggen-row">
+        <button type="button" class="pnggen-btn pnggen-btn-muted" id="pnggen-clear-image">Clear Image</button>
+      </div>
+    </div>
+
+    <div class="pnggen-panel pnggen-control-panel">
+      <div class="pnggen-panel-title">Prompt</div>
+      <details class="pnggen-advanced" open>
+        <summary class="pnggen-advanced-summary">Base Prompt (أساسي)</summary>
+        <textarea id="pnggen-base-prompt" rows="6" spellcheck="true" placeholder="Base prompt used for every generation..."></textarea>
+        <div class="pnggen-hint">لتسريع التوليد: قلّل عدد الصور أو اختر مقاس أصغر.</div>
+      </details>
+      <textarea id="pnggen-user-prompt" rows="7" spellcheck="true" placeholder="Image edit suggestions or prompt..."></textarea>
+      <div class="pnggen-settings pnggen-settings-keys">
+        <label>
+          <span>Base URL</span>
+          <input type="text" id="pnggen-base-url" value="http://127.0.0.1:8317/v1">
+        </label>
+        <label>
+          <span>API Key</span>
+          <input type="password" id="pnggen-api-key" value="nhp_95TmDQKQNbsEWNYQK8IqcIK_snqF6uJq" autocomplete="off">
+        </label>
+      </div>
+      <div class="pnggen-settings">
+        <label>
+          <span>Model</span>
+          <input type="text" id="pnggen-model" value="auto">
+        </label>
+        <label>
+          <span>Output count</span>
+          <input type="number" id="pnggen-count" value="4" min="1" max="10">
+        </label>
+        <label>
+          <span>Variation</span>
+          <select id="pnggen-variation">
+            <option value="balanced" selected>Balanced</option>
+            <option value="strong">Strong</option>
+          </select>
+        </label>
+        <label>
+          <span>Size</span>
+          <select id="pnggen-size">
+            <option value="1024x1024">1024 x 1024</option>
+            <option value="1536x1024">1536 x 1024</option>
+            <option value="1024x1536">1024 x 1536</option>
+          </select>
+        </label>
+      </div>
+      <div class="pnggen-row">
+        <button type="button" class="pnggen-btn pnggen-btn-primary" id="pnggen-generate">Generate Designs</button>
+        <button type="button" class="pnggen-btn pnggen-btn-muted" id="pnggen-clear-results">Clear Results</button>
+      </div>
+      <div class="pnggen-wait" id="pnggen-wait" aria-hidden="true">
+        <div class="pnggen-wait-row">
+          <div class="pnggen-spinner" aria-hidden="true"></div>
+          <div class="pnggen-wait-text">Generating…</div>
+        </div>
+        <div class="pnggen-progress" aria-hidden="true">
+          <div class="pnggen-progress-bar"></div>
+        </div>
+      </div>
+      <div class="pnggen-status" id="pnggen-status">Ready.</div>
+    </div>
+  </section>
+
+  <section class="pnggen-results" id="pnggen-results" aria-label="Generated designs"></section>
+
+  <div class="pnggen-scroll-tools" aria-label="Scroll controls">
+    <button type="button" class="pnggen-scroll-btn" id="pnggen-scroll-up" title="Up" aria-label="Scroll up">
+      <i class="fa-solid fa-chevron-up" aria-hidden="true"></i>
+    </button>
+    <button type="button" class="pnggen-scroll-btn" id="pnggen-scroll-down" title="Down" aria-label="Scroll down">
+      <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+    </button>
+  </div>
+
+  <div class="pnggen-modal" id="pnggen-modal" aria-hidden="true">
+    <div class="pnggen-modal-backdrop" data-action="close"></div>
+    <div class="pnggen-modal-card" role="dialog" aria-modal="true" aria-label="Preview">
+      <button type="button" class="pnggen-modal-close" data-action="close" aria-label="Close">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+      <img id="pnggen-modal-img" alt="">
+      <div class="pnggen-modal-actions">
+        <a class="pnggen-btn pnggen-btn-muted" id="pnggen-modal-download" href="#" download="design.png">Download PNG</a>
+      </div>
+    </div>
+  </div>
+</div>

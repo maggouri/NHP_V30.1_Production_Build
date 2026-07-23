@@ -1,0 +1,164 @@
+<div class="markets-compact marketplaces-shell pinterest-market-shell">
+    <div class="markets-header">مدير المنصات والأسواق</div>
+    <div class="markets-tabs" role="tablist" aria-label="Marketplaces">
+        <button class="markets-tab-btn" data-markets-tab="amazon" type="button">Amazon</button>
+        <button class="markets-tab-btn" data-markets-tab="redbubble" type="button">Redbubble</button>
+        <button class="markets-tab-btn markets-tab-active" data-markets-tab="pinterest" type="button">Pinterest</button>
+    </div>
+</div>
+
+<details class="glass-card mb-4 market-page-settings" style="border-color: #1877F2; background: rgba(24, 119, 242, 0.03);">
+    <summary>إعدادات الصفحة و Pinterest AI</summary>
+    <h3 class="text-sm font-bold mb-2 flex items-center gap-2" style="color: #1877F2;">
+        <i class="fa-brands fa-facebook"></i>
+        إعدادات صفحة فيسبوك
+    </h3>
+    <div class="grid grid-cols-2 gap-2 mb-2">
+        <input type="text" id="social-page-id" class="modern-input text-[11px]" placeholder="معرف الصفحة (Page ID)">
+        <input type="password" id="social-access-token" class="modern-input text-[11px]"
+            placeholder="رمز الوصول (Page Access Token)">
+    </div>
+    <button id="social-save-settings"
+        class="btn w-full bg-surface2 border border-border text-[10px] py-1.5 hover:bg-white/5">
+        <i class="fa-solid fa-save"></i> حفظ الإعدادات
+    </button>
+</details>
+
+<div class="glass-card mb-4" style="border-color: #E60023; background: rgba(230, 0, 35, 0.04);">
+    <h3 class="text-sm font-bold mb-3 flex items-center gap-2" style="color: #E60023;">
+        <i class="fa-brands fa-pinterest"></i>
+        إعدادات Pinterest
+    </h3>
+    <div class="grid grid-cols-1 gap-2 mb-2 hidden">
+        <input type="text" id="social-pin-board-id" class="modern-input text-[11px]" placeholder="معرف البورد (Board ID)">
+        <input type="password" id="social-pin-token" class="modern-input text-[11px]" placeholder="Pinterest Access Token">
+    </div>
+
+    <div class="rounded-lg border border-white/10 bg-black/20 p-3 mb-2 space-y-1.5 text-[10px] text-slate-300 leading-4">
+        <div class="font-bold text-[#E60023]">Pinterest browser session</div>
+        <div>Uses the currently logged-in Pinterest tab in Chrome. No Board ID or token is required here.</div>
+        <div>Title: first line up to 100 characters.</div>
+        <div>Description: post text with hashtags up to 800 characters.</div>
+        <div>Link: tested successfully above 2000 characters.</div>
+    </div>
+
+    <div class="rounded-lg border border-white/10 bg-black/20 p-3 mb-2 space-y-2">
+        <label class="flex items-center gap-2 text-[11px] text-slate-200 cursor-pointer">
+            <input type="checkbox" id="social-pin-watermark-enabled" checked>
+            <span>تفعيل العلامة المائية تلقائياً لنسخة Pinterest فقط</span>
+        </label>
+        <input type="text" id="social-pin-watermark-text" class="modern-input text-[11px]" value="maggouristore" placeholder="نص العلامة المائية - مثال: maggouristore">
+        <div class="market-watermark-row">
+            <select id="social-pin-watermark-position" class="modern-input text-[11px]">
+                <option value="bottom-right">أسفل اليمين</option>
+                <option value="bottom-left">أسفل اليسار</option>
+                <option value="top-right">أعلى اليمين</option>
+                <option value="top-left">أعلى اليسار</option>
+                <option value="center">الوسط</option>
+            </select>
+            <div class="rounded-lg border border-white/10 bg-surface2 px-2 py-1.5">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-[10px] text-slate-400">شفافية العلامة</span>
+                    <span id="social-pin-watermark-opacity-value" class="text-[10px] text-[#E60023] font-bold">68%</span>
+                </div>
+                <input type="range" id="social-pin-watermark-opacity" min="20" max="90" step="1" value="68" class="w-full">
+            </div>
+        </div>
+        <p class="text-[10px] text-slate-400 leading-4">
+            سيتم تطبيق العلامة المائية على نسخة النشر الخاصة بـ Pinterest فقط، بدون تغيير الصورة الأصلية داخل الطابور.
+        </p>
+    </div>
+
+    <button id="social-pin-save-settings"
+        class="btn w-full text-[10px] py-1.5 border"
+        style="background: rgba(230, 0, 35, 0.08); color: #E60023; border-color: rgba(230, 0, 35, 0.35);">
+        <i class="fa-solid fa-save"></i> حفظ إعدادات Pinterest
+    </button>
+</div>
+
+<div class="glass-card mb-4" style="border-color: var(--primary);">
+    <h3 class="text-sm font-bold mb-3 flex items-center gap-2">
+        <i class="fa-solid fa-bullhorn text-primary"></i>
+        صناعة ونشر المحتوى
+    </h3>
+
+    <input type="file" id="social-image-upload" accept="image/*" class="hidden" multiple>
+    <div class="upload-zone mb-3 market-upload-trigger" id="social-upload-trigger">
+        <i class="fa-regular fa-image"></i>
+        <p>اضغط لرفع التصاميم للتسويق</p>
+        <span>يمكنك تحديد عدة صور معاً (Bulk Upload)</span>
+    </div>
+
+    <!-- طابور التسويق (Queue) -->
+    <div id="social-queue-container" class="hidden mb-3 p-2 bg-black/20 rounded-lg border border-white/5">
+        <div class="flex justify-between items-center mb-2">
+            <span class="text-[10px] uppercase font-black text-primary/80 tracking-widest">طابور التسويق</span>
+            <div class="flex items-center gap-3">
+                <span class="text-[10px] text-slate-500" id="social-queue-count">0 تصميم</span>
+                <button id="social-clear-queue-btn"
+                    class="text-[10px] text-red-400 hover:text-red-300 transition-colors" title="مسح الكل">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        <div id="social-queue" class="flex gap-2 overflow-x-auto pb-1" style="scrollbar-width: thin;"></div>
+    </div>
+
+    <div id="social-preview-wrap" class="hidden space-y-3">
+        <div class="flex items-center gap-3 bg-black/20 p-2 rounded-lg border border-white/5">
+            <img id="social-img-preview" src="#"
+                style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid var(--primary);">
+            <div class="flex-1">
+                <input type="text" id="social-niche-hint" class="modern-input text-[10px] h-7 mb-1"
+                    placeholder="أدخل اسم النيتش لمساعدة AI (اختياري)...">
+                <button id="social-ai-gen" class="action-btn action-btn-primary w-full py-1 text-[10px]"
+                    style="background: linear-gradient(135deg, var(--primary), #ec4899);">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> كتابة منشور تسويقي (AI)
+                </button>
+            </div>
+        </div>
+
+        <div class="relative">
+            <label class="text-[10px] uppercase font-bold text-slate-400 mb-1 block">نص المنشور</label>
+            <textarea id="social-post-text" class="modern-input text-[11px] h-20"
+                placeholder="سيتم كتابة النص الإعلاني هنا..."></textarea>
+        </div>
+
+        <div class="relative">
+            <label class="text-[10px] uppercase font-bold text-slate-400 mb-1 block">الهاشتاجات</label>
+            <input type="text" id="social-post-tags" class="modern-input text-[11px]" placeholder="#هاشتاج">
+        </div>
+
+        <div class="relative">
+            <label class="text-[10px] uppercase font-bold text-slate-400 mb-1 block">رابط الشراء (اختياري - سيُضاف أسفل
+                النص)</label>
+            <input type="text" id="social-product-link" class="modern-input text-[11px]"
+                placeholder="https://teepublic.com/...">
+        </div>
+
+        <button id="social-publish-btn" class="action-btn w-full py-2"
+            style="background: #1877F2; color: white; font-weight: bold; border-radius: 8px;">
+            <i class="fa-solid fa-paper-plane"></i> نشر الآن على فيسبوك
+        </button>
+
+        <button id="social-pin-publish-btn" class="action-btn w-full py-2"
+            style="background: #E60023; color: white; font-weight: bold; border-radius: 8px;">
+            <i class="fa-brands fa-pinterest"></i> نشر الآن على Pinterest
+        </button>
+
+        <button id="social-ui-engage-btn" class="action-btn w-full py-2 mt-2"
+            style="background: transparent; color: #1877F2; border: 1px solid #1877F2; font-weight: bold; border-radius: 8px; transition: all 0.2s;">
+            <i class="fa-solid fa-robot"></i> أتمتة التفاعل (UI Bot)
+        </button>
+
+        <button id="social-ai-agent-btn" class="action-btn w-full py-2 mt-2"
+            style="background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; font-weight: bold; border-radius: 8px; transition: all 0.2s; box-shadow: 0 4px 15px rgba(236,72,153,0.3);">
+            <i class="fa-solid fa-brain"></i> إطلاق الوكيل الذكي للتفاعل (AI Agent)
+        </button>
+
+        <button id="social-ai-pilot-btn" class="action-btn w-full py-2 mt-2"
+            style="background: linear-gradient(135deg, #10b981, #3b82f6); color: white; font-weight: bold; border-radius: 8px; transition: all 0.2s; box-shadow: 0 4px 15px rgba(16,185,129,0.3);">
+            <i class="fa-solid fa-plane-departure"></i> الطيار الآلي الشامل (AI Pilot)
+        </button>
+    </div>
+</div>

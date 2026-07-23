@@ -1,0 +1,7 @@
+// Copy to nhp-cliproxy-management.local.js (gitignored) and set your management key.
+(function (global) {
+    'use strict';
+    global.NhpCliProxyManagementLocal = Object.freeze({
+        managementKey: ''
+    });
+})(typeof globalThis !== 'undefined' ? globalThis : typeof self !== 'undefined' ? self : window);

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>screeeeenvme Studio</title>
+    <script src="../extension-theme-boot.js"></script>
+    <link rel="stylesheet" href="../extension-theme.css">
+    <link rel="stylesheet" href="styles/annotator.css">
+  </head>
+  <body>
+    <main class="studio-shell">
+      <aside class="studio-sidebar">
+        <div class="brand-block">
+          <div class="eyebrow">Local Drawing Studio</div>
+          <h1>screeeeenvme</h1>
+          <p>Annotate screenshots locally with drawing tools inspired by the workflow you wanted.</p>
+        </div>
+
+        <section class="tool-section">
+          <h2>Tools</h2>
+          <div class="tool-grid">
+            <button class="tool-btn active" data-tool="pen">Pen</button>
+            <button class="tool-btn" data-tool="arrow">Arrow</button>
+            <button class="tool-btn" data-tool="rect">Rectangle</button>
+            <button class="tool-btn" data-tool="ellipse">Ellipse</button>
+            <button class="tool-btn" data-tool="text">Text</button>
+          </div>
+        </section>
+
+        <section class="tool-section">
+          <h2>Style</h2>
+          <label class="field">
+            <span>Color</span>
+            <input id="colorPicker" type="color" value="#ff5c39">
+          </label>
+          <label class="field">
+            <span>Size</span>
+            <input id="sizeRange" type="range" min="2" max="18" value="4">
+          </label>
+          <div class="size-readout" id="sizeReadout">4 px</div>
+        </section>
+
+        <section class="tool-section">
+          <h2>Actions</h2>
+          <div class="action-stack">
+            <button id="uploadButton" class="action-btn accent">Upload image</button>
+            <button id="undoButton" class="action-btn">Undo</button>
+            <button id="clearButton" class="action-btn">Clear drawings</button>
+            <button id="saveButton" class="action-btn success">Save annotated image</button>
+          </div>
+          <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+        </section>
+
+        <section class="tool-section">
+          <h2>Tips</h2>
+          <ul class="tip-list">
+            <li>Paste an image with <code>Ctrl+V</code>.</li>
+            <li>Use <code>Ctrl+Z</code> to undo.</li>
+            <li>Text tool adds a label at the clicked point.</li>
+          </ul>
+        </section>
+
+        <section class="tool-section">
+          <div class="section-head">
+            <h2>Gemini Inbox</h2>
+            <button id="clearInboxButton" class="mini-btn">Clear</button>
+          </div>
+          <div id="bufferList" class="buffer-list">
+            <div class="buffer-empty">No buffered Gemini images yet.</div>
+          </div>
+        </section>
+
+        <div class="status-box" id="statusBox">Load a screenshot or use capture with editor enabled.</div>
+      </aside>
+
+      <section class="studio-stage">
+        <header class="stage-header">
+          <div>
+            <div class="stage-label">Current Image</div>
+            <strong id="imageTitle">No image loaded</strong>
+          </div>
+        </header>
+
+        <div class="canvas-wrap" id="canvasWrap">
+          <div class="empty-stage" id="emptyStage">
+            Drop an image here, paste one, or capture with the editor toggle enabled.
+          </div>
+          <canvas id="editorCanvas"></canvas>
+        </div>
+      </section>
+    </main>
+
+    <script src="scripts/annotator.js"></script>
+  </body>
+</html>

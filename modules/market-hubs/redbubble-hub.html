@@ -1,0 +1,152 @@
+<div class="markets-compact marketplaces-shell redbubble-market-shell">
+    <div class="markets-header">مدير المنصات والأسواق</div>
+    <div class="markets-tabs" role="tablist" aria-label="Marketplaces">
+        <button class="markets-tab-btn" data-markets-tab="amazon" type="button">Amazon</button>
+        <button class="markets-tab-btn markets-tab-active" data-markets-tab="redbubble" type="button">Redbubble</button>
+        <button class="markets-tab-btn" data-markets-tab="pinterest" type="button">Pinterest</button>
+    </div>
+</div>
+
+<div class="glass-card mb-4" style="border-color: rgba(244, 63, 94, 0.2); background: rgba(15, 23, 42, 0.45);">
+    <div class="flex items-center justify-between gap-2 mb-1">
+        <h2 class="text-[0.8125rem] font-black text-white flex items-center gap-1">
+            <i class="fa-solid fa-circle-dot" style="color:#f43f5e;"></i>
+            قسم Redbubble
+        </h2>
+        <span class="text-[0.6875rem] font-black px-2 rounded-full border" style="height:1.375rem;line-height:1.25rem;color:#fecdd3; border-color:rgba(244,63,94,0.25); background:rgba(244,63,94,0.08);">RB</span>
+    </div>
+
+    <div class="status-bar" style="border-color: rgba(244, 63, 94, 0.25); background: rgba(15, 23, 42, 0.55);">
+        <span id="rbh-status-dot" class="status-dot active"></span>
+        <span id="rbh-status-text" class="status-text">محرك Redbubble مدمج وجاهز للاستخدام</span>
+        <span id="rbh-current-badge" class="current-badge" style="background:rgba(244,63,94,0.12); border-color:rgba(244,63,94,0.2); color:#fda4af;">
+            0 حسابات
+        </span>
+    </div>
+
+    <div class="progress-wrap">
+        <div class="progress-header">
+            <span>جاهزية التشغيل</span>
+            <b id="rbh-readiness-label">0%</b>
+        </div>
+        <div class="progress-bg">
+            <div id="rbh-readiness-fill" class="progress-fill" style="width:0%; background:linear-gradient(90deg, #e11d48, #fb7185);"></div>
+        </div>
+    </div>
+</div>
+
+<div class="market-badges-row mb-4">
+    <div class="market-badge"><span id="rbh-accounts-count">0</span><span>الحسابات</span></div>
+    <div class="market-badge"><span id="rbh-queue-count">0</span><span>الطابور</span></div>
+    <div class="market-badge"><span id="rbh-works-count">0</span><span>الأعمال</span></div>
+    <div class="market-badge"><span id="rbh-sales-count">0</span><span>المبيعات</span></div>
+</div>
+
+<div class="glass-card mb-4" style="border-color: rgba(244, 63, 94, 0.18);">
+    <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-bold flex items-center gap-2">
+            <i class="fa-solid fa-images" style="color:#fb7185;"></i>
+            طابور SEO المشترك
+        </h3>
+        <button id="rbh-open-seo" class="text-[0.625rem] px-3 py-1 rounded-full border" style="color:#fecdd3; border-color:rgba(244,63,94,0.25); background:rgba(244,63,94,0.08);">
+            فتح SEO
+        </button>
+    </div>
+    <div class="text-[0.6875rem] text-slate-400 leading-5 mb-3">
+        هذا القسم يقرأ نفس التصاميم ونفس بيانات SEO المستعملة في قسم SEO و Autopilot.
+    </div>
+    <div id="rbh-queue-container" class="hidden p-2 bg-black/20 rounded-lg border border-white/5">
+        <div class="flex justify-between items-center mb-2">
+            <span class="text-[0.5625rem] uppercase font-black tracking-widest" style="color:#fb7185;">Queue</span>
+            <div class="flex items-center gap-3">
+                <span class="text-[0.5625rem] text-slate-500" id="rbh-shared-queue-count">0 ملفات</span>
+                <button id="rbh-clear-queue-btn" class="text-[0.5625rem] text-red-400 hover:text-red-300 transition-colors" title="مسح الكل">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        <div id="rbh-queue" class="queue-grid"></div>
+    </div>
+</div>
+
+<div id="rbh-seo-preview" class="hidden glass-card mb-4" style="border-color: rgba(244, 63, 94, 0.18);">
+    <div class="flex items-center justify-between border-b border-white/5 pb-2 mb-3">
+        <div class="flex items-center gap-2 overflow-hidden">
+            <img id="rbh-img-preview" src="#" style="width:2.875rem; height:2.875rem; object-fit:cover; border-radius:0.625rem; border:1px solid rgba(244,63,94,0.35);">
+            <div class="overflow-hidden">
+                <div id="rbh-current-filename" class="text-[0.625rem] text-white truncate font-medium max-w-[9.375rem]">filename.png</div>
+                <div class="text-[0.5rem] uppercase font-bold" style="color:#fb7185;">Redbubble SEO Bridge</div>
+            </div>
+        </div>
+        <button id="rbh-apply-all" class="copy-btn-modern" title="تطبيق على كل التصاميم" style="width:1.875rem; height:1.875rem; background:rgba(16,185,129,0.15); border-color:rgba(16,185,129,0.3); color:#10B981;">
+            <i class="fa-solid fa-clone"></i>
+        </button>
+    </div>
+
+    <div class="market-seo-row">
+        <div class="relative">
+            <input type="text" id="rbh-seo-title" class="modern-input text-[0.6875rem]" placeholder="عنوان Redbubble...">
+        </div>
+        <div class="relative">
+            <input type="text" id="rbh-seo-main-tag" class="modern-input text-[0.6875rem]" placeholder="الكلمة المفتاحية الرئيسية...">
+        </div>
+        <div class="relative">
+            <textarea id="rbh-seo-tags" class="modern-input text-[0.625rem] h-14" placeholder="العلامات Tags..."></textarea>
+        </div>
+        <div class="relative">
+            <textarea id="rbh-seo-desc" class="modern-input text-[0.625rem] h-14" placeholder="وصف التصميم..."></textarea>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card mb-4" style="border-color: rgba(244, 63, 94, 0.18);">
+    <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-bold flex items-center gap-2">
+            <i class="fa-solid fa-bolt" style="color:#fb7185;"></i>
+            إجراءات سريعة
+        </h3>
+        <span class="text-[0.625rem] text-slate-500">مسار مختصر بدل الرجوع إلى MerchGhost يدوياً</span>
+    </div>
+    <div class="market-actions-row">
+        <button id="rbh-open-uploader" class="action-btn w-full py-2" style="background:linear-gradient(135deg,#e11d48,#fb7185); color:white; font-weight:800; border-radius:0.625rem;">
+            <i class="fa-solid fa-rocket"></i> فتح مدير الرفع على Redbubble
+        </button>
+        <button id="rbh-open-platform" class="btn border text-[0.6875rem]" style="border-color:rgba(244,63,94,0.25); background:rgba(255,255,255,0.03); color:#ffe4e6;">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> فتح Redbubble
+        </button>
+        <button id="rbh-open-autopilot" class="btn border text-[0.6875rem]" style="border-color:rgba(244,63,94,0.25); background:rgba(255,255,255,0.03); color:#ffe4e6;">
+            <i class="fa-solid fa-users-gear"></i> إدارة حسابات Redbubble
+        </button>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 gap-3">
+    <details class="glass-card market-locked-details" style="border-color: rgba(244, 63, 94, 0.18);">
+        <summary>ما هو المفعّل هنا؟</summary>
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold flex items-center gap-2">
+                <i class="fa-solid fa-screwdriver-wrench" style="color:#fb7185;"></i>
+                ما هو المفعّل هنا؟
+            </h3>
+            <span id="rbh-tier" class="text-[0.625rem] font-black px-2 py-1 rounded-full" style="background:rgba(255,255,255,0.04); color:#fbcfe8;">Tier: Standard</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-[0.6875rem]">
+            <div class="p-2 rounded-lg border border-white/5 bg-black/15 text-slate-200">
+                <div class="font-black mb-1">رفع تلقائي</div>
+                <div class="text-slate-400">استخدام سكربت Redbubble المدمج للنشر وتحديث الحالة.</div>
+            </div>
+            <div class="p-2 rounded-lg border border-white/5 bg-black/15 text-slate-200">
+                <div class="font-black mb-1">استئناف ذكي</div>
+                <div class="text-slate-400">يدعم حفظ التقدم محلياً ومتابعة سير الرفع.</div>
+            </div>
+            <div class="p-2 rounded-lg border border-white/5 bg-black/15 text-slate-200">
+                <div class="font-black mb-1">إحصاءات محلية</div>
+                <div class="text-slate-400">قراءة الأعمال والمبيعات من بيانات MerchGhost المحلية.</div>
+            </div>
+            <div class="p-2 rounded-lg border border-white/5 bg-black/15 text-slate-200">
+                <div class="font-black mb-1">توافق مع الحسابات</div>
+                <div class="text-slate-400">يرتبط بحسابات المنصة المحفوظة داخل Autopilot.</div>
+            </div>
+        </div>
+    </details>
+</div>

@@ -1,0 +1,237 @@
+{
+  "manifest_version": 3,
+  "name": "Niche Hunter Pro - USPTO + TeePublic + AI",
+  "version": "30.1.22",
+  "description": "أداة متكاملة: فحص USPTO + تحليل TeePublic + Niche Commander بالذكاء الاصطناعي",
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  },
+  "permissions": [
+    "activeTab",
+    "contextMenus",
+    "scripting",
+    "storage",
+    "tabs",
+    "windows",
+    "unlimitedStorage",
+    "downloads",
+    "clipboardWrite",
+    "clipboardRead",
+    "desktopCapture",
+    "tabCapture",
+    "offscreen",
+    "alarms",
+    "identity",
+    "declarativeNetRequest",
+    "nativeMessaging"
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_1",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
+  "host_permissions": [
+    "https://tmsearch.uspto.gov/*",
+    "https://www.teepublic.com/*",
+    "https://*.teepublic.com/*",
+    "https://gemini.google.com/*",
+    "https://chatgpt.com/*",
+    "https://*.pinterest.com/*",
+    "https://*.redbubble.com/*",
+    "https://www.amazon.com/*",
+    "https://www.amazon.ca/*",
+    "https://www.amazon.co.uk/*",
+    "https://www.amazon.de/*",
+    "https://www.amazon.fr/*",
+    "https://www.amazon.it/*",
+    "https://www.amazon.es/*",
+    "*://*.facebook.com/*",
+    "https://*.google.com/*",
+    "https://generativelanguage.googleapis.com/*",
+    "https://www.googleapis.com/*",
+    "https://accounts.google.com/*",
+    "https://*.etsy.com/*",
+    "https://*.tmhunt.com/*",
+    "https://github.com/*",
+    "https://raw.githubusercontent.com/*",
+    "http://127.0.0.1/*",
+    "http://127.0.0.1:3019/*",
+    "http://localhost/*",
+    "http://*/*",
+    "https://*/*"
+  ],
+  "oauth2": {
+    "client_id": "705300807020-l9ubl8algdh8sd9345ltbpii9i02dc1h.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile"
+    ]
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src *; img-src 'self' data: blob: http://127.0.0.1:* http://localhost:*;"
+  },
+  "action": {
+    "default_popup": "launcher.html",
+    "default_icon": {
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "commands": {
+    "capture-visible": {
+      "suggested_key": {
+        "default": "Alt+Shift+V"
+      },
+      "description": "Capture visible area"
+    },
+    "capture-selected": {
+      "suggested_key": {
+        "default": "Alt+Shift+S"
+      },
+      "description": "Capture selected area"
+    },
+    "capture-full-page": {
+      "suggested_key": {
+        "default": "Alt+Shift+F"
+      },
+      "description": "Capture full page"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://tmsearch.uspto.gov/*",
+        "https://www.teepublic.com/*",
+        "*://*.facebook.com/*",
+        "*://web.facebook.com/*"
+      ],
+      "js": [
+        "content_script.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://gemini.google.com/*",
+        "https://chatgpt.com/*",
+        "*://*.google.com/search*"
+      ],
+      "js": [
+        "gemini-content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "exclude_matches": [
+        "https://remotedesktop.google.com/*",
+        "https://*.remotedesktop.google.com/*"
+      ],
+      "js": [
+        "prompt_bag_image_prompts.js",
+        "prompt_bag_overlay.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.google.com/search*",
+        "*://*.pinterest.com/*",
+        "*://*.teepublic.com/*",
+        "*://*.etsy.com/*"
+      ],
+      "js": [
+        "SEO Analyse Artisan/local_library.js",
+        "SEO Analyse Artisan/content.js",
+        "image-injector.js"
+      ],
+      "css": [
+        "SEO Analyse Artisan/content.css"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.tmhunt.com/*"
+      ],
+      "js": [
+        "modules/tmhunt/content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.amazon.com/*",
+        "https://www.amazon.ca/*",
+        "https://www.amazon.co.uk/*",
+        "https://www.amazon.de/*",
+        "https://www.amazon.fr/*",
+        "https://www.amazon.it/*",
+        "https://www.amazon.es/*"
+      ],
+      "js": [
+        "modules/merchghost/amazonProductFilters.89fc476f.js",
+        "modules/merchghost/amazonSuggestions.2a300a23.js",
+        "modules/merchghost/averageBSR.547bdf65.js",
+        "modules/merchghost/amazonScraper.bb141551.js",
+        "modules/merchghost/productCounter.c9a05130.js",
+        "modules/merchghost/productPageBSR.7d8d3b92.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.redbubble.com/*"
+      ],
+      "js": [
+        "modules/merchghost/redbubble-profile-menu.5030faa3.js",
+        "modules/merchghost/redbubble.9b402b2d.js"
+      ],
+      "run_at": "document_end"
+    },
+    {
+      "matches": [
+        "*://*.teepublic.com/*"
+      ],
+      "exclude_matches": [
+        "*://*.teepublic.com/design/*",
+        "*://*.teepublic.com/designs/*/edit*",
+        "*://*.teepublic.com/account/uploads/*"
+      ],
+      "js": [
+        "modules/merchghost/teepublic.d58a32d8.js"
+      ],
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "niche_commander.html",
+        "icon.png",
+        "main_inject.js",
+        "tailwind-built.css",
+        "studio_hub.js",
+        "startup-script-templates.json",
+        "NHP_Start_All_Servers.bat.template",
+        "assets/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}

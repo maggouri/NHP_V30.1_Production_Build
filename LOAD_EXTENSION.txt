@@ -1,0 +1,67 @@
+================================================================================
+  Niche Hunter Pro — تحميل الإضافة من Production_Build
+  Load Chrome extension from Production_Build
+================================================================================
+
+العربية
+-------
+هذا المجلد هو الإضافة الرئيسية + السيرفرات المحلية معاً.
+
+  1. افتح: chrome://extensions
+  2. فعّل "وضع المطوّر" (Developer mode)
+  3. احذف أي نسخة قديمة من نفس المجلد أو من NHP EMAILCORE إن وُجدت
+  4. اضغط "Load unpacked" واختر:
+
+       <NHP_PLATFORM>/02_Chrome_Extension
+
+       مثال: D:/Dev/NHP_PLATFORM/02_Chrome_Extension
+
+  5. تأكد أن اسم الإضافة:
+       Niche Hunter Pro - USPTO + TeePublic + AI
+
+  6. معرّف الإضافة (Extension ID) يعتمد على المسار عند التحميل غير المعبأ.
+     المعرّف المعتاد لهذا المجلد: lnfplhpnfclldpofcclibhlfcgkhhhob
+     إذا ظهر dbogillpojmdiahjdambllmlalgjibho فأنت حمّلت NHP EMAILCORE بالخطأ.
+
+  7. شغّل السيرفرات من نفس المجلد:
+       NHP_Start_All_Servers.bat
+     أو من الإضافة: Admin → Repair Local Services
+
+  8. منافذ Studio المطلوبة:
+       3019 — Ghost (TeePublic / Redbubble)
+       3031 — AI Bridge (RENAME AI / SEO)
+       3020 — Creaty (إنشاء حسابات — اختياري)
+
+  9. بعد أي تعديل على الملفات: اضغط Reload (↻) في chrome://extensions
+
+English
+-------
+This folder is both your main extension and local servers.
+
+  1. Open: chrome://extensions
+  2. Enable "Developer mode"
+  3. Remove old copies from this folder or NHP EMAILCORE if present
+  4. Click "Load unpacked" and select:
+
+       <NHP_PLATFORM>/02_Chrome_Extension
+
+       Example: D:/Dev/NHP_PLATFORM/02_Chrome_Extension
+
+  5. Extension name: Niche Hunter Pro - USPTO + TeePublic + AI
+
+  6. Unpacked Extension ID is path-dependent.
+     Expected for this folder: lnfplhpnfclldpofcclibhlfcgkhhhob
+     If you see dbogillpojmdiahjdambllmlalgjibho you loaded NHP EMAILCORE instead.
+
+  7. Start servers from the same folder:
+       NHP_Start_All_Servers.bat
+     Or from the extension: Admin → Repair Local Services
+
+  8. Studio ports:
+       3019 — Ghost
+       3031 — AI Bridge (RENAME AI / SEO)
+       3020 — Creaty (optional)
+
+  9. After code changes: click Reload (↻) on chrome://extensions
+
+================================================================================

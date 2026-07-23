@@ -1,0 +1,440 @@
+/* USPTO Module - Luxury Dark Mode */
+
+:root {
+      font-size: 100%; /* NHP: 1rem = 16px default */
+    --uspto-bg: #050508;
+    --uspto-surface: rgba(15, 15, 20, 0.7);
+    --uspto-border: rgba(255, 255, 255, 0.06);
+    --uspto-primary: #6C63FF;
+    /* Deep Purple base */
+    --uspto-secondary: #00D2FF;
+    /* Electric Blue base */
+    --uspto-safe: #10B981;
+    --uspto-banned: #EF4444;
+    --uspto-text: #E0E0FF;
+    --uspto-text-dim: #8A8AA3;
+    --glass-blur: 1rem;
+}
+
+#panel-uspto .card-list {
+    contain: layout style;
+}
+
+body.nhp-light-mode #panel-uspto .card-list .card-item {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 2.25rem;
+}
+
+.uspto-module-root {
+    position: relative;
+    background: var(--uspto-bg);
+    min-height: 34.375rem;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    padding: 1.25rem;
+    font-family: 'Tajawal', sans-serif;
+    color: var(--uspto-text);
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    height: 100%;
+}
+
+/* Mesh Gradient Animation */
+.mesh-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    filter: blur(100px);
+    opacity: 0.35;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.mesh-ball {
+    position: absolute;
+    border-radius: 50%;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+
+.ball-1 {
+    width: 25rem;
+    height: 25rem;
+    background: radial-gradient(circle, #7000FF 0%, transparent 70%);
+    /* Deep Purple */
+    top: -9.375rem;
+    right: -6.25rem;
+    animation: uspto-move-1 25s infinite;
+}
+
+.ball-2 {
+    width: 28.125rem;
+    height: 28.125rem;
+    background: radial-gradient(circle, #0075FF 0%, transparent 70%);
+    /* Electric Blue */
+    bottom: -12.5rem;
+    left: -9.375rem;
+    animation: uspto-move-2 30s infinite;
+}
+
+@keyframes uspto-move-1 {
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+
+    33% {
+        transform: translate(-6.25rem, 9.375rem) scale(1.1);
+    }
+
+    66% {
+        transform: translate(-12.5rem, 3.125rem) scale(0.9);
+    }
+
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+}
+
+@keyframes uspto-move-2 {
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+
+    33% {
+        transform: translate(9.375rem, -6.25rem) scale(0.9);
+    }
+
+    66% {
+        transform: translate(3.125rem, -12.5rem) scale(1.1);
+    }
+
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+}
+
+/* Layout */
+.uspto-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    min-height: 0;
+}
+
+@media (min-width: 62.5rem) {
+    .uspto-layout {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* Glass Panels */
+.glass-panel {
+    background: var(--uspto-surface);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--uspto-border);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.glass-panel:hover {
+    border-color: rgba(108, 99, 255, 0.15);
+}
+
+/* Luxury Stats */
+.luxury-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.625rem;
+    margin-bottom: 1.25rem;
+}
+
+.lux-stat-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 0.75rem;
+    padding: 0.625rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.lux-stat-value {
+    display: block;
+    font-size: 1.125rem;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+}
+
+.lux-stat-label {
+    display: block;
+    font-size: 0.5625rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--uspto-text-dim);
+    letter-spacing: 0.05em;
+}
+
+/* Progress & Status */
+.luxury-progress-wrap {
+    margin-bottom: 1.25rem;
+}
+
+.lux-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: var(--uspto-text-dim);
+}
+
+.lux-progress-bg {
+    height: 0.375rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 0.625rem;
+    overflow: hidden;
+    position: relative;
+}
+
+.lux-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--uspto-primary), var(--uspto-secondary));
+    border-radius: 0.625rem;
+    width: 0%;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 15px rgba(108, 99, 255, 0.4);
+}
+
+.luxury-status-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.625rem 0.9375rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 0.625rem;
+    margin-bottom: 1.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.lux-status-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--uspto-text-dim);
+    position: relative;
+}
+
+.lux-status-dot.active {
+    background: var(--uspto-safe);
+    box-shadow: 0 0 10px var(--uspto-safe);
+    animation: pulse-dot 1.5s infinite;
+}
+
+@keyframes pulse-dot {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.5);
+        opacity: 0.5;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Inputs & Buttons */
+.luxury-title {
+    font-size: 1rem;
+    font-weight: 900;
+    margin-bottom: 0.9375rem;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    color: #fff;
+}
+
+.luxury-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: #fff;
+    font-size: 0.8125rem;
+    transition: all 0.3s ease;
+}
+
+.luxury-input:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(108, 99, 255, 0.4);
+    box-shadow: 0 0 20px rgba(108, 99, 255, 0.15);
+}
+
+.luxury-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.875rem;
+    border-radius: 0.625rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--uspto-primary) 0%, #4F46E5 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(108, 99, 255, 0.3);
+}
+
+.btn-primary:hover {
+    filter: brightness(1.1);
+    transform: translateY(-0.125rem);
+    box-shadow: 0 8px 25px rgba(108, 99, 255, 0.4);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--uspto-border);
+    color: var(--uspto-text);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+/* Result Cards */
+.lux-result-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+    transition: border-color 0.3s ease;
+}
+
+.lux-result-card.safe {
+    border-left: 0.1875rem solid var(--uspto-safe);
+}
+
+.lux-result-card.banned {
+    border-left: 0.1875rem solid var(--uspto-banned);
+}
+
+.lux-card-header {
+    padding: 0.625rem 0.9375rem;
+    background: rgba(255, 255, 255, 0.03);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.lux-card-title {
+    font-size: 0.75rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.lux-card-count {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.125rem 0.5rem;
+    border-radius: 1.25rem;
+    font-size: 0.625rem;
+}
+
+.u-right-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    flex: 1;
+    min-height: 0;
+}
+
+.glass-panel {
+    min-height: 0;
+}
+
+.lux-result-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.lux-card-list {
+    max-height: 9.375rem;
+    overflow-y: auto;
+    padding: 0.625rem;
+}
+
+.lux-card-list {
+    max-height: none;
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* In full-page mode, let USPTO stretch vertically inside the app */
+body.full-page #panel-uspto {
+    min-height: calc(100vh - 9.375rem);
+}
+
+body.full-page #panel-uspto .uspto-module-root {
+    min-height: calc(100vh - 11.25rem);
+}
+
+/* Full-page density tweak */
+body.full-page .uspto-module-root {
+    padding: 0.875rem;
+}
+
+body.full-page .luxury-btn {
+    padding: 0.4375rem 0.75rem;
+    border-radius: 0.5625rem;
+    font-size: 0.6875rem;
+}
+
+body.full-page .uspto-layout {
+    gap: 0.875rem;
+}
+
+body.full-page .luxury-title,
+body.full-page .luxury-progress-wrap {
+    margin-bottom: 0.875rem;
+}
+
+/* Scrollbar */
+.luxury-scroll::-webkit-scrollbar {
+    width: 0.1875rem;
+}
+
+.luxury-scroll::-webkit-scrollbar-thumb {
+    background: rgba(108, 99, 255, 0.2);
+    border-radius: 0.625rem;
+}

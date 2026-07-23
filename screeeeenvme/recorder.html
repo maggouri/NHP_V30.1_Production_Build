@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>screeeeenvme Recorder</title>
+    <script src="../extension-theme-boot.js"></script>
+    <link rel="stylesheet" href="../extension-theme.css">
+    <link rel="stylesheet" href="styles/recorder.css">
+  </head>
+  <body>
+    <main class="recorder-shell">
+      <section class="summary">
+        <div class="badge" id="modeBadge">Recorder</div>
+        <h1 id="recordingTitle">Preparing...</h1>
+        <p id="recordingSubtitle">Local-only recording. The file will be saved to Downloads/screeeeenvme/recordings.</p>
+      </section>
+
+      <section class="preview-panel">
+        <video id="preview" autoplay muted playsinline></video>
+        <div class="countdown" id="countdownDisplay" hidden></div>
+      </section>
+
+      <section class="info-grid">
+        <div class="info-card">
+          <span class="label">Status</span>
+          <strong id="statusText">Idle</strong>
+        </div>
+        <div class="info-card">
+          <span class="label">Timer</span>
+          <strong id="timerText">00:00</strong>
+        </div>
+      </section>
+
+      <section class="controls">
+        <button id="startButton" class="primary-btn">Start</button>
+        <button id="pauseButton" class="ghost-btn" disabled>Pause</button>
+        <button id="stopButton" class="danger-btn" disabled>Stop</button>
+      </section>
+
+      <section class="log-box" id="logBox">Recorder ready.</section>
+    </main>
+
+    <script src="scripts/recorder.js"></script>
+  </body>
+</html>

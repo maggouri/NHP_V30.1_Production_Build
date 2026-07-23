@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "unlockKey": "693400",
+  "description": "Registration & Activation pipeline — frozen for developers/agents. End users are NOT blocked.",
+  "updatedAt": "2026-06-25",
+  "entries": [
+    {
+      "path": "teepublic-signup-inject.js",
+      "description": "TeePublic signup auto-fill content script",
+      "sha256": "7b56958cb01374d872cf6a9fbb760530b2b5204872c08b48a4983ed85f28069b"
+    },
+    {
+      "path": "teepublic-signup-main.js",
+      "description": "TeePublic signup setNativeValue fallback (web_accessible)",
+      "sha256": "dc4b9cdd2575dfad19bc7ae85a48900dd2b250acff6e446090acdf47d7e83989"
+    },
+    {
+      "path": "emailcore-account-utils.js",
+      "ranges": [
+        [
+          56,
+          220
+        ]
+      ],
+      "description": "Signup sanitize, password compliance, hash encode/decode, inbox confirm helpers",
+      "sha256": "26a9b571844eaf9c219edf5737cc613c4dea10044acc9d50d524fbf2663453bb"
+    },
+    {
+      "path": "creaty-handlers.js",
+      "ranges": [
+        [
+          558,
+          2214
+        ],
+        [
+          3019,
+          3230
+        ]
+      ],
+      "description": "Signup queue fetch, activation API bridge, runSignupLoop, registration action handlers",
+      "sha256": "7d09a4f1ea65848463478409b83548429e72fdc2bc2466b2899ad4d07aec5e4e"
+    },
+    {
+      "path": "creaty-server.js",
+      "ranges": [
+        [
+          65,
+          70
+        ]
+      ],
+      "description": "Activation timing constants",
+      "sha256": "8f12df0a153d993cd04442c1d45c29c14b49b322df764d159f9d8aae48e29f4a"
+    },
+    {
+      "path": "creaty-server.js",
+      "ranges": [
+        [
+          2525,
+          2945
+        ]
+      ],
+      "description": "Activation link resolution, poll backoff, TeePublic confirm message parsing",
+      "sha256": "ac26eda4435ccb4ce7210a220684a6c96f356394fe8f1e618ad1f2ba62b2ceb8"
+    },
+    {
+      "path": "creaty-server.js",
+      "ranges": [
+        [
+          3691,
+          4323
+        ]
+      ],
+      "description": "Signup job sanitize, activation meta resolve, manual activation UI",
+      "sha256": "adcdf33d6cfc164fb0601a320ff568f00e25cbce6fb82f7ba3cb22a8076cc355"
+    },
+    {
+      "path": "creaty-server.js",
+      "ranges": [
+        [
+          4601,
+          5364
+        ]
+      ],
+      "description": "Sequential signup form fill, validation, confirmation page detection",
+      "sha256": "56d5cd2fcf75fb47857cd6aa8aec88fedbb055e2ef2716fff05f2e67d97aec3f"
+    },
+    {
+      "path": "creaty-server.js",
+      "ranges": [
+        [
+          5519,
+          6352
+        ]
+      ],
+      "description": "Activation email poll, inbox fetch, activateAccountInSession",
+      "sha256": "8cd541a4014af7e3a482a3021a7f58826ba2caf33149784e876a28b14ab6646b"
+    },
+    {
+      "path": "creaty-server.js",
+      "ranges": [
+        [
+          6353,
+          6992
+        ]
+      ],
+      "description": "runActivationOnlyJob, deferred activation, runSignupJob, enqueueSignupJob",
+      "sha256": "964ed85e94912db184e1b92b0949ccc5484b63837deb0b974e83862a74ddc061"
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+<div class="pnggen-root" dir="rtl">
+  <header class="pnggen-header">
+    <div>
+      <p class="pnggen-kicker">NHP Image Lab</p>
+      <h2>Generat PNG</h2>
+    </div>
+    <span class="pnggen-pill" id="pnggen-model-pill">auto</span>
+  </header>
+
+  <section class="pnggen-layout">
+    <div class="pnggen-panel pnggen-source-panel">
+      <div class="pnggen-panel-title">Source</div>
+      <label class="pnggen-drop" id="pnggen-drop">
+        <input type="file" id="pnggen-image-input" accept="image/png,image/jpeg,image/webp">
+        <span id="pnggen-drop-text">Drop image here or click to select</span>
+      </label>
+      <div class="pnggen-preview" id="pnggen-source-preview">No image selected</div>
+      <div class="pnggen-row">
+        <button type="button" class="pnggen-btn pnggen-btn-muted" id="pnggen-clear-image">Clear Image</button>
+      </div>
+    </div>
+
+    <div class="pnggen-panel pnggen-control-panel">
+      <div class="pnggen-panel-title">Prompt</div>
+      <textarea id="pnggen-user-prompt" rows="7" spellcheck="true" placeholder="Image edit suggestions or prompt..."></textarea>
+      <div class="pnggen-settings">
+        <label>
+          <span>Model</span>
+          <input type="text" id="pnggen-model" value="auto">
+        </label>
+        <label>
+          <span>Output count</span>
+          <input type="number" id="pnggen-count" value="4" min="1" max="4">
+        </label>
+        <label>
+          <span>Size</span>
+          <select id="pnggen-size">
+            <option value="1024x1024">1024 x 1024</option>
+            <option value="1536x1024">1536 x 1024</option>
+            <option value="1024x1536">1024 x 1536</option>
+          </select>
+        </label>
+      </div>
+      <div class="pnggen-row">
+        <button type="button" class="pnggen-btn pnggen-btn-primary" id="pnggen-generate">Generate Designs</button>
+        <button type="button" class="pnggen-btn pnggen-btn-muted" id="pnggen-clear-results">Clear Results</button>
+      </div>
+      <div class="pnggen-status" id="pnggen-status">Ready.</div>
+    </div>
+  </section>
+
+  <section class="pnggen-results" id="pnggen-results" aria-label="Generated designs"></section>
+</div>

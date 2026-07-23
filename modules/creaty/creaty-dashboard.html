@@ -1,0 +1,120 @@
+<link rel="stylesheet" href="modules/creaty/creaty.css?v=creaty_dashboard_20260607">
+
+<div class="creaty-module-root" id="creaty-module-root" dir="rtl" lang="ar">
+    <header class="creaty-header">
+        <div class="creaty-header-title">
+            <span aria-hidden="true">✉️</span>
+            <div>
+                <h2 data-i18n="creaty.title">NHP EMAILCORE</h2>
+                <small data-i18n="creaty.subtitle">Creaty Artisan — TeePublic automation</small>
+            </div>
+        </div>
+        <div class="creaty-header-actions">
+            <span class="creaty-server-pill" id="creaty-server-pill" title="Creaty Server">3020</span>
+            <button type="button" class="creaty-icon-btn" id="creaty-lang-toggle" title="AR / EN">AR</button>
+        </div>
+    </header>
+
+    <div class="creaty-columns">
+        <!-- Column 1: accounts -->
+        <aside class="creaty-col creaty-col--side" id="creaty-col-accounts" aria-label="Accounts">
+            <div class="creaty-col-head" data-i18n="creaty.col.accounts">الحسابات</div>
+            <div class="creaty-col-body">
+                <div class="creaty-account-list" id="creaty-account-list">
+                    <div class="creaty-stub-note" data-i18n="creaty.accounts.empty">لا توجد حسابات TeePublic</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Column 2: Artisan schedule -->
+        <section class="creaty-col creaty-col--artisan" id="creaty-col-artisan" aria-label="Artisan schedule">
+            <div class="creaty-col-head" data-i18n="creaty.col.artisan">جدولة Artisan</div>
+            <nav class="creaty-artisan-tabs" id="creaty-artisan-tabs" role="tablist" aria-label="Artisan tabs">
+                <button type="button" class="creaty-artisan-tab is-active" role="tab" aria-selected="true"
+                    data-creaty-tab="schedule" id="creaty-tab-schedule">
+                    <span data-i18n="creaty.tab.schedule">جدولة الرفع</span>
+                </button>
+                <button type="button" class="creaty-artisan-tab" role="tab" aria-selected="false"
+                    data-creaty-tab="store" id="creaty-tab-store">
+                    <span data-i18n="creaty.tab.store">توليد المتجر</span>
+                </button>
+                <button type="button" class="creaty-artisan-tab" role="tab" aria-selected="false"
+                    data-creaty-tab="dashboard" id="creaty-tab-dashboard">
+                    <span data-i18n="creaty.tab.dashboard">لوحة الإشراف</span>
+                </button>
+            </nav>
+
+            <!-- Tab 1: Upload schedule -->
+            <div class="creaty-artisan-panel is-active" data-creaty-panel="schedule" role="tabpanel"
+                id="creaty-panel-schedule">
+                <p class="creaty-stub-note" data-i18n="creaty.schedule.hint">
+                    اضبط مواعيد الرفع لكل حساب. اختر حساباً من العمود الأول ثم حدّد الجدول.
+                </p>
+                <div id="creaty-schedule-form-host"></div>
+            </div>
+
+            <!-- Tab 2: Store generation -->
+            <div class="creaty-artisan-panel" data-creaty-panel="store" role="tabpanel" id="creaty-panel-store" hidden>
+                <p class="creaty-stub-note" data-i18n="creaty.store.hint">
+                    توليد المتجر والألبومات — يُدار من هذا التبويب.
+                </p>
+                <div id="creaty-store-form-host"></div>
+            </div>
+
+            <!-- Tab 3: Supervision dashboard -->
+            <div class="creaty-artisan-panel" data-creaty-panel="dashboard" role="tabpanel" id="creaty-panel-dashboard" hidden>
+                <div class="creaty-dash-toolbar">
+                    <div class="creaty-filter-pills" id="creaty-dash-filters" role="group" aria-label="Stage filters">
+                        <button type="button" class="creaty-filter-pill is-active" data-filter="all" data-i18n="creaty.filter.all">الكل</button>
+                        <button type="button" class="creaty-filter-pill" data-filter="pending" data-i18n="creaty.filter.pending">Pending</button>
+                        <button type="button" class="creaty-filter-pill" data-filter="artisan" data-i18n="creaty.filter.artisan">artisan</button>
+                        <button type="button" class="creaty-filter-pill" data-filter="apprentice" data-i18n="creaty.filter.apprentice">apprentice</button>
+                        <button type="button" class="creaty-filter-pill" data-filter="design" data-i18n="creaty.filter.design">Designs</button>
+                        <button type="button" class="creaty-filter-pill" data-filter="active" data-i18n="creaty.filter.active">active</button>
+                        <button type="button" class="creaty-filter-pill" data-filter="done" data-i18n="creaty.filter.done">Done</button>
+                    </div>
+                    <div class="creaty-dash-count">
+                        <strong id="creaty-dash-count-num">0</strong>
+                        <span data-i18n="creaty.dash.accounts">حساب</span>
+                        <button type="button" class="creaty-icon-btn" id="creaty-dash-refresh" title="Refresh">
+                            <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="creaty-table-wrap">
+                    <table class="creaty-dash-table" id="creaty-dash-table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="creaty.col.email">Email</th>
+                                <th data-i18n="creaty.col.stage">Stage</th>
+                                <th data-i18n="creaty.col.designs">Designs uploaded</th>
+                                <th data-i18n="creaty.col.lastUpload">Last upload</th>
+                                <th data-i18n="creaty.col.remaining">Remaining</th>
+                                <th data-i18n="creaty.col.nextScheduled">Next scheduled</th>
+                                <th data-i18n="creaty.col.actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="creaty-dash-tbody">
+                            <tr class="creaty-empty-row">
+                                <td colspan="7" data-i18n="creaty.dash.loading">جاري التحميل…</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Column 3: quick status -->
+        <aside class="creaty-col creaty-col--side" id="creaty-col-status" aria-label="Status">
+            <div class="creaty-col-head" data-i18n="creaty.col.status">الحالة السريعة</div>
+            <div class="creaty-col-body" id="creaty-quick-status">
+                <p class="creaty-stub-note" data-i18n="creaty.status.hint">اختر حساباً لعرض تفاصيله.</p>
+            </div>
+            <div class="creaty-supervisor-wrap" id="creaty-supervisor-wrap" aria-live="polite" style="margin-top:0.5rem">
+                <div class="creaty-col-head" style="font-size:0.72rem">مشرف AI — Field Watch</div>
+                <div id="creaty-supervisor-status" class="creaty-stub-note" style="border-style:solid;color:#fbbf24">مشرف AI: في انتظار الأتمتة…</div>
+                <div id="creaty-supervisor-journal" class="creaty-stub-note" style="border-style:solid;max-height:7rem;overflow:auto;font-size:0.62rem"></div>
+            </div>
+        </aside>
+    </div>
+</div>

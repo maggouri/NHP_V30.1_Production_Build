@@ -1,0 +1,881 @@
+<style>
+    .admin-module-root.admin-ui-shell {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+        min-height: 0;
+        box-sizing: border-box;
+        padding: 2px 0 10px;
+    }
+
+    .admin-module-root .glass-card {
+        margin-bottom: 0 !important;
+        border-radius: 10px !important;
+        padding: 12px 14px !important;
+    }
+
+    .admin-header {
+        flex-shrink: 0;
+        flex-wrap: wrap;
+        gap: 10px;
+        row-gap: 12px;
+        margin-bottom: 0;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+    }
+
+    .admin-title-group {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .admin-icon-mark {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(108, 99, 255, 0.14);
+        border: 1px solid rgba(108, 99, 255, 0.28);
+        color: var(--primary);
+        font-size: 15px;
+    }
+
+    .admin-title-text .admin-kicker {
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--primary);
+        opacity: 0.88;
+        margin-bottom: 4px;
+    }
+
+    .admin-title-text h2 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--text);
+        line-height: 1.25;
+    }
+
+    .admin-title-text p {
+        margin: 6px 0 0;
+        font-size: 10px;
+        color: var(--text-muted);
+        line-height: 1.45;
+        max-width: 520px;
+    }
+
+    .admin-header-stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 6px;
+        min-width: 0;
+        flex-shrink: 1;
+        align-self: stretch;
+        max-width: min(100%, 520px);
+    }
+
+    .admin-stat-tile {
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.04);
+        padding: 7px 8px;
+        min-width: 0;
+        text-align: center;
+    }
+
+    .admin-stat-tile .admin-stat-label {
+        font-size: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .admin-stat-tile .admin-stat-value {
+        font-size: 10px;
+        font-weight: 800;
+        color: var(--text);
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .admin-main-split {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        align-items: start;
+        min-height: 0;
+    }
+
+    .admin-col {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-height: 0;
+        min-width: 0;
+    }
+
+    .admin-card-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+    }
+
+    .admin-card-head h3 {
+        margin: 0;
+        font-size: 11px;
+        font-weight: 800;
+        color: #c7d2fe;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    #library-container.admin-lib-scroll {
+        max-height: min(220px, 38vh);
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-inline-end: 2px;
+    }
+
+    #ai-chat-messages.admin-chat-scroll {
+        max-height: min(152px, 30vh);
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-inline-end: 2px;
+    }
+
+    #admin-users-list.admin-users-scroll {
+        max-height: min(200px, 32vh);
+    }
+
+    /* وضع العرض + Pipeline في صف واحد (عمودان متجاوران) */
+    .admin-display-pipeline-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 8px;
+        align-items: stretch;
+    }
+
+    .admin-display-pipeline-row .admin-prefs-pane {
+        min-width: 0;
+        padding: 8px 10px !important;
+    }
+
+    .admin-display-pipeline-row .admin-prefs-pane .text-xs.font-black {
+        font-size: 10px !important;
+        margin-bottom: 6px !important;
+    }
+
+    .admin-display-pipeline-row .admin-prefs-pane .space-y-2 > label {
+        font-size: 10px !important;
+        line-height: 1.35;
+    }
+
+    @media (max-width: 380px) {
+        .admin-display-pipeline-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* صف واحد: تصدير/استيراد سحابي + رفع سحابة + حفظ محلي */
+    .admin-cloud-lib-toolbar {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 6px;
+        margin-bottom: 12px;
+        min-width: 0;
+    }
+
+    .admin-cloud-lib-toolbar button {
+        font-size: 9px !important;
+        font-weight: 700 !important;
+        padding: 8px 6px !important;
+        line-height: 1.2 !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+    }
+
+    @media (max-width: 520px) {
+        .admin-cloud-lib-toolbar {
+            grid-template-columns: repeat(4, minmax(72px, 1fr));
+            overflow-x: auto;
+            padding-bottom: 2px;
+            -webkit-overflow-scrolling: touch;
+        }
+    }
+
+    /* أزرار مجلد العمل المحلي في صف واحد */
+    .admin-workspace-actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+        min-width: 0;
+    }
+
+    .admin-workspace-actions button {
+        font-size: 9px !important;
+        font-weight: 700 !important;
+        padding: 8px 6px !important;
+        line-height: 1.2 !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+    }
+
+    @media (max-width: 360px) {
+        .admin-workspace-actions {
+            grid-template-columns: repeat(3, minmax(68px, 1fr));
+            overflow-x: auto;
+            padding-bottom: 2px;
+            -webkit-overflow-scrolling: touch;
+        }
+    }
+
+    @media (max-width: 1200px) {
+        .admin-main-split {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 960px) {
+        .admin-main-split {
+            grid-template-columns: 1fr;
+        }
+
+        .admin-header-stats {
+            max-width: 100%;
+        }
+    }
+
+    @media (max-width: 420px) {
+        .admin-header-stats {
+            grid-template-columns: repeat(4, minmax(64px, 1fr));
+            overflow-x: auto;
+            padding-bottom: 2px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .admin-stat-tile {
+            padding: 6px 5px;
+        }
+
+        .admin-stat-tile .admin-stat-value {
+            font-size: 9px;
+        }
+    }
+
+    /* === Admin Center Compact Dashboard v1 === */
+    #panel-admin.admin-compact.tab-panel.active {
+        max-height: calc(100vh - 128px);
+        overflow-y: auto;
+        overflow-x: hidden;
+        min-height: 0;
+        overscroll-behavior: contain;
+    }
+
+    #panel-admin.admin-compact .admin-module-root.admin-ui-shell {
+        gap: 6px;
+        padding: 2px 0 4px;
+        max-height: none;
+        overflow: visible;
+    }
+
+    #panel-admin.admin-compact .admin-header,
+    #panel-admin.admin-compact .admin-header-stats {
+        display: none;
+    }
+
+    #panel-admin.admin-compact .admin-main-split {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr);
+        gap: 8px;
+    }
+
+    #panel-admin.admin-compact .admin-col {
+        gap: 4px;
+    }
+
+    #panel-admin.admin-compact .admin-col-primary { order: 3; }
+    #panel-admin.admin-compact .admin-col-library { order: 2; }
+    #panel-admin.admin-compact .admin-col-side { order: 1; }
+
+    #panel-admin.admin-compact .admin-col-label { margin-bottom: 2px !important; font-size: 9px !important; }
+    #panel-admin.admin-compact .glass-card {
+        padding: 6px !important;
+        border-radius: 7px !important;
+        border: 1px solid rgba(148, 163, 184, 0.15) !important;
+        background: rgba(15, 23, 42, 0.65) !important;
+        box-shadow: none !important;
+    }
+    #panel-admin.admin-compact .admin-module-root button { box-shadow: none !important; }
+    #panel-admin.admin-compact .admin-card-head { margin-bottom: 4px; }
+    #panel-admin.admin-compact .admin-card-head h3 { font-size: 10px; gap: 4px; }
+
+    #panel-admin.admin-compact .admin-auth-row { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+    #panel-admin.admin-compact #authNickname,
+    #panel-admin.admin-compact #authPassword,
+    #panel-admin.admin-compact #admin-target-email {
+        min-height: 26px;
+        height: 26px;
+        font-size: 11px !important;
+        border-radius: 7px;
+        padding: 3px 8px;
+    }
+
+    #panel-admin.admin-compact .admin-sync-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        margin-bottom: 4px;
+    }
+    #panel-admin.admin-compact .admin-sync-item {
+        border: 1px solid rgba(148, 163, 184, 0.15) !important;
+        background: transparent !important;
+        border-radius: 7px;
+        padding: 4px 6px;
+        min-height: 26px;
+    }
+    #panel-admin.admin-compact .admin-sync-item > div > div:first-child { font-size: 10px !important; }
+    #panel-admin.admin-compact .admin-sync-item > div > div:last-child { font-size: 9px !important; line-height: 1.2; }
+
+    #panel-admin.admin-compact .admin-cloud-lib-toolbar {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 4px;
+        margin-bottom: 4px;
+    }
+    #panel-admin.admin-compact .admin-cloud-lib-toolbar button,
+    #panel-admin.admin-compact .admin-workspace-actions button {
+        min-height: 26px;
+        height: 26px;
+        font-size: 11px !important;
+        padding: 0 6px !important;
+        border-radius: 7px !important;
+        box-shadow: none !important;
+    }
+
+    #panel-admin.admin-compact .admin-display-pipeline-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    #panel-admin.admin-compact .admin-display-pipeline-row .admin-prefs-pane {
+        flex: 1 1 220px;
+        padding: 4px 6px !important;
+        border-radius: 7px !important;
+        border: 1px solid rgba(148, 163, 184, 0.15) !important;
+        background: rgba(2, 6, 23, 0.45) !important;
+    }
+    #panel-admin.admin-compact .admin-display-pipeline-row .space-y-2 { display: flex; flex-wrap: wrap; gap: 4px 8px; }
+    #panel-admin.admin-compact .admin-display-pipeline-row .space-y-2 > label { margin: 0 !important; font-size: 10px !important; white-space: nowrap; }
+
+    #panel-admin.admin-compact .admin-library-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 4px;
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 7px;
+        padding: 3px 6px;
+        margin-bottom: 4px;
+    }
+    #panel-admin.admin-compact .admin-lib-upload-trigger {
+        min-height: 24px;
+        height: 24px;
+        min-width: 28px;
+        border-radius: 6px;
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 11px;
+    }
+    #panel-admin.admin-compact #library-container.admin-lib-scroll {
+        max-height: min(190px, 34vh);
+        border-radius: 7px;
+        padding: 4px;
+        gap: 4px;
+    }
+
+    #panel-admin.admin-compact .admin-quick-tools-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+    }
+    #panel-admin.admin-compact .admin-quick-tools-grid button {
+        min-height: 26px;
+        height: 26px;
+        font-size: 11px !important;
+        padding: 0 6px !important;
+        border-radius: 7px !important;
+        box-shadow: none !important;
+    }
+    #panel-admin.admin-compact .admin-quick-tools-grid i { font-size: 10px !important; }
+    #panel-admin.admin-compact .admin-quick-tools-grid .admin-quick-wide,
+    #panel-admin.admin-compact .admin-quick-tools-grid .admin-quick-status {
+        grid-column: 1 / -1;
+    }
+    #panel-admin.admin-compact #admin-full-scan-progress { box-shadow: none !important; }
+
+    #panel-admin.admin-compact .admin-central-brain #ai-chat-messages {
+        max-height: 74px;
+        min-height: 48px;
+        margin-bottom: 4px;
+        padding: 4px;
+        border-radius: 7px;
+        gap: 4px;
+    }
+    #panel-admin.admin-compact #ai-chat-input {
+        height: 25px !important;
+        min-height: 25px !important;
+        font-size: 11px !important;
+        padding: 0 8px !important;
+    }
+    #panel-admin.admin-compact #btn-ai-chat-send {
+        height: 25px;
+        min-height: 25px;
+        min-width: 30px;
+        padding: 0 8px !important;
+        border-radius: 7px !important;
+        box-shadow: none !important;
+    }
+
+</style>
+
+<div class="admin-module-root admin-ui-shell text-white dir-rtl">
+    <header class="admin-header">
+        <div class="admin-title-group">
+            <div class="admin-icon-mark" aria-hidden="true">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div class="admin-title-text">
+                <div class="admin-kicker">Admin Center</div>
+                <h2>مركز الإدارة والمزامنة</h2>
+                <p>لوحة مرتبة لإدارة الحساب، الربط السحابي، المكتبة، وأدوات التشغيل السريع من مكان واحد.</p>
+            </div>
+        </div>
+        <div class="admin-header-stats">
+            <div class="admin-stat-tile">
+                <div class="admin-stat-label">Cloud</div>
+                <div class="admin-stat-value">GitHub Sync</div>
+            </div>
+            <div class="admin-stat-tile">
+                <div class="admin-stat-label">Local</div>
+                <div class="admin-stat-value">Smart Sync</div>
+            </div>
+            <div class="admin-stat-tile">
+                <div class="admin-stat-label">Library</div>
+                <div class="admin-stat-value">Design Assets</div>
+            </div>
+            <div class="admin-stat-tile">
+                <div class="admin-stat-label">Control</div>
+                <div class="admin-stat-value">Admin Tools</div>
+            </div>
+        </div>
+        <button type="button" id="btn-start-ai-image-sender-top" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-black transition shrink-0" title="Start AI Bridge 3031 and Chrome 9331 for GPT/Gemini image sending.">
+            <i class="fa-solid fa-paper-plane"></i> AI Sender 3031/9331
+        </button>
+    </header>
+
+    <div class="admin-main-split">
+        <!-- العمود 1: الحساب والربط -->
+        <div class="admin-col admin-col-primary">
+            <div class="field-label admin-col-label" style="margin: 0 0 4px 0; font-size: 10px; opacity: 0.85;">الحساب والربط</div>
+
+            <div class="glass-card border border-slate-700/50 bg-slate-900/70">
+                <div class="admin-card-head">
+                    <h3><i class="fa-solid fa-user-shield"></i> الحساب والمزامنة السحابية</h3>
+                    <span class="text-[10px] px-2.5 py-0.5 rounded-full border border-indigo-400/20 bg-indigo-400/10 text-indigo-200 shrink-0">
+                        تسجيل الدخول والحماية
+                    </span>
+                </div>
+
+                <div id="authBox" class="space-y-3">
+                    <div class="admin-auth-row">
+                        <input type="text" id="authNickname" class="modern-input text-xs" placeholder="الاسم المستعار">
+                        <input type="password" id="authPassword" class="modern-input text-xs" placeholder="كلمة المرور">
+                    </div>
+                    <button id="btnLogin" class="btn w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-xs font-black transition">
+                        تسجيل الدخول / إنشاء حساب
+                    </button>
+                    <div id="authStatus" class="hidden p-2 rounded-xl text-xs text-center"></div>
+                    <div class="text-center">
+                        <a href="#" id="forgotPasswordLink" class="text-[11px] text-slate-400 hover:text-indigo-300 transition-colors">نسيت كلمة السر؟</a>
+                    </div>
+                </div>
+
+                <div id="userInfo" style="display:none;">
+                    <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/8 p-3 flex items-center justify-between gap-3 flex-wrap">
+                        <div class="min-w-0">
+                            <div class="text-[11px] text-slate-400 mb-1">الحساب النشط</div>
+                            <div id="userEmailDisplay" class="text-sm font-black text-emerald-300 truncate"></div>
+                        </div>
+                        <button id="btnLogout" class="bg-red-500/15 text-red-300 border border-red-500/25 px-3 py-2 rounded-xl text-xs font-bold hover:bg-red-500/25 transition shrink-0">
+                            تسجيل الخروج
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card border border-slate-700/50 bg-slate-900/70">
+                <div class="admin-card-head">
+                    <h3><i class="fa-solid fa-arrows-rotate"></i> الربط والمجلدات</h3>
+                    <span class="text-[10px] text-slate-400">محلي ↔ سحابي</span>
+                </div>
+
+                <div class="admin-sync-grid">
+                    <label class="admin-sync-item rounded-xl border border-slate-700 bg-slate-950/60 p-3 flex items-center justify-between gap-3 cursor-pointer">
+                        <div class="min-w-0">
+                            <div class="text-xs font-black text-white">المزامنة السحابية</div>
+                            <div class="text-[10px] text-slate-400">GitHub backup</div>
+                        </div>
+                        <input type="checkbox" id="toggle-cloud-sync" class="accent-indigo-500 w-4 h-4 cursor-pointer shrink-0" checked>
+                    </label>
+                    <label class="admin-sync-item rounded-xl border border-slate-700 bg-slate-950/60 p-3 flex items-center justify-between gap-3 cursor-pointer">
+                        <div class="min-w-0">
+                            <div class="text-xs font-black text-white">المزامنة الذكية</div>
+                            <div class="text-[10px] text-slate-400">Local workspace</div>
+                        </div>
+                        <input type="checkbox" id="toggle-smart-sync" class="accent-indigo-500 w-4 h-4 cursor-pointer shrink-0" checked>
+                    </label>
+                    <label class="admin-sync-item rounded-xl border border-slate-700 bg-slate-950/60 p-3 flex items-center justify-between gap-3 cursor-pointer">
+                        <div class="min-w-0">
+                            <div class="text-xs font-black text-white">Auto Lite Assist</div>
+                            <div class="text-[10px] text-slate-400">تفعيل Lite تلقائيا عند الضغط العالي</div>
+                        </div>
+                        <input type="checkbox" id="toggle-auto-lite-assist" class="accent-indigo-500 w-4 h-4 cursor-pointer shrink-0" checked>
+                    </label>
+                    <label class="admin-sync-item rounded-xl border border-rose-700/40 bg-rose-950/20 p-3 flex items-center justify-between gap-3 cursor-pointer">
+                        <div class="min-w-0">
+                            <div class="text-xs font-black text-white">I3 RAM 2GB</div>
+                            <div class="text-[10px] text-slate-400">وضع قسري للأجهزة الضعيفة جدا جدا</div>
+                        </div>
+                        <input type="checkbox" id="toggle-i3-ram-2gb-mode" class="accent-rose-500 w-4 h-4 cursor-pointer shrink-0">
+                    </label>
+                </div>
+
+                <div class="admin-cloud-lib-toolbar">
+                    <button type="button" id="btn-github-export" class="bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-600 transition">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> تصدير سحابي
+                    </button>
+                    <button type="button" id="btn-github-import" class="bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-600 transition">
+                        <i class="fa-solid fa-cloud-arrow-down"></i> استيراد سحابي
+                    </button>
+                    <button type="button" id="btn-upload-to-lib" class="bg-indigo-600 text-white rounded-xl shadow hover:bg-indigo-500 transition">
+                        <i class="fa-solid fa-upload"></i> رفع للسحابة
+                    </button>
+                    <button type="button" id="btn-add-to-local-lib" class="bg-slate-800 text-white rounded-xl border border-slate-600 hover:bg-slate-700 transition">
+                        <i class="fa-solid fa-download"></i> حفظ محلي
+                    </button>
+                </div>
+                <input type="file" id="lib-file-input" class="hidden" multiple accept="image/*">
+
+                <div class="rounded-xl border border-slate-700 bg-slate-950/60 p-3 mb-3">
+                    <div class="flex items-center justify-between gap-3 mb-2">
+                        <div class="text-xs font-black text-white">مجلد العمل المحلي</div>
+                        <div id="workspace-indicator" class="w-3 h-3 rounded-full bg-slate-500 shrink-0"></div>
+                    </div>
+                    <div id="workspace-path" class="text-[10px] text-slate-500 font-mono dir-ltr text-left mb-3 truncate">غير متصل</div>
+                    <div class="admin-workspace-actions">
+                        <button type="button" id="btn-select-workspace" class="bg-indigo-600/15 text-indigo-300 border border-indigo-500/25 rounded-xl hover:bg-indigo-600/25 transition">تحديد المجلد</button>
+                        <button type="button" id="btn-local-export" class="bg-slate-800 text-slate-200 border border-slate-600 rounded-xl hover:bg-slate-700 transition">حفظ محلي</button>
+                        <button type="button" id="btn-local-import" class="bg-slate-800 text-slate-200 border border-slate-600 rounded-xl hover:bg-slate-700 transition">استعادة محلية</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- العمود 2: المكتبة والإدارة العليا -->
+        <div class="admin-col admin-col-library">
+            <div class="field-label admin-col-label" style="margin: 0 0 4px 0; font-size: 10px; opacity: 0.85;">المكتبة والإدارة</div>
+
+            <div class="glass-card border border-slate-700/50 bg-slate-900/70">
+                <div class="admin-card-head">
+                    <h3><i class="fa-solid fa-sliders"></i> العرض والـ Pipeline</h3>
+                    <span class="text-[10px] text-slate-400">واجهة الإطلاق والمراحل</span>
+                </div>
+                <div class="admin-display-pipeline-row">
+                    <div class="admin-prefs-pane rounded-xl border border-slate-700 bg-slate-950/60 p-3">
+                        <div class="text-xs font-black text-white mb-2">وضع العرض</div>
+                        <div class="space-y-2 text-[11px] text-slate-300">
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="ui-launch-mode" value="popup" class="accent-indigo-500"> نافذة عادية</label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="ui-launch-mode" value="window" class="accent-indigo-500"> نافذة تطبيق</label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="ui-launch-mode" value="tab" class="accent-indigo-500"> تبويب كامل</label>
+                        </div>
+                    </div>
+                    <div class="admin-prefs-pane rounded-xl border border-slate-700 bg-slate-950/60 p-3">
+                        <div class="text-xs font-black text-white mb-2">مراحل الـ Pipeline</div>
+                        <div class="space-y-2 text-[11px] text-slate-300">
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="pipeline-enable-tmhunt" class="accent-indigo-500" checked> فحص TMHunt</label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="pipeline-enable-uspto" class="accent-indigo-500" checked> فحص USPTO</label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="pipeline-enable-analysis" class="accent-indigo-500" checked> تحليل المنافسة TeePublic</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="admin-theme-strip rounded-xl border border-slate-700 bg-slate-950/60 p-3 mt-2 flex flex-col gap-2">
+                    <div class="text-xs font-black text-white">مظهر الإضافة</div>
+                    <button type="button" id="btn-toggle-neon-gamer-theme"
+                        class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-xs font-black transition border border-indigo-500/30 shadow-sm">
+                        واجهة نيون (لاعب)
+                    </button>
+                    <p class="text-[10px] text-slate-400 leading-snug">تفعيل واجهة داكنة بلمسات نيون على كل نوافذ وأقسام الإضافة. اضغط مجدداً للعودة للوضع الافتراضي.</p>
+                </div>
+            </div>
+
+            <div class="glass-card border border-slate-700/50 bg-slate-900/70">
+                <div class="admin-card-head">
+                    <h3><i class="fa-solid fa-key"></i> تخصيص خاص (AI + الإعدادات)</h3>
+                    <span class="text-[10px] text-slate-400">Private profile</span>
+                </div>
+
+                <div class="rounded-xl border border-slate-700 bg-slate-950/60 p-3 mb-3 space-y-2">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="text-xs font-black text-white">مفاتيح AI</div>
+                        <label class="text-[10px] text-slate-400 flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="toggle-ai-keys-visibility" class="accent-indigo-500">
+                            إظهار المفاتيح
+                        </label>
+                    </div>
+
+                    <div class="space-y-2">
+                        <input type="password" id="admin-ai-key-gemini" class="modern-input text-xs" placeholder="Gemini API Key">
+                        <input type="password" id="admin-ai-key-cursor" class="modern-input text-xs" placeholder="Cursor API Key">
+                        <input type="password" id="admin-ai-key-gpt" class="modern-input text-xs" placeholder="GPT/OpenAI API Key (Optional)">
+                    </div>
+
+                    <button type="button" id="btn-admin-save-ai-keys" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-xs font-black transition">
+                        <i class="fa-solid fa-floppy-disk"></i> حفظ مفاتيح AI
+                    </button>
+                </div>
+
+                <div class="rounded-xl border border-slate-700 bg-slate-950/60 p-3">
+                    <div class="text-xs font-black text-white mb-2">استيراد / تصدير بيانات التخصيص</div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" id="btn-private-profile-export" class="bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-600 transition text-xs py-2">
+                            <i class="fa-solid fa-file-export"></i> تصدير الإعدادات
+                        </button>
+                        <button type="button" id="btn-private-profile-import" class="bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-600 transition text-xs py-2">
+                            <i class="fa-solid fa-file-import"></i> استيراد الإعدادات
+                        </button>
+                    </div>
+                    <input type="file" id="private-profile-import-input" class="hidden" accept="application/json,.json">
+                </div>
+            </div>
+
+            <div class="glass-card border border-slate-700/50 bg-slate-900/70">
+                <div class="admin-card-head">
+                    <h3><i class="fa-solid fa-images"></i> مكتبة التصاميم</h3>
+                    <div class="flex gap-2 shrink-0">
+                        <button id="btn-refresh-library" class="text-xs bg-slate-800 px-2.5 py-2 rounded-lg border border-slate-600 hover:bg-slate-700" title="تحديث السحابة">
+                            <i class="fa-solid fa-cloud-arrow-down"></i>
+                        </button>
+                        <button id="btn-refresh-local-lib" class="text-xs bg-slate-800 px-2.5 py-2 rounded-lg border border-slate-600 hover:bg-slate-700" title="تحديث المحلي">
+                            <i class="fa-solid fa-folder-open"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="admin-library-topbar">
+                    <label class="text-[11px] text-slate-400 flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="lib-select-all" class="accent-indigo-500">
+                        تحديد الكل
+                    </label>
+                    <label for="lib-file-input" class="admin-lib-upload-trigger text-slate-300" title="رفع للمكتبة">
+                        <i class="fa-solid fa-upload"></i>
+                    </label>
+                    <button id="btn-lib-bulk-import" class="hidden bg-emerald-600 text-white text-[11px] px-3 py-2 rounded-xl hover:bg-emerald-500">
+                        <i class="fa-solid fa-file-import"></i> استيراد المحدد للطابور
+                    </button>
+                </div>
+
+                <div id="library-container" class="admin-lib-scroll grid grid-cols-4 gap-2 bg-slate-950/60 border border-slate-700 rounded-xl p-2 custom-scrollbar min-h-[100px]">
+                    <div class="text-xs text-slate-500 col-span-4 text-center py-6">جاري التحميل...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- العمود 3: أدوات وتكاملات -->
+        <div class="admin-col admin-col-side">
+            <div class="field-label admin-col-label" style="margin: 0 0 4px 0; font-size: 10px; opacity: 0.85;">أدوات وتكاملات</div>
+
+            <div class="glass-card border border-slate-700/50 bg-slate-900/70">
+                <div class="admin-card-head">
+                    <h3><i class="fa-solid fa-toolbox"></i> أدوات سريعة</h3>
+                    <span class="text-[10px] text-slate-400">اختصارات</span>
+                </div>
+                <div class="rounded-xl border border-indigo-500/25 bg-indigo-500/8 p-3 mb-3">
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <div class="text-[11px] font-black text-indigo-200">
+                            <i class="fa-solid fa-stethoscope"></i> الفحص الشامل لوظائف الإضافة
+                        </div>
+                        <div id="admin-full-scan-percent" class="text-[10px] text-indigo-300 font-bold">0%</div>
+                    </div>
+                    <div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden border border-slate-700/80 mb-2" style="position:relative;">
+                        <div id="admin-full-scan-progress"
+                             class="h-full transition-all duration-300"
+                             style="width:0%; height:100%; min-width:0; display:block; background:linear-gradient(90deg,#6366f1 0%, #8b5cf6 100%); box-shadow:0 0 10px rgba(99,102,241,0.65);"></div>
+                    </div>
+                    <div id="admin-full-scan-status" class="text-[10px] text-slate-400 mb-2">جاهز للفحص</div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="btn-admin-full-scan" class="bg-indigo-600/20 text-indigo-200 border border-indigo-500/30 py-2 rounded-xl text-xs font-black hover:bg-indigo-600/30 transition">
+                            <i class="fa-solid fa-play"></i> بدء الفحص
+                        </button>
+                        <button id="btn-admin-download-console-report" class="bg-slate-800 text-slate-200 border border-slate-600 py-2 rounded-xl text-xs font-black hover:bg-slate-700 transition" disabled>
+                            <i class="fa-solid fa-file-lines"></i> تنزيل console.txt
+                        </button>
+                    </div>
+                </div>
+                <div class="admin-quick-tools-grid">
+                    <button id="btn-launch-recorder" class="bg-emerald-600/15 text-emerald-300 border border-emerald-500/25 py-2 rounded-xl text-xs font-black hover:bg-emerald-600/25 transition">
+                        <i class="fa-solid fa-video"></i> مسجل الشاشة
+                    </button>
+                    <button id="btn-launch-screen-toolkit" class="hidden bg-emerald-600/15 text-emerald-300 border border-emerald-500/25 py-2 rounded-xl text-xs font-black hover:bg-emerald-600/25 transition">
+                        <i class="fa-solid fa-camera-retro"></i> Local Screen Toolkit
+                    </button>
+                    <button id="btn-launch-screen-annotator" class="hidden bg-cyan-600/15 text-cyan-300 border border-cyan-500/25 py-2 rounded-xl text-xs font-black hover:bg-cyan-600/25 transition">
+                        <i class="fa-solid fa-pen-ruler"></i> Local Drawing Studio
+                    </button>
+                    <button id="btn-launch-artisan" class="bg-purple-600/15 text-purple-300 border border-purple-500/25 py-2 rounded-xl text-xs font-black hover:bg-purple-600/25 transition">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> واجهة Artisan
+                    </button>
+                    <button id="btn-launch-merchghost" class="bg-teal-600/15 text-teal-300 border border-teal-500/25 py-2 rounded-xl text-xs font-black hover:bg-teal-600/25 transition">
+                        <i class="fa-solid fa-ghost"></i> لوحة MerchGhost
+                    </button>
+                    <button id="btn-start-nonautopilot-servers" class="bg-cyan-600/15 text-cyan-300 border border-cyan-500/25 py-2 rounded-xl text-xs font-black hover:bg-cyan-600/25 transition">
+                        <i class="fa-solid fa-play"></i> تشغيل سيرفرات AI
+                    </button>
+                    <button id="btn-start-ai-image-sender" class="admin-quick-wide bg-emerald-600/15 text-emerald-300 border border-emerald-500/25 py-2 rounded-xl text-xs font-black hover:bg-emerald-600/25 transition" title="يشغل AI Bridge 3031 و Chrome 9331 معاً لإرسال الصور إلى GPT/Gemini عبر السيرفر.">
+                        <i class="fa-solid fa-paper-plane"></i> تشغيل سيرفر إرسال الصور
+                    </button>
+                    <button id="btn-stop-nonautopilot-servers" class="bg-rose-600/15 text-rose-300 border border-rose-500/25 py-2 rounded-xl text-xs font-black hover:bg-rose-600/25 transition">
+                        <i class="fa-solid fa-stop"></i> إيقاف سيرفرات AI
+                    </button>
+                    <div id="nonautopilot-servers-status" class="admin-quick-status text-[10px] text-slate-400 text-center min-h-[16px] leading-snug">
+                        سيرفرات AI منفصلة عن Autopilot/TeePublic
+                    </div>
+                    <button id="btn-download-startup-bat" type="button" class="admin-quick-wide bg-violet-600/15 text-violet-200 border border-violet-500/25 py-2 rounded-xl text-xs font-black hover:bg-violet-600/25 transition" title="تنزيل NHP_Start_All_Servers.bat — أو شغّل مباشرة من مجلد المشروع بنقرة مزدوجة. يكتشف Node تلقائياً ويعرض حالة السيرفرات قبل الإغلاق.">
+                        <i class="fa-solid fa-download"></i> تحميل سكربت التشغيل (.bat) · Download startup script
+                    </button>
+                    <button id="btn-download-startup-sh" type="button" class="bg-slate-700/40 text-slate-200 border border-slate-600/40 py-2 rounded-xl text-[10px] font-black hover:bg-slate-700/60 transition" title="bash/macOS/Linux — نفس العقد؛ Manager اختياري على 3009">
+                        <i class="fa-brands fa-linux"></i> تنزيل .sh (اختياري)
+                    </button>
+                    <button id="btn-start-ai-chrome-session" class="bg-amber-600/15 text-amber-300 border border-amber-500/25 py-2 rounded-xl text-xs font-black hover:bg-amber-600/25 transition">
+                        <i class="fa-brands fa-chrome"></i> فتح Chrome الرئيسي AI
+                    </button>
+                    <button id="btn-restart-ai-chrome-session" class="bg-orange-600/15 text-orange-300 border border-orange-500/25 py-2 rounded-xl text-xs font-black hover:bg-orange-600/25 transition">
+                        <i class="fa-solid fa-rotate"></i> إعادة تشغيل Chrome الرئيسي
+                    </button>
+                    <button id="btn-repair-local-services" class="admin-quick-wide bg-indigo-600/15 text-indigo-300 border border-indigo-500/25 py-2 rounded-xl text-xs font-black hover:bg-indigo-600/25 transition">
+                        <i class="fa-solid fa-screwdriver-wrench"></i> Repair Local Services (3031/9331)
+                    </button>
+                    <div id="ai-chrome-session-status" class="admin-quick-status text-[10px] text-slate-400 text-center min-h-[16px] leading-snug">
+                        يستخدم حساب Chrome الرئيسي على البورت 9331 عند التفعيل
+                    </div>
+                    <button id="btn-open-tp-ai-tags" class="bg-blue-600/15 text-blue-300 border border-blue-500/25 py-2 rounded-xl text-xs font-black hover:bg-blue-600/25 transition">
+                        <i class="fa-solid fa-tags"></i> مولد التاجز الذكي لـ TeePublic
+                    </button>
+                    <button id="btn-admin-open-tmhunt" class="bg-amber-600/15 text-amber-300 border border-amber-500/25 py-2 rounded-xl text-xs font-black hover:bg-amber-600/25 transition">
+                        <i class="fa-solid fa-magnifying-glass-plus"></i> فتح TMHunt المعزول
+                    </button>
+                </div>
+            </div>
+
+            <div id="admin-tmhunt-shell" class="glass-card border border-amber-500/25 bg-amber-500/5 hidden">
+                <div class="admin-card-head">
+                    <h3 class="text-amber-300"><i class="fa-solid fa-magnifying-glass-plus"></i> TMHunt (معزول)</h3>
+                    <button id="btn-admin-close-tmhunt" class="text-[10px] px-2 py-1 rounded-lg border border-slate-600 bg-slate-900/60 hover:bg-slate-800 text-slate-300">
+                        إغلاق
+                    </button>
+                </div>
+                <div id="admin-tmhunt-host" class="rounded-xl border border-slate-700 bg-slate-950/60 p-2"></div>
+            </div>
+
+            <div id="admin-panel" class="glass-card border border-orange-500/25 bg-orange-500/8 hidden">
+                <div class="admin-card-head">
+                    <h3 class="text-orange-300"><i class="fa-solid fa-crown"></i> لوحة الإدارة العليا</h3>
+                    <span class="text-[10px] px-2.5 py-0.5 rounded-full border border-orange-400/20 bg-orange-400/10 text-orange-200 shrink-0">Owner Only</span>
+                </div>
+
+                <div class="space-y-3">
+                    <input type="text" id="admin-target-email" class="modern-input text-xs" placeholder="إيميل أو معرف العضو المستهدف">
+                    <button id="btn-admin-send-queue" class="bg-orange-600 hover:bg-orange-500 text-white px-3 py-2 rounded-xl text-xs transition font-black w-full">
+                        <i class="fa-solid fa-paper-plane"></i> إرسال الطابور
+                    </button>
+                    <div class="grid gap-2 md:grid-cols-2">
+                        <button id="btn-admin-reset-pass" class="bg-red-600/15 hover:bg-red-600/25 text-red-300 border border-red-500/25 py-2 rounded-xl text-xs transition">
+                            إعادة تعيين كلمة السر
+                        </button>
+                        <button id="btn-sync-legacy-users" class="bg-slate-800 hover:bg-slate-700 text-slate-200 py-2 rounded-xl border border-slate-600 text-xs transition">
+                            <i class="fa-solid fa-rotate"></i> مزامنة الأعضاء القدامى
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-3 pt-3 border-t border-white/10">
+                    <h4 class="text-[10px] font-black text-slate-300 mb-2">السجل المركزي للأعضاء</h4>
+                    <div id="admin-users-list" class="admin-users-scroll bg-slate-950/60 rounded-xl border border-slate-700/50 overflow-y-auto custom-scrollbar p-2 space-y-1"></div>
+                </div>
+            </div>
+
+            <div class="admin-central-brain glass-card border border-slate-700/50 bg-slate-900/70">
+                <div class="admin-card-head" style="margin-bottom: 8px;">
+                    <h3><i class="fa-solid fa-robot"></i> العقل المركزي</h3>
+                    <span class="text-[10px] text-slate-400">Strategic Chat</span>
+                </div>
+                <div id="ai-chat-messages" class="admin-chat-scroll bg-slate-950/60 rounded-xl border border-slate-700 mb-3 p-3 flex flex-col gap-2 custom-scrollbar"></div>
+                <div class="flex gap-2">
+                    <input type="text" id="ai-chat-input" class="modern-input flex-1 text-xs min-w-0" placeholder="تحدث مع المستشار الذكي...">
+                    <button type="button" id="btn-ai-chat-send" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 rounded-xl shrink-0">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="tp-ai-modal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4 backdrop-blur-sm" style="display: none;">
+    <div class="bg-slate-900 border border-indigo-500/50 rounded-2xl w-full max-w-sm p-5 shadow-2xl relative">
+        <button type="button" id="tp-ai-close" class="absolute top-3 right-3 text-slate-400 hover:text-white">
+            <i class="fa-solid fa-times"></i>
+        </button>
+        <h3 class="text-lg font-black text-indigo-300 mb-2 flex items-center gap-2">
+            <i class="fa-solid fa-tags"></i>
+            مولد التاجز الذكي
+        </h3>
+        <p class="text-xs text-slate-400 mb-4">يعتمد على Gemini لاستخراج أفضل 25 كلمة مفتاحية لـ TeePublic.</p>
+
+        <input type="text" id="tp-ai-niche" class="modern-input w-full mb-3 text-sm" placeholder="أدخل اسم النيتش">
+        <button type="button" id="tp-ai-generate-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl font-black mb-3 transition">
+            توليد التاجز
+        </button>
+
+        <textarea id="tp-ai-result" class="modern-input w-full h-24 mb-3 text-xs font-mono" readonly placeholder="ستظهر النتائج هنا..."></textarea>
+        <button type="button" id="tp-ai-copy-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-black hidden transition">
+            <i class="fa-regular fa-copy"></i> نسخ التاجز
+        </button>
+    </div>
+</div>

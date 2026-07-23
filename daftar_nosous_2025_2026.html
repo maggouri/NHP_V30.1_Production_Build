@@ -1,0 +1,1250 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>دفتر النصوص - التربية الإسلامية 2025/2026</title>
+  <style>
+    :root {
+      --ink: #151515;
+      --muted: #555;
+      --line: #1f1f1f;
+      --soft: #f3f6f4;
+      --accent: #0f766e;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: #dfe5e2;
+      color: var(--ink);
+      font-family: "Tahoma", "Arial", sans-serif;
+      line-height: 1.45;
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: #ffffff;
+      border-bottom: 1px solid #cfd8d4;
+      direction: rtl;
+    }
+
+    .toolbar strong { font-size: 14px; }
+
+    .toolbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .toolbar button {
+      border: 1px solid #0d5f59;
+      background: var(--accent);
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .toolbar button.secondary {
+      background: #fff;
+      color: #0d5f59;
+    }
+
+    .toolbar button.warning {
+      border-color: #8a4b0b;
+      background: #fff7ed;
+      color: #8a4b0b;
+    }
+
+    .edit-enabled .page {
+      outline: 2px dashed #0f766e;
+      outline-offset: -5px;
+    }
+
+    .save-status {
+      color: #35504c;
+      font-size: 12px;
+      min-width: 120px;
+    }
+
+    .control-panel {
+      display: none;
+      min-height: 100vh;
+      padding: 18px;
+      background: #eef4f1;
+    }
+
+    .control-panel.is-open {
+      display: block;
+    }
+
+    .control-shell {
+      max-width: 980px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid #c7d4cf;
+      padding: 16px;
+    }
+
+    .control-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      border-bottom: 1px solid #d6e1dd;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+    }
+
+    .control-header h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .control-field {
+      display: grid;
+      gap: 5px;
+      font-size: 13px;
+    }
+
+    .control-field.full {
+      grid-column: 1 / -1;
+    }
+
+    .control-field input,
+    .control-field select,
+    .control-field textarea {
+      width: 100%;
+      border: 1px solid #9fb2ad;
+      border-radius: 4px;
+      padding: 8px;
+      font: inherit;
+    }
+
+    .control-field textarea {
+      min-height: 72px;
+      resize: vertical;
+    }
+
+    .document-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .document-item {
+      border: 1px solid #d1ddd9;
+      background: #fbfdfc;
+      padding: 9px;
+      font-size: 13px;
+    }
+
+    .document-item strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #0f4f49;
+    }
+
+    .document-item button {
+      margin-top: 6px;
+    }
+
+    .schedule-board {
+      display: grid;
+      gap: 10px;
+      margin: 12px 0 18px;
+    }
+
+    .schedule-day {
+      border: 1px solid #cddbd7;
+      background: #fbfdfc;
+      padding: 10px;
+    }
+
+    .schedule-day h4 {
+      margin: 0 0 8px;
+      color: #0f4f49;
+      font-size: 15px;
+    }
+
+    .schedule-line {
+      display: grid;
+      grid-template-columns: 110px 1fr 80px;
+      gap: 8px;
+      padding: 5px 0;
+      border-top: 1px solid #e3ebe8;
+      font-size: 13px;
+    }
+
+    .schedule-line:first-of-type {
+      border-top: 0;
+    }
+
+    .schedule-line.support {
+      color: #8a4b0b;
+      background: #fffaf2;
+      margin: 2px -4px;
+      padding: 5px 4px;
+    }
+
+    .reference-table {
+      width: 100%;
+      margin: 10px 0 18px;
+      font-size: 12px;
+    }
+
+    .reference-table th,
+    .reference-table td {
+      padding: 6px;
+    }
+
+    .reference-table .update-row td {
+      background: #fff7ed;
+    }
+
+    .level-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 8px 0;
+    }
+
+    .book {
+      display: grid;
+      gap: 16px;
+      padding: 16px 0 32px;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 11mm 10mm;
+      background: #fff;
+      border: 1px solid #cbd5d1;
+      box-shadow: 0 8px 20px rgba(0,0,0,.12);
+      page-break-after: always;
+      break-after: page;
+    }
+
+    .page-header {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 8px;
+      align-items: start;
+      border-bottom: 2px solid var(--line);
+      padding-bottom: 7px;
+      margin-bottom: 8px;
+      font-size: 11px;
+    }
+
+    .page-header .center {
+      text-align: center;
+      min-width: 78mm;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
+      margin-bottom: 7px;
+      font-size: 11px;
+    }
+
+    .calendar-summary {
+      margin-bottom: 7px;
+      border: 1px solid #8fa8a3;
+      background: #f7fbfa;
+      padding: 6px 8px;
+      font-size: 10.5px;
+      color: #173b36;
+    }
+
+    .calendar-summary b {
+      color: #0f4f49;
+    }
+
+    .meta {
+      border: 1px solid var(--line);
+      min-height: 10mm;
+      padding: 4px 6px;
+      background: #fff;
+    }
+
+    .meta b {
+      display: inline-block;
+      margin-left: 4px;
+      color: #000;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 11px;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      vertical-align: top;
+      padding: 5px;
+    }
+
+    th {
+      background: var(--soft);
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .narrow { width: 21mm; }
+    .time { width: 27mm; }
+    .class { width: 25mm; }
+    .notes { width: 28mm; }
+
+    .session-title {
+      font-weight: 700;
+      text-align: center;
+      background: #fbfbfb;
+    }
+
+    .lesson-cell {
+      min-height: 68mm;
+      white-space: pre-wrap;
+    }
+
+    .scheduled td {
+      padding: 4px;
+    }
+
+    .level-summary {
+      margin-bottom: 7px;
+      border: 1px solid #8fa8a3;
+      background: #fbfdfc;
+      padding: 6px 8px;
+      font-size: 10.5px;
+      color: #173b36;
+    }
+
+    .level-summary b {
+      color: #0f4f49;
+    }
+
+    .lesson-topic {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .lesson-domain {
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .official-note {
+      margin-top: 6px;
+      padding: 5px 7px;
+      border: 1px solid #b7c7c3;
+      background: #f6faf8;
+      color: #1f3c37;
+      font-size: 10.5px;
+      white-space: pre-wrap;
+    }
+
+    .steps {
+      margin: 6px 0 0;
+      padding: 0 16px 0 0;
+    }
+
+    .steps li { margin-bottom: 4px; }
+
+    .fill-line {
+      border-bottom: 1px dotted #777;
+      min-height: 7mm;
+      margin-top: 4px;
+    }
+
+    .signature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      margin-top: 7px;
+      border: 1px solid var(--line);
+      border-bottom: 0;
+      font-size: 11px;
+    }
+
+    .signature-grid div {
+      min-height: 22mm;
+      border-bottom: 1px solid var(--line);
+      padding: 5px;
+    }
+
+    .signature-grid div:first-child {
+      border-left: 1px solid var(--line);
+    }
+
+    .footer {
+      margin-top: 5px;
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .holiday .lesson-cell {
+      background: #fafafa;
+      min-height: 153mm;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 700;
+      display: table-cell;
+      vertical-align: middle;
+    }
+
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    @media print {
+      body { background: #fff; }
+      .toolbar, .control-panel { display: none; }
+      .book { display: block; padding: 0; }
+      .page {
+        width: 210mm;
+        min-height: 297mm;
+        margin: 0;
+        border: 0;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <strong id="pageCount">دفتر النصوص - التربية الإسلامية</strong>
+    <div class="toolbar-actions">
+      <button class="secondary" type="button" data-jump="الأولى إعدادي">الأولى إعدادي</button>
+      <button class="secondary" type="button" data-jump="الثالثة إعدادي">الثالثة إعدادي</button>
+      <button type="button" id="openControlPanel">لوحة التحكم</button>
+      <button type="button" onclick="window.print()">طباعة / حفظ PDF</button>
+      <span class="save-status" id="saveStatus"></span>
+    </div>
+  </div>
+  <main id="book" class="book"></main>
+  <section id="controlPanel" class="control-panel" aria-label="لوحة التحكم">
+    <div class="control-shell">
+      <div class="control-header">
+        <h2>لوحة التحكم</h2>
+        <button class="secondary" type="button" id="closeControlPanel">الرجوع إلى الدفتر</button>
+      </div>
+
+      <div class="toolbar-actions" style="justify-content:flex-start; margin-bottom:12px;">
+        <button type="button" id="editToggle">تفعيل التعديل على الدفتر</button>
+        <button class="secondary" type="button" id="saveEdits">حفظ تعديلات الدفتر</button>
+        <button class="warning" type="button" id="resetEdits">استرجاع النسخة الأصلية</button>
+      </div>
+
+      <h3>استعمال الزمن الخاص بي</h3>
+      <div id="controlSchedule" class="schedule-board control-editable"></div>
+
+      <h3>لائحة العطل والمستجدات</h3>
+      <div id="controlHolidays" class="control-editable"></div>
+
+      <h3>التوزيع السنوي وعناوين الدروس ومحاورها</h3>
+      <div class="level-tabs">
+        <button class="secondary" type="button" data-distribution="الأولى إعدادي">توزيع الأولى إعدادي</button>
+        <button class="secondary" type="button" data-distribution="الثالثة إعدادي">توزيع الثالثة إعدادي</button>
+      </div>
+      <div id="controlDistribution" class="control-editable"></div>
+
+      <h3>إدراج الوثائق المكوّنة للدفتر</h3>
+      <div class="control-grid">
+        <label class="control-field">
+          عنوان الوثيقة
+          <input id="docTitle" type="text" placeholder="مثال: التوزيع السنوي للأولى إعدادي">
+        </label>
+        <label class="control-field">
+          نوع الوثيقة
+          <select id="docType">
+            <option>توزيع سنوي</option>
+            <option>لائحة العطل</option>
+            <option>استعمال الزمن</option>
+            <option>نموذج دفتر النصوص</option>
+            <option>مذكرة أو بلاغ</option>
+            <option>وثيقة أخرى</option>
+          </select>
+        </label>
+        <label class="control-field">
+          تاريخ الوثيقة
+          <input id="docDate" type="text" placeholder="مثال: 2025/2026">
+        </label>
+        <label class="control-field">
+          الملف أو المصدر
+          <input id="docSource" type="text" placeholder="اسم الملف، الرابط، أو المسار">
+        </label>
+        <label class="control-field full">
+          ملاحظات
+          <textarea id="docNotes" placeholder="ما الذي اعتمدناه من هذه الوثيقة؟"></textarea>
+        </label>
+      </div>
+      <div class="toolbar-actions" style="justify-content:flex-start;">
+        <button type="button" id="addDocument">إضافة الوثيقة</button>
+        <button class="secondary" type="button" id="clearDocumentForm">مسح الخانات</button>
+      </div>
+
+      <div id="documentList" class="document-list"></div>
+    </div>
+  </section>
+
+  <script>
+    const commonSteps = [
+      "أنشطة الافتتاح: التذكير بمثاق القسم، تتبع الواجبات، النشاط الاعتيادي، التصريح بأهداف الحصة.",
+      "بناء التعلمات: قراءة النصوص الشرعية، شرح المفاهيم، استخراج المضامين والقيم، إنجاز أنشطة تطبيقية.",
+      "اختتام الحصة: تركيب الخلاصات، تقويم سريع، وتوجيه واجب منزلي عند الحاجة."
+    ];
+
+    const firstLevel = [
+      ["1", "من 08 إلى 13 شتنبر 2025", "التقويم التشخيصي في مادة التربية الإسلامية", "تقويم تشخيصي", "تشخيص المكتسبات الأولية وتحديد حاجات الدعم.\nتنبيه زمني رسمي: عيد المولد النبوي الشريف يومي 12 و13 ربيع الأول 1447."],
+      ["2", "من 15 إلى 20 شتنبر 2025", "دعم ومعالجة: قراءة النص الشرعي وفهمه", "دعم ومعالجة", "تدريب المتعلمين على القراءة السليمة وفهم النص الشرعي."],
+      ["3", "من 22 إلى 27 شتنبر 2025", "دعم ومعالجة: استخراج المعاني والقيم", "دعم ومعالجة", "استخراج المضامين والقيم من النصوص الشرعية."],
+      ["4", "من 29 شتنبر إلى 04 أكتوبر 2025", "دعم ومعالجة: توظيف المفاهيم الشرعية + تقويم بعدي", "دعم ومعالجة", "توظيف المفاهيم الشرعية وإنجاز تقويم بعدي."],
+      ["5", "من 06 إلى 11 أكتوبر 2025", "الشطر الأول من سورة لقمان", "التزكية", "مدارسة الشطر الأول من سورة لقمان واستخراج مضامينه."],
+      ["6", "من 13 إلى 18 أكتوبر 2025", "الإيمان والعلم", "التزكية", "بيان العلاقة بين الإيمان والعلم وآثارها في سلوك المتعلم."],
+      ["عطلة", "من 19 إلى 26 أكتوبر 2025", "العطلة البينية الأولى", "عطلة", "لا تنجز حصص دراسية."],
+      ["7", "من 27 أكتوبر إلى 01 نونبر 2025", "بعثة الرسول ﷺ", "الاقتداء", "تعرف سياق البعثة النبوية وقيمها."],
+      ["8", "من 03 إلى 08 نونبر 2025", "الطهارة: أنواعها ومقاصدها", "الاستجابة", "تعرف أنواع الطهارة ومقاصدها.\nتنبيه زمني رسمي: ذكرى المسيرة الخضراء يوم الخميس 06 نونبر 2025."],
+      ["9", "من 10 إلى 15 نونبر 2025", "حق الله: التوحيد والإخلاص", "القسط", "ترسيخ معنى التوحيد والإخلاص لله تعالى."],
+      ["10", "من 17 إلى 22 نونبر 2025", "طلب العلم", "الحكمة", "استخلاص قيمة طلب العلم وآدابه.\nتنبيه زمني رسمي: عيد الاستقلال يوم الثلاثاء 18 نونبر 2025."],
+      ["11", "من 24 إلى 29 نونبر 2025", "الشطر الثاني من سورة لقمان", "التزكية", "مدارسة الشطر الثاني من سورة لقمان واستخراج القيم."],
+      ["12", "من 01 إلى 06 دجنبر 2025", "فرض محروس رقم 1 / دعم واستثمار", "تقويم ودعم", "إنجاز الفرض المحروس واستثمار نتائجه."],
+      ["عطلة", "من 07 إلى 14 دجنبر 2025", "العطلة البينية الثانية", "عطلة", "لا تنجز حصص دراسية."],
+      ["13", "من 15 إلى 20 دجنبر 2025", "الله نور السماوات والأرض", "التزكية", "تعرف دلالات النور والهداية وأثرهما في حياة المؤمن."],
+      ["14", "من 22 إلى 27 دجنبر 2025", "الدعوة السرية والجهرية", "الاقتداء", "استخلاص مراحل الدعوة وقيم الثبات والحكمة."],
+      ["15", "من 29 دجنبر إلى 03 يناير 2026", "الصلاة: شروطها وأركانها + تقويم", "الاستجابة", "تعرف شروط الصلاة وأركانها مع تقويم مكتسبات الدرس.\nتنبيه زمني رسمي: فاتح السنة الميلادية يوم الخميس 01 يناير 2026."],
+      ["16", "من 05 إلى 10 يناير 2026", "حق الوالدين", "القسط", "ترسيخ قيمة بر الوالدين وحسن معاملتهما."],
+      ["17", "من 12 إلى 17 يناير 2026", "الصدق", "الحكمة", "تمثل قيمة الصدق في القول والعمل.\nتنبيه زمني رسمي: ذكرى تقديم وثيقة الاستقلال يوم الأحد 11 يناير 2026، وعطلة رأس السنة الأمازيغية يوم الأربعاء 14 يناير 2026."],
+      ["18", "من 19 إلى 24 يناير 2026", "الشطر الثالث من سورة لقمان + دعم", "التزكية", "استكمال مدارسة سورة لقمان وإنجاز أنشطة دعم."],
+      ["عطلة", "من 25 يناير إلى 01 فبراير 2026", "عطلة منتصف السنة الدراسية", "عطلة", "لا تنجز حصص دراسية."],
+      ["19", "من 02 إلى 07 فبراير 2026", "الإيمان واليقين", "التزكية", "تعميق مفهوم اليقين وأثره في ثبات المؤمن."],
+      ["20", "من 09 إلى 14 فبراير 2026", "الهجرة إلى الحبشة", "الاقتداء", "استخلاص قيم الصبر وطلب الأمان من الهجرة إلى الحبشة."],
+      ["21", "من 16 إلى 21 فبراير 2026", "الصلاة: سننها ومستحباتها", "الاستجابة", "تعرف سنن الصلاة ومستحباتها وآثارها."],
+      ["22", "من 23 إلى 28 فبراير 2026", "حق الرحم والأقارب", "القسط", "ترسيخ صلة الرحم وحسن التعامل مع الأقارب."],
+      ["23", "من 02 إلى 07 مارس 2026", "الأمانة", "الحكمة", "تمثل خلق الأمانة في الحياة اليومية."],
+      ["24", "من 09 إلى 14 مارس 2026", "فرض محروس رقم 2 / دعم واستثمار", "تقويم ودعم", "إنجاز الفرض المحروس واستثمار نتائجه."],
+      ["عطلة", "من 15 إلى 22 مارس 2026", "العطلة البينية الثالثة", "عطلة", "لا تنجز حصص دراسية. عيد الفطر من 29 رمضان إلى 2 شوال 1447 حسب اللائحة الرسمية. مستجد: أضيف يوم الإثنين 23 مارس 2026 كعطلة استثنائية بمناسبة عيد الفطر، مع بقاء العطلة البينية الثالثة مبرمجة من 15 إلى 22 مارس 2026 دون تغيير رسمي."],
+      ["25", "من 23 إلى 28 مارس 2026", "الإيمان والعمل", "التزكية", "بيان علاقة الإيمان بالعمل الصالح.\nمستجد زمني: الإثنين 23 مارس 2026 عطلة استثنائية بمناسبة عيد الفطر."],
+      ["26", "من 30 مارس إلى 04 أبريل 2026", "بيعة العقبة والهجرة إلى المدينة", "الاقتداء", "استخلاص قيم النصرة والوفاء والتضحية."],
+      ["27", "من 06 إلى 11 أبريل 2026", "المسجد: أحكامه وآدابه", "الاستجابة", "تعرف أحكام المسجد وآداب دخوله والمكث فيه."],
+      ["28", "من 13 إلى 18 أبريل 2026", "حق الجار", "القسط", "ترسيخ حق الجار وآداب الإحسان إليه."],
+      ["29", "من 20 إلى 25 أبريل 2026", "العفة", "الحكمة", "تمثل خلق العفة في السلوك الفردي والاجتماعي."],
+      ["30", "من 27 أبريل إلى 02 ماي 2026", "دعم وتقويم مرحلي", "تقويم ودعم", "إنجاز أنشطة دعم وتقويم مرحلي.\nتنبيه زمني رسمي: عيد الشغل يوم الجمعة فاتح ماي 2026."],
+      ["عطلة", "من 03 إلى 10 ماي 2026", "العطلة البينية الرابعة", "عطلة", "لا تنجز حصص دراسية."],
+      ["31", "من 11 إلى 16 ماي 2026", "أنشطة داعمة / معالجة التعثرات", "أنشطة داعمة", "معالجة التعثرات وتثبيت الموارد الأساس."],
+      ["32", "من 18 إلى 23 ماي 2026", "فرض محروس رقم 3 أو 4 حسب البرمجة الداخلية", "تقويم ودعم", "إنجاز فرض محروس وفق البرمجة الداخلية."],
+      ["33", "من 25 إلى 30 ماي 2026", "تصحيح الفرض واستثمار النتائج", "تقويم ودعم", "تصحيح الفرض واستثمار النتائج.\nمستجد زمني: الجمعة 29 ماي 2026 عطلة استثنائية وطنية بمناسبة عيد الأضحى، والسبت 30 ماي 2026 أضيف لعطلة المؤسسات التعليمية."],
+      ["34", "من 01 إلى 06 يونيو 2026", "أنشطة داعمة ومراجعة عامة", "أنشطة داعمة", "إنجاز أنشطة داعمة ومراجعة عامة.\nملاحظة تحيين: تمت إضافة الجمعة 29 ماي 2026 كعطلة استثنائية، والسبت 30 ماي 2026 بقطاع التعليم."],
+      ["35", "من 08 إلى 13 يونيو 2026", "دعم وتثبيت التعلمات", "دعم وتثبيت", "تثبيت التعلمات الأساسية ومعالجة الصعوبات."],
+      ["36", "من 15 إلى 20 يونيو 2026", "آخر فروض المراقبة المستمرة", "تقويم ودعم", "إنجاز آخر فروض المراقبة المستمرة."],
+      ["37", "من 22 إلى 27 يونيو 2026", "تصحيح الفروض واستثمار النتائج", "تقويم ودعم", "تصحيح الفروض واستثمار النتائج."],
+      ["38", "من 29 إلى 30 يونيو 2026", "إنهاء السنة الدراسية وأنشطة ختامية", "أنشطة ختامية", "إنهاء السنة الدراسية وتنظيم أنشطة ختامية."],
+    ];
+
+    const thirdLevel = [
+      ["1", "من 01 إلى 07 شتنبر 2025", "انطلاق الدراسة وتوقيع محضر الدخول", "تنظيمي", "افتتاح الموسم الدراسي.\nتنبيه زمني رسمي: عيد المولد النبوي الشريف يومي 12 و13 ربيع الأول 1447."],
+      ["2", "من 08 إلى 13 شتنبر 2025", "تشخيص المكتسبات الدراسية وأنشطة الدعم والمراجعة والتثبيت", "تقويم تشخيصي", "استحضار حصيلة تعلمات المتعلمين السابقة."],
+      ["3", "من 15 إلى 20 شتنبر 2025", "المقطع الأول من السورة المقررة", "القرآن الكريم", "مدارسة المقطع الأول واستخلاص مضامينه."],
+      ["4", "من 22 إلى 27 شتنبر 2025", "أسماء الله الحسنى", "التزكية", "تعرف دلالات الأسماء الحسنى وآثارها."],
+      ["5", "من 29 شتنبر إلى 04 أكتوبر 2025", "حماية الدعوة وبناء الدولة: الهجرة إلى المدينة", "الاقتداء", "استخلاص دروس الهجرة وقيمها."],
+      ["6", "من 06 إلى 11 أكتوبر 2025", "العبادة غاية الخلق: العبادة صفة إيمان ودليل خضوع", "الاستجابة", "تعميق مفهوم العبادة وأثرها."],
+      ["7", "من 13 إلى 18 أكتوبر 2025", "حق الله: تقوى الله", "القسط", "ترسيخ قيمة التقوى في السلوك."],
+      ["عطلة", "من 19 إلى 26 أكتوبر 2025", "العطلة البينية الأولى", "عطلة", "لا تنجز حصص دراسية."],
+      ["8", "من 27 أكتوبر إلى 01 نونبر 2025", "الهجرة المتجددة: المهاجر من هاجر ما نهى الله عنه", "الحكمة", "تحويل معنى الهجرة إلى سلوك يومي."],
+      ["9", "من 03 إلى 08 نونبر 2025", "فرض كتابي 1", "تقويم ودعم", "مع مراعاة ذكرى المسيرة الخضراء يوم الخميس 06 نونبر."],
+      ["10", "من 10 إلى 15 نونبر 2025", "المقطع الثاني من السورة المقررة", "القرآن الكريم", "استكمال مدارسة السورة."],
+      ["11", "من 17 إلى 22 نونبر 2025", "أهمية التدين في حياة الفرد والمجتمع", "التزكية", "مع مراعاة عيد الاستقلال يوم 18 نونبر."],
+      ["12", "من 24 إلى 29 نونبر 2025", "المسجد نواة المجتمع الإنساني", "الاقتداء", "بيان وظائف المسجد التربوية والاجتماعية."],
+      ["13", "من 02 إلى 06 دجنبر 2025", "الزكاة: أحكامها ومقاصدها: التعريف، الأحكام، المستحقون", "الاستجابة", "تعرف أحكام الزكاة ومقاصدها."],
+      ["عطلة", "من 07 إلى 14 دجنبر 2025", "العطلة البينية الثانية", "عطلة", "لا تنجز حصص دراسية."],
+      ["14", "من 15 إلى 20 دجنبر 2025", "حق النفس: أهمية التخطيط والتنظيم في الحياة", "القسط", "اكتساب مهارة التخطيط وتنظيم الوقت."],
+      ["15", "من 15 إلى 20 دجنبر 2025", "الإيثار والتضحية", "الحكمة", "تعزيز قيم البذل والتضامن."],
+      ["16", "من 22 إلى 27 دجنبر 2025", "المقطع الثالث من السورة المقررة", "القرآن الكريم", "استكمال المقطع الثالث وتقويم الفهم."],
+      ["17", "من 29 دجنبر إلى 03 يناير 2026", "فرض كتابي 2", "تقويم ودعم", "مع مراعاة عطلة فاتح يناير 2026.\nتنبيه زمني رسمي لاحق: ذكرى تقديم وثيقة الاستقلال يوم الأحد 11 يناير 2026، وعطلة رأس السنة الأمازيغية يوم الأربعاء 14 يناير 2026."],
+      ["امتحان", "19 و20 يناير 2026", "الامتحان الموحد المحلي لنيل شهادة السلك الإعدادي", "امتحان", "مرحلة خاصة بالتقويم الإشهادي المحلي."],
+      ["عطلة", "من 25 يناير إلى 01 فبراير 2026", "عطلة منتصف السنة الدراسية", "عطلة", "لا تنجز حصص دراسية."],
+      ["18", "من 02 إلى 07 فبراير 2026", "سورة: المقطع الأول", "القرآن الكريم", "بداية الأسدوس الثاني ومدارسة المقطع الأول."],
+      ["19", "من 09 إلى 14 فبراير 2026", "الإسلام عقيدة وشريعة", "التزكية", "تمييز مكونات الدين وأثرها."],
+      ["20", "من 16 إلى 21 فبراير 2026", "الرسول ﷺ يرسي قيم السلم والتعايش: وثيقة المدينة", "الاقتداء", "استخلاص مبادئ التعايش والسلم."],
+      ["21", "من 23 إلى 28 فبراير 2026", "الزكاة أحكامها ومقاصدها: الغايات والوظائف التنموية", "الاستجابة", "بيان الأبعاد التنموية للزكاة."],
+      ["22", "من 02 إلى 07 مارس 2026", "حق الغير: إمارة المؤمنين: الأسس والغايات", "القسط", "تعرف مفهوم إمارة المؤمنين ووظائفها."],
+      ["23", "من 09 إلى 14 مارس 2026", "التعارف والتعايش", "الحكمة", "ترسيخ ثقافة الحوار والتعايش."],
+      ["عطلة", "من 15 إلى 22 مارس 2026", "العطلة البينية الثالثة - عطلة عيد الفطر", "عطلة", "لا تنجز حصص دراسية. عيد الفطر من 29 رمضان إلى 2 شوال 1447 حسب اللائحة الرسمية. مستجد: لم تسجل صيغة رسمية لتغيير العطلة البينية الثالثة، وأضيف يوم الإثنين 23 مارس 2026 كعطلة استثنائية بإدارات الدولة والجماعات الترابية بمناسبة عيد الفطر."],
+      ["24", "من 23 إلى 28 مارس 2026", "فرض كتابي 1 / تصحيح ودعم", "تقويم ودعم", "إنجاز الفرض واستثمار نتائجه.\nمستجد زمني: الإثنين 23 مارس 2026 عطلة استثنائية بمناسبة عيد الفطر.\nتنبيه: العطلة البينية الثالثة بقيت مبرمجة من 15 إلى 22 مارس 2026 دون تغيير رسمي."],
+      ["25", "من 30 مارس إلى 04 أبريل 2026", "سورة: المقطع الثاني", "القرآن الكريم", "استكمال مدارسة السورة."],
+      ["26", "من 06 إلى 11 أبريل 2026", "أثر القرآن في تزكية النفس", "التزكية", "إبراز أثر القرآن في تهذيب السلوك."],
+      ["27", "من 13 إلى 18 أبريل 2026", "إيواء الرسول ﷺ ونصرته: أبو أيوب الأنصاري - أم سليم", "الاقتداء", "استخلاص قيم النصرة والإيواء."],
+      ["28", "من 20 إلى 25 أبريل 2026", "الإنفاق في سبيل الله: صوره ومقاصده", "الاستجابة", "تعرف صور الإنفاق ومقاصده."],
+      ["29", "من 27 أبريل إلى 02 ماي 2026", "حق البيئة: الاعتناء بجمال البيئة والمحيط", "القسط", "مع مراعاة عيد الشغل فاتح ماي."],
+      ["عطلة", "من 03 إلى 10 ماي 2026", "العطلة البينية الرابعة", "عطلة", "لا تنجز حصص دراسية."],
+      ["30", "من 11 إلى 16 ماي 2026", "من وصايا الرسول ﷺ: الوصايا التسع", "الحكمة", "استخلاص الوصايا العملية وتطبيقاتها."],
+      ["31", "من 18 إلى 23 ماي 2026", "سورة: المقطع الثالث", "القرآن الكريم", "استكمال المقطع الثالث وتقويم التعلمات."],
+      ["32", "من 25 إلى 30 ماي 2026", "فرض كتابي 2 / تصحيح ودعم", "تقويم ودعم", "إنجاز الفرض الختامي والدعم.\nمستجد زمني: الجمعة 29 ماي 2026 عطلة استثنائية وطنية بمناسبة عيد الأضحى، والسبت 30 ماي 2026 أضيف لعطلة المؤسسات التعليمية."],
+      ["33", "من 01 إلى 06 يونيو 2026", "أنشطة داعمة", "أنشطة داعمة", "مع مراعاة عيد الأضحى المبارك من 9 إلى 11 ذي الحجة 1447.\nملاحظة تحيين: تمت إضافة الجمعة 29 ماي 2026 كعطلة استثنائية، والسبت 30 ماي 2026 بقطاع التعليم."],
+      ["امتحان", "24 و25 يونيو 2026", "الامتحان الموحد الجهوي لنيل شهادة السلك الإعدادي", "امتحان", "مرحلة خاصة بالتقويم الإشهادي الجهوي.\nتنبيه زمني رسمي لاحق: فاتح محرم يوم 1 محرم 1448."],
+    ];
+
+    const levelSchedules = {
+      "الأولى إعدادي": [
+        ["الإثنين", "18:00 - 19:00", "1APIC-13"],
+        ["الثلاثاء", "09:00 - 10:00", "1APIC-1"],
+        ["الثلاثاء", "10:00 - 11:00", "1APIC-14"],
+        ["الثلاثاء", "12:00 - 13:00", "1APIC-10"],
+        ["الأربعاء", "15:00 - 16:00", "1APIC-12"],
+        ["الخميس", "09:00 - 10:00", "1APIC-1"],
+        ["الخميس", "11:00 - 12:00", "1APIC-13"],
+        ["الجمعة", "18:00 - 19:00", "1APIC-12"],
+        ["السبت", "10:00 - 11:00", "1APIC-10"],
+        ["السبت", "11:00 - 12:00", "1APIC-14"]
+      ],
+      "الثالثة إعدادي": [
+        ["الإثنين", "15:00 - 16:00", "3APIC-13"],
+        ["الإثنين", "16:00 - 17:00", "3APIC-14"],
+        ["الإثنين", "17:00 - 18:00", "3APIC-15"],
+        ["الثلاثاء", "11:00 - 12:00", "3APIC-16"],
+        ["الأربعاء", "16:00 - 17:00", "3APIC-13"],
+        ["الأربعاء", "17:00 - 18:00", "3ASPCC-1"],
+        ["الأربعاء", "18:00 - 19:00", "3APIC-17"],
+        ["الخميس", "10:00 - 11:00", "3APIC-15"],
+        ["الجمعة", "16:00 - 17:00", "3ASPCC-1"],
+        ["الجمعة", "17:00 - 18:00", "3APIC-16"],
+        ["السبت", "09:00 - 10:00", "3APIC-17"],
+        ["السبت", "12:00 - 13:00", "3APIC-14"]
+      ]
+    };
+
+    const fullTeacherSchedule = {
+      "الإثنين": [
+        ["15:00 - 16:00", "3APIC-13", "القاعة 12"],
+        ["16:00 - 17:00", "3APIC-14", "القاعة 12"],
+        ["17:00 - 18:00", "3APIC-15", "القاعة 12"],
+        ["18:00 - 19:00", "1APIC-13", "القاعة 12"]
+      ],
+      "الثلاثاء": [
+        ["09:00 - 10:00", "1APIC-1", "القاعة 12"],
+        ["10:00 - 11:00", "1APIC-14", "القاعة 12"],
+        ["11:00 - 12:00", "3APIC-16", "القاعة 12"],
+        ["12:00 - 13:00", "1APIC-10", "القاعة 12"]
+      ],
+      "الأربعاء": [
+        ["15:00 - 16:00", "1APIC-12", "القاعة 12"],
+        ["16:00 - 17:00", "3APIC-13", "القاعة 12"],
+        ["17:00 - 18:00", "3ASPCC-1", "القاعة 12"],
+        ["18:00 - 19:00", "3APIC-17", "القاعة 12"]
+      ],
+      "الخميس": [
+        ["09:00 - 10:00", "1APIC-1", "القاعة 12"],
+        ["10:00 - 11:00", "3APIC-15", "القاعة 12"],
+        ["11:00 - 12:00", "1APIC-13", "القاعة 12"],
+        ["12:00 - 13:00", "دعم تربوي", "-"]
+      ],
+      "الجمعة": [
+        ["15:00 - 16:00", "دعم تربوي", "-"],
+        ["16:00 - 17:00", "3ASPCC-1", "القاعة 12"],
+        ["17:00 - 18:00", "3APIC-16", "القاعة 12"],
+        ["18:00 - 19:00", "1APIC-12", "القاعة 12"]
+      ],
+      "السبت": [
+        ["09:00 - 10:00", "3APIC-17", "القاعة 12"],
+        ["10:00 - 11:00", "1APIC-10", "القاعة 12"],
+        ["11:00 - 12:00", "1APIC-14", "القاعة 12"],
+        ["12:00 - 13:00", "3APIC-14", "القاعة 12"]
+      ]
+    };
+
+    const holidayReference = [
+      ["عيد المولد النبوي الشريف", "يومان حسب التاريخ الهجري", "برمجة أصلية"],
+      ["العطلة البينية الأولى", "من الأحد 19 أكتوبر إلى الأحد 26 أكتوبر 2025", "برمجة أصلية"],
+      ["ذكرى المسيرة الخضراء", "الخميس 06 نونبر 2025", "برمجة أصلية"],
+      ["عيد الاستقلال", "الثلاثاء 18 نونبر 2025", "برمجة أصلية"],
+      ["العطلة البينية الثانية", "من الأحد 07 دجنبر إلى الأحد 14 دجنبر 2025", "برمجة أصلية"],
+      ["فاتح السنة الميلادية", "الخميس 01 يناير 2026", "برمجة أصلية"],
+      ["ذكرى تقديم وثيقة الاستقلال", "الأحد 11 يناير 2026", "برمجة أصلية"],
+      ["رأس السنة الأمازيغية", "الأربعاء 14 يناير 2026", "برمجة أصلية"],
+      ["عطلة منتصف السنة الدراسية", "من الأحد 25 يناير إلى الأحد 01 فبراير 2026", "برمجة أصلية"],
+      ["العطلة البينية الثالثة", "من الأحد 15 مارس إلى الأحد 22 مارس 2026", "برمجة أصلية - دون تغيير رسمي"],
+      ["عيد الفطر", "3 أو 4 أيام حسب الرؤية الشرعية", "برمجة أصلية"],
+      ["عيد الفطر - استثناء", "الإثنين 23 مارس 2026", "مستجد لاحق"],
+      ["عيد الشغل", "الجمعة 01 ماي 2026", "برمجة أصلية"],
+      ["العطلة البينية الرابعة", "من الأحد 03 ماي إلى الأحد 10 ماي 2026", "برمجة أصلية"],
+      ["عيد الأضحى - استثناء", "الجمعة 29 ماي 2026 والسبت 30 ماي 2026 بقطاع التعليم", "مستجد لاحق"],
+      ["عيد الأضحى", "3 أيام حسب التاريخ الهجري", "برمجة أصلية"],
+      ["فاتح محرم", "يوم واحد حسب التاريخ الهجري", "برمجة أصلية"]
+    ];
+
+    function levelClasses(levelName) {
+      return [...new Set(levelSchedules[levelName].map(slot => slot[2]))].join("، ");
+    }
+
+    function activeSlots(levelName, entry) {
+      const marker = `${entry[1]} ${entry[2]} ${entry[4]}`;
+      const excludedDays = new Set();
+
+      if (marker.includes("23 مارس 2026") || marker.includes("من 23 إلى 28 مارس")) {
+        excludedDays.add("الإثنين");
+      }
+
+      if (marker.includes("06 نونبر") || marker.includes("6 نونبر")) {
+        excludedDays.add("الخميس");
+      }
+
+      if (marker.includes("18 نونبر")) {
+        excludedDays.add("الثلاثاء");
+      }
+
+      if (marker.includes("01 يناير") || marker.includes("فاتح السنة الميلادية")) {
+        excludedDays.add("الخميس");
+      }
+
+      if (marker.includes("14 يناير") || marker.includes("رأس السنة الأمازيغية")) {
+        excludedDays.add("الأربعاء");
+      }
+
+      if (marker.includes("فاتح ماي") || marker.includes("01 ماي") || marker.includes("02 ماي")) {
+        excludedDays.add("الجمعة");
+      }
+
+      if (marker.includes("29 ماي 2026") || marker.includes("30 ماي 2026") || marker.includes("من 25 إلى 30 ماي")) {
+        excludedDays.add("الجمعة");
+        excludedDays.add("السبت");
+      }
+
+      return levelSchedules[levelName].filter(slot => !excludedDays.has(slot[0]));
+    }
+
+    function weeklySessions(levelName, entry) {
+      const byClass = new Map();
+      activeSlots(levelName, entry).forEach(slot => {
+        const className = slot[2];
+        if (!byClass.has(className)) byClass.set(className, []);
+        byClass.get(className).push(slot);
+      });
+
+      return [0, 1].map(sessionIndex => {
+        const slots = [];
+        byClass.forEach(classSlots => {
+          if (classSlots[sessionIndex]) slots.push(classSlots[sessionIndex]);
+        });
+        return slots;
+      });
+    }
+
+    function sessionTimeList(slots) {
+      if (!slots.length) return "لا توجد حصة بسبب العطلة";
+      return slots
+        .map(slot => `${slot[0]}: ${slot[1]}`)
+        .join("<br>");
+    }
+
+    function sessionClassList(slots) {
+      if (!slots.length) return "لا توجد أقسام";
+      return slots
+        .map(slot => `${slot[2]} <span class="subtitle">(القاعة 12)</span>`)
+        .join("<br>");
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[char]));
+    }
+
+    function splitSessionTitles(topic) {
+      const parts = topic
+        .split(/\s*(?:\/|\+)\s*/u)
+        .map(part => part.trim())
+        .filter(Boolean);
+
+      if (parts.length >= 2) return [parts[0], parts.slice(1).join(" / ")];
+      return [topic, "تثبيت التعلمات ودعمها بأنشطة تطبيقية"];
+    }
+
+    function lessonSteps(entry, sessionIndex = 0) {
+      const isBreak = ["عطلة", "امتحان"].includes(entry[3]) || ["عطلة", "امتحان"].includes(entry[0]);
+      if (isBreak) return `<div class="lesson-topic">${escapeHtml(entry[2])}</div><div>${escapeHtml(entry[4])}</div>`;
+      const titles = splitSessionTitles(entry[2]);
+      const sessionTitle = titles[Math.min(sessionIndex, titles.length - 1)];
+      const note = entry[4] && sessionIndex === 0 ? `<div class="official-note">${escapeHtml(entry[4])}</div>` : "";
+      return `
+        <div class="lesson-topic">${escapeHtml(sessionTitle)}</div>
+        <div class="lesson-domain">المدخل: ${escapeHtml(entry[3])}</div>
+        <ol class="steps">
+          ${commonSteps.map(step => `<li>${escapeHtml(step)}</li>`).join("")}
+        </ol>
+        ${note}
+        <div class="fill-line"></div>
+        <div class="fill-line"></div>
+      `;
+    }
+
+    function pageTemplate(levelName, entry, pageNumber, levelPageNumber) {
+      const isBreak = ["عطلة", "امتحان"].includes(entry[3]) || ["عطلة", "امتحان"].includes(entry[0]);
+      const calendarSummary = pageNumber === 1 ? `
+        <div class="calendar-summary">
+          <b>مرجع زمني:</b>
+          البرمجة الأصلية للعطل المدرسية 2025/2026 تشمل العطل البينية الأربع، الأعياد الوطنية والدينية، عطلة منتصف السنة، عيد الشغل وفاتح محرم حسب اللائحة الرسمية.
+          <b>مستجدات لاحقة:</b>
+          الإثنين 23 مارس 2026 عطلة استثنائية بمناسبة عيد الفطر، والجمعة 29 ماي 2026 عطلة استثنائية بمناسبة عيد الأضحى، مع إضافة السبت 30 ماي 2026 لقطاع التعليم.
+        </div>
+      ` : "";
+      const levelSummary = levelPageNumber === 1 ? `
+        <div class="level-summary">
+          <b>قسم ${escapeHtml(levelName)}:</b>
+          الأقسام المسندة: ${escapeHtml(levelClasses(levelName))}.
+          حُذفت حصص الدعم التربوي من خانات الأقسام لأنها ليست قسماً مستقلاً.
+        </div>
+      ` : "";
+      const sessions = weeklySessions(levelName, entry);
+      const rows = isBreak
+        ? `<tr class="holiday"><td colspan="6" class="lesson-cell">${lessonSteps(entry)}</td></tr>`
+        : sessions.map((slots, index) => `
+          <tr>
+            <td class="session-title">الحصة ${index + 1}</td>
+            <td>${escapeHtml(entry[1])}</td>
+            <td>${sessionTimeList(slots)}</td>
+            <td>${sessionClassList(slots)}</td>
+            <td class="lesson-cell">${lessonSteps(entry, index)}</td>
+            <td><div class="fill-line"></div><div class="fill-line"></div></td>
+          </tr>
+        `).join("");
+
+      return `
+        <section class="page" data-level="${escapeHtml(levelName)}" data-level-page="${levelPageNumber}">
+          <header class="page-header">
+            <div>
+              المملكة المغربية<br>
+              وزارة التربية الوطنية والتعليم الأولي والرياضة<br>
+              المؤسسة: ثانوية مولاي يوسف الإعدادية
+            </div>
+            <div class="center">
+              <h1>دفتر النصوص</h1>
+              <div class="subtitle">مادة التربية الإسلامية - الموسم الدراسي 2025/2026</div>
+            </div>
+            <div>
+              الأستاذ: خالد ماكوري<br>
+              المستوى: ${escapeHtml(levelName)}<br>
+              الصفحة: ${pageNumber}
+            </div>
+          </header>
+
+          <div class="meta-grid">
+            <div class="meta"><b>الأسبوع:</b> ${escapeHtml(entry[0])}</div>
+            <div class="meta"><b>الفترة:</b> ${escapeHtml(entry[1])}</div>
+            <div class="meta"><b>الموضوع:</b> ${escapeHtml(entry[2])}</div>
+            <div class="meta"><b>المدخل:</b> ${escapeHtml(entry[3])}</div>
+          </div>
+          ${calendarSummary}
+          ${levelSummary}
+
+          <table>
+            <thead>
+              <tr>
+                <th class="narrow">الحصة</th>
+                <th class="time">التاريخ</th>
+                <th class="time">التوقيت</th>
+                <th class="class">القسم</th>
+                <th>مراحل إنجاز الدرس</th>
+                <th class="notes">ملاحظات</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+
+          <div class="signature-grid">
+            <div><b>ملاحظات رئيس المؤسسة</b></div>
+            <div><b>ملاحظات المؤطر التربوي للمادة</b></div>
+          </div>
+
+          <div class="footer">
+            <span>مصدر البناء: نموذج دفتر النصوص رائدة + التوزيع السنوي + لائحة العطل المدرسية 2025/2026 + مستجدات العطل الاستثنائية.</span>
+            <span>نسخة أولية قابلة للتحيين بعد إضافة الوثائق المتبقية.</span>
+          </div>
+        </section>
+      `;
+    }
+
+    function compactLevel(entries, targetCount) {
+      const withBreakNotes = [];
+      let pendingNotes = [];
+
+      entries.forEach(entry => {
+        const isBreak = ["عطلة"].includes(entry[0]) || entry[3] === "عطلة";
+        if (isBreak) {
+          const note = `${entry[2]} (${entry[1]})`;
+          if (withBreakNotes.length) withBreakNotes[withBreakNotes.length - 1][4] += `\nتنبيه زمني: ${note}.`;
+          else pendingNotes.push(note);
+          return;
+        }
+
+        const copy = [...entry];
+        if (pendingNotes.length) {
+          copy[4] += `\nتنبيه زمني: ${pendingNotes.join("، ")}.`;
+          pendingNotes = [];
+        }
+        withBreakNotes.push(copy);
+      });
+
+      if (withBreakNotes.length <= targetCount) return withBreakNotes;
+
+      const compacted = [];
+      for (let i = 0; i < targetCount; i++) {
+        const start = Math.floor(i * withBreakNotes.length / targetCount);
+        const end = Math.floor((i + 1) * withBreakNotes.length / targetCount);
+        const bucket = withBreakNotes.slice(start, Math.max(start + 1, end));
+        const first = bucket[0];
+        const last = bucket[bucket.length - 1];
+        const weeks = first[0] === last[0] ? first[0] : `${first[0]} - ${last[0]}`;
+        const dates = first[1] === last[1] ? first[1] : `${first[1]} / ${last[1]}`;
+        const topics = [...new Set(bucket.map(item => item[2]))].join(" / ");
+        const domains = [...new Set(bucket.map(item => item[3]))].join(" / ");
+        const notes = bucket.map(item => item[4]).filter(Boolean).join("\n");
+        compacted.push([weeks, dates, topics, domains, notes]);
+      }
+
+      return compacted;
+    }
+
+    const pages = [];
+    compactLevel(firstLevel, firstLevel.length).forEach((entry, index) => pages.push(["الأولى إعدادي", entry, index + 1]));
+    compactLevel(thirdLevel, thirdLevel.length).forEach((entry, index) => pages.push(["الثالثة إعدادي", entry, index + 1]));
+
+    const storageKey = "daftar_nosous_2025_2026_saved_html_v1";
+    const documentsKey = "daftar_nosous_2025_2026_documents_v1";
+    const storage = {
+      get(key) {
+        try { return window.localStorage ? window.localStorage.getItem(key) : null; }
+        catch { return null; }
+      },
+      set(key, value) {
+        try { if (window.localStorage) window.localStorage.setItem(key, value); }
+        catch { setSaveStatus("تعذر الحفظ المحلي في هذا المتصفح"); }
+      },
+      remove(key) {
+        try { if (window.localStorage) window.localStorage.removeItem(key); }
+        catch { setSaveStatus("تعذر حذف الحفظ المحلي في هذا المتصفح"); }
+      }
+    };
+    const generatedBookHtml = pages
+      .map(([level, entry, levelPageNumber], index) => pageTemplate(level, entry, index + 1, levelPageNumber))
+      .join("");
+
+    const book = document.getElementById("book");
+    book.innerHTML = storage.get(storageKey) || generatedBookHtml;
+
+    document.getElementById("pageCount").textContent =
+      `دفتر النصوص - التربية الإسلامية | عدد صفحات A4: ${pages.length}`;
+
+    function setSaveStatus(message) {
+      const status = document.getElementById("saveStatus");
+      status.textContent = message;
+      window.clearTimeout(setSaveStatus.timer);
+      setSaveStatus.timer = window.setTimeout(() => {
+        status.textContent = "";
+      }, 3500);
+    }
+
+    function setEditMode(enabled) {
+      book.querySelectorAll(".page").forEach(page => {
+        page.setAttribute("contenteditable", enabled ? "true" : "false");
+        page.setAttribute("spellcheck", "false");
+      });
+      setControlEditable(enabled);
+      document.body.classList.toggle("edit-enabled", enabled);
+      document.getElementById("editToggle").textContent = enabled ? "إيقاف التعديل" : "تفعيل التعديل";
+      setSaveStatus(enabled ? "يمكنك التعديل الآن" : "تم إيقاف التعديل");
+    }
+
+    function openControlPanel() {
+      document.getElementById("controlPanel").classList.add("is-open");
+      document.getElementById("book").style.display = "none";
+      document.getElementById("controlPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function closeControlPanel() {
+      document.getElementById("controlPanel").classList.remove("is-open");
+      document.getElementById("book").style.display = "";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function getDocuments() {
+      try {
+        return JSON.parse(storage.get(documentsKey) || "[]");
+      } catch {
+        return [];
+      }
+    }
+
+    function saveDocuments(documents) {
+      storage.set(documentsKey, JSON.stringify(documents));
+    }
+
+    function clearDocumentForm() {
+      ["docTitle", "docDate", "docSource", "docNotes"].forEach(id => {
+        document.getElementById(id).value = "";
+      });
+      document.getElementById("docType").selectedIndex = 0;
+    }
+
+    function renderDocuments() {
+      const list = document.getElementById("documentList");
+      const documents = getDocuments();
+      if (!documents.length) {
+        list.innerHTML = `<div class="document-item">لم تُدرج أي وثيقة بعد.</div>`;
+        return;
+      }
+
+      list.innerHTML = documents.map((doc, index) => `
+        <div class="document-item">
+          <strong>${escapeHtml(doc.title || "وثيقة بدون عنوان")}</strong>
+          <div><b>النوع:</b> ${escapeHtml(doc.type)}</div>
+          <div><b>التاريخ:</b> ${escapeHtml(doc.date || "-")}</div>
+          <div><b>المصدر:</b> ${escapeHtml(doc.source || "-")}</div>
+          <div><b>ملاحظات:</b> ${escapeHtml(doc.notes || "-")}</div>
+          <button class="warning" type="button" data-delete-document="${index}">حذف الوثيقة</button>
+        </div>
+      `).join("");
+
+      list.querySelectorAll("[data-delete-document]").forEach(button => {
+        button.addEventListener("click", () => {
+          const index = Number(button.getAttribute("data-delete-document"));
+          const next = getDocuments();
+          next.splice(index, 1);
+          saveDocuments(next);
+          renderDocuments();
+          setSaveStatus("تم حذف الوثيقة");
+        });
+      });
+    }
+
+    function renderControlSchedule() {
+      const holder = document.getElementById("controlSchedule");
+      holder.innerHTML = Object.entries(fullTeacherSchedule).map(([day, slots]) => `
+        <div class="schedule-day">
+          <h4>${escapeHtml(day)}</h4>
+          ${slots.map(slot => `
+            <div class="schedule-line ${slot[1] === "دعم تربوي" ? "support" : ""}">
+              <span>${escapeHtml(slot[0])}</span>
+              <span>${escapeHtml(slot[1])}</span>
+              <span>${escapeHtml(slot[2])}</span>
+            </div>
+          `).join("")}
+        </div>
+      `).join("");
+    }
+
+    function renderControlHolidays() {
+      document.getElementById("controlHolidays").innerHTML = `
+        <table class="reference-table">
+          <thead>
+            <tr>
+              <th>المناسبة</th>
+              <th>التاريخ</th>
+              <th>الصفة</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${holidayReference.map(row => `
+              <tr class="${row[2].includes("مستجد") ? "update-row" : ""}">
+                <td>${escapeHtml(row[0])}</td>
+                <td>${escapeHtml(row[1])}</td>
+                <td>${escapeHtml(row[2])}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function distributionRows(levelName) {
+      const source = levelName === "الأولى إعدادي" ? firstLevel : thirdLevel;
+      return compactLevel(source, source.length).map((entry, index) => ({
+        level: levelName,
+        page: index + 1,
+        week: entry[0],
+        period: entry[1],
+        topic: entry[2],
+        axis: entry[3],
+        notes: entry[4]
+      }));
+    }
+
+    function renderControlDistribution(levelName = "الأولى إعدادي") {
+      const rows = distributionRows(levelName);
+      document.getElementById("controlDistribution").innerHTML = `
+        <table class="reference-table" data-distribution-table="${escapeHtml(levelName)}">
+          <thead>
+            <tr>
+              <th>الأسبوع</th>
+              <th>الفترة</th>
+              <th>عنوان الدرس</th>
+              <th>المحور / المدخل</th>
+              <th>ما يكتب أو ينجز</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(row => `
+              <tr data-level="${escapeHtml(row.level)}" data-level-page="${row.page}">
+                <td data-field="week">${escapeHtml(row.week)}</td>
+                <td data-field="period">${escapeHtml(row.period)}</td>
+                <td data-field="topic">${escapeHtml(row.topic)}</td>
+                <td data-field="axis">${escapeHtml(row.axis)}</td>
+                <td data-field="notes">${escapeHtml(row.notes)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+      setControlEditable(document.body.classList.contains("edit-enabled"));
+    }
+
+    function setControlEditable(enabled) {
+      document.querySelectorAll(".control-editable").forEach(area => {
+        area.setAttribute("contenteditable", enabled ? "true" : "false");
+        area.setAttribute("spellcheck", "false");
+      });
+    }
+
+    function applyDistributionToBook() {
+      document.querySelectorAll("[data-distribution-table] tbody tr").forEach(row => {
+        const level = row.getAttribute("data-level");
+        const pageNumber = row.getAttribute("data-level-page");
+        const page = book.querySelector(`.page[data-level="${CSS.escape(level)}"][data-level-page="${pageNumber}"]`);
+        if (!page) return;
+
+        const data = {};
+        row.querySelectorAll("[data-field]").forEach(cell => {
+          data[cell.getAttribute("data-field")] = cell.innerText.trim();
+        });
+
+        const meta = page.querySelectorAll(".meta");
+        if (meta[0]) meta[0].innerHTML = `<b>الأسبوع:</b> ${escapeHtml(data.week || "")}`;
+        if (meta[1]) meta[1].innerHTML = `<b>الفترة:</b> ${escapeHtml(data.period || "")}`;
+        if (meta[2]) meta[2].innerHTML = `<b>الموضوع:</b> ${escapeHtml(data.topic || "")}`;
+        if (meta[3]) meta[3].innerHTML = `<b>المدخل:</b> ${escapeHtml(data.axis || "")}`;
+
+        page.querySelectorAll("tbody tr").forEach((tr, index) => {
+          const dateCell = tr.children[1];
+          if (dateCell) dateCell.textContent = data.period || "";
+          const topicCell = tr.querySelector(".lesson-topic");
+          if (topicCell) {
+            topicCell.textContent = index === 0 ? (data.topic || "") : "تثبيت التعلمات ودعمها بأنشطة تطبيقية";
+          }
+          const axisCell = tr.querySelector(".lesson-domain");
+          if (axisCell) axisCell.textContent = `المدخل: ${data.axis || ""}`;
+          const noteCell = tr.querySelector(".official-note");
+          if (noteCell && index === 0) noteCell.textContent = data.notes || "";
+        });
+      });
+    }
+
+    document.querySelectorAll("[data-jump]").forEach(button => {
+      button.addEventListener("click", () => {
+        const level = button.getAttribute("data-jump");
+        const page = [...book.querySelectorAll(".page")]
+          .find(item => item.innerText.includes(`المستوى: ${level}`));
+        if (page) page.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+
+    document.getElementById("openControlPanel").addEventListener("click", openControlPanel);
+    document.getElementById("closeControlPanel").addEventListener("click", closeControlPanel);
+
+    document.getElementById("editToggle").addEventListener("click", () => {
+      setEditMode(!document.body.classList.contains("edit-enabled"));
+    });
+
+    document.getElementById("saveEdits").addEventListener("click", () => {
+      applyDistributionToBook();
+      storage.set(storageKey, book.innerHTML);
+      setSaveStatus("تم حفظ التعديلات");
+    });
+
+    document.getElementById("resetEdits").addEventListener("click", () => {
+      if (!confirm("هل تريد استرجاع النسخة الأصلية؟ سيتم حذف التعديلات المحفوظة داخل هذا المتصفح.")) return;
+      storage.remove(storageKey);
+      book.innerHTML = generatedBookHtml;
+      setEditMode(false);
+      setSaveStatus("تم استرجاع النسخة الأصلية");
+    });
+
+    document.getElementById("addDocument").addEventListener("click", () => {
+      const title = document.getElementById("docTitle").value.trim();
+      const type = document.getElementById("docType").value;
+      const date = document.getElementById("docDate").value.trim();
+      const source = document.getElementById("docSource").value.trim();
+      const notes = document.getElementById("docNotes").value.trim();
+
+      if (!title && !source) {
+        setSaveStatus("أدخل عنواناً أو مصدراً للوثيقة");
+        return;
+      }
+
+      const documents = getDocuments();
+      documents.push({ title, type, date, source, notes, addedAt: new Date().toISOString() });
+      saveDocuments(documents);
+      clearDocumentForm();
+      renderDocuments();
+      setSaveStatus("تمت إضافة الوثيقة");
+    });
+
+    document.getElementById("clearDocumentForm").addEventListener("click", clearDocumentForm);
+
+    document.querySelectorAll("[data-distribution]").forEach(button => {
+      button.addEventListener("click", () => {
+        renderControlDistribution(button.getAttribute("data-distribution"));
+      });
+    });
+
+    setEditMode(false);
+    renderControlSchedule();
+    renderControlHolidays();
+    renderControlDistribution("الأولى إعدادي");
+    renderDocuments();
+  </script>
+</body>
+</html>

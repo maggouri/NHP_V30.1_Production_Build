@@ -1,0 +1,276 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2200" height="1700" viewBox="0 0 2200 1700">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#07111f"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="root" x1="0" x2="1">
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+    <style>
+      text {
+        font-family: "Tajawal", "Segoe UI", Arial, sans-serif;
+        fill: #eef2ff;
+      }
+      .title {
+        font-size: 34px;
+        font-weight: 700;
+      }
+      .subtitle {
+        font-size: 18px;
+        fill: #cbd5e1;
+      }
+      .section-title {
+        font-size: 24px;
+        font-weight: 700;
+      }
+      .box-title {
+        font-size: 18px;
+        font-weight: 700;
+      }
+      .box-text {
+        font-size: 14px;
+        fill: #dbe4ff;
+      }
+      .line {
+        stroke: rgba(255,255,255,0.18);
+        stroke-width: 3;
+      }
+      .soft {
+        fill: rgba(255,255,255,0.04);
+        stroke: rgba(255,255,255,0.14);
+        stroke-width: 2;
+      }
+    </style>
+  </defs>
+
+  <rect width="2200" height="1700" fill="url(#bg)"/>
+
+  <rect x="760" y="40" rx="28" ry="28" width="680" height="110" fill="url(#root)" opacity="0.95"/>
+  <text x="1100" y="88" text-anchor="middle" class="title">Niche Hunter Pro v30.1</text>
+  <text x="1100" y="122" text-anchor="middle" class="subtitle">خطاطة شاملة لوظائف الإضافة</text>
+
+  <line x1="1100" y1="150" x2="360" y2="220" class="line"/>
+  <line x1="1100" y1="150" x2="980" y2="220" class="line"/>
+  <line x1="1100" y1="150" x2="1460" y2="220" class="line"/>
+  <line x1="1100" y1="150" x2="1840" y2="220" class="line"/>
+
+  <rect x="70" y="220" rx="24" ry="24" width="580" height="1380" fill="rgba(79,70,229,0.08)" stroke="rgba(99,102,241,0.28)" stroke-width="3"/>
+  <text x="360" y="270" text-anchor="middle" class="section-title">واجهة الإضافة Popup</text>
+
+  <rect x="760" y="220" rx="24" ry="24" width="440" height="1380" fill="rgba(236,72,153,0.08)" stroke="rgba(236,72,153,0.28)" stroke-width="3"/>
+  <text x="980" y="270" text-anchor="middle" class="section-title">خدمات الخلفية</text>
+
+  <rect x="1280" y="220" rx="24" ry="24" width="540" height="780" fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.28)" stroke-width="3"/>
+  <text x="1550" y="270" text-anchor="middle" class="section-title">الحقن داخل المواقع</text>
+
+  <rect x="1280" y="1040" rx="24" ry="24" width="540" height="560" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.28)" stroke-width="3"/>
+  <text x="1550" y="1090" text-anchor="middle" class="section-title">الخادم المحلي والتخزين</text>
+
+  <rect x="1870" y="220" rx="24" ry="24" width="250" height="1380" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.28)" stroke-width="3"/>
+  <text x="1995" y="270" text-anchor="middle" class="section-title">المنصات</text>
+
+  <g transform="translate(100,300)">
+    <rect class="soft" x="0" y="0" rx="16" ry="16" width="520" height="88"/>
+    <text x="260" y="28" text-anchor="middle" class="box-title">Trends</text>
+    <text x="260" y="52" text-anchor="middle" class="box-text">جلب ترندات TeePublic</text>
+    <text x="260" y="72" text-anchor="middle" class="box-text">تحليل AI وتشغيل المسار الكامل</text>
+
+    <rect class="soft" x="0" y="102" rx="16" ry="16" width="520" height="88"/>
+    <text x="260" y="130" text-anchor="middle" class="box-title">TMHunt Bulk</text>
+    <text x="260" y="154" text-anchor="middle" class="box-text">فحص جماعي للنِّتشات</text>
+    <text x="260" y="174" text-anchor="middle" class="box-text">تصنيف آمن أو مقيّد وتصدير</text>
+
+    <rect class="soft" x="0" y="204" rx="16" ry="16" width="520" height="88"/>
+    <text x="260" y="232" text-anchor="middle" class="box-title">USPTO</text>
+    <text x="260" y="256" text-anchor="middle" class="box-text">فحص العلامات التجارية</text>
+    <text x="260" y="276" text-anchor="middle" class="box-text">آمن أو محظور مع نقل وتصدير</text>
+
+    <rect class="soft" x="0" y="306" rx="16" ry="16" width="520" height="88"/>
+    <text x="260" y="334" text-anchor="middle" class="box-title">Analysis</text>
+    <text x="260" y="358" text-anchor="middle" class="box-text">تحليل منافسة TeePublic</text>
+    <text x="260" y="378" text-anchor="middle" class="box-text">ممتاز أو متوسط أو مشبع أو غير معروف</text>
+
+    <rect class="soft" x="0" y="408" rx="16" ry="16" width="520" height="88"/>
+    <text x="260" y="436" text-anchor="middle" class="box-title">Note</text>
+    <text x="260" y="460" text-anchor="middle" class="box-text">مفكرة النِّتشات والبحث والسجل</text>
+    <text x="260" y="480" text-anchor="middle" class="box-text">استيراد وتصدير</text>
+
+    <rect class="soft" x="0" y="510" rx="16" ry="16" width="520" height="108"/>
+    <text x="260" y="538" text-anchor="middle" class="box-title">Studio Pipeline</text>
+    <text x="260" y="562" text-anchor="middle" class="box-text">Gemini Designer و Imitation</text>
+    <text x="260" y="582" text-anchor="middle" class="box-text">Peel Banana و TeeMaster و Smart Renamer</text>
+    <text x="260" y="602" text-anchor="middle" class="box-text">لقطات شاشة وتسجيل ورسم</text>
+
+    <rect class="soft" x="0" y="632" rx="16" ry="16" width="520" height="88"/>
+    <text x="260" y="660" text-anchor="middle" class="box-title">Radar</text>
+    <text x="260" y="684" text-anchor="middle" class="box-text">Rising Star Scan و Hunter</text>
+    <text x="260" y="704" text-anchor="middle" class="box-text">Related Tags و AI Insights</text>
+
+    <rect class="soft" x="0" y="734" rx="16" ry="16" width="520" height="108"/>
+    <text x="260" y="762" text-anchor="middle" class="box-title">SEO AI</text>
+    <text x="260" y="786" text-anchor="middle" class="box-text">رفع جماعي وتوليد Title Tags Description</text>
+    <text x="260" y="806" text-anchor="middle" class="box-text">تدقيق جمالي وتطبيق جماعي</text>
+    <text x="260" y="826" text-anchor="middle" class="box-text">رفع تلقائي إلى TeePublic</text>
+
+    <rect class="soft" x="0" y="856" rx="16" ry="16" width="520" height="128"/>
+    <text x="260" y="884" text-anchor="middle" class="box-title">Autopilot</text>
+    <text x="260" y="908" text-anchor="middle" class="box-text">طابور التصاميم والألبومات والمجموعات</text>
+    <text x="260" y="928" text-anchor="middle" class="box-text">إدارة حسابات TeePublic و Redbubble و Amazon</text>
+    <text x="260" y="948" text-anchor="middle" class="box-text">حصص يومية وبروكسي ورفع متعدد</text>
+    <text x="260" y="968" text-anchor="middle" class="box-text">تصدير واستيراد جلسات وحسابات</text>
+
+    <rect class="soft" x="0" y="998" rx="16" ry="16" width="520" height="108"/>
+    <text x="260" y="1026" text-anchor="middle" class="box-title">Admin</text>
+    <text x="260" y="1050" text-anchor="middle" class="box-text">تسجيل دخول ومزامنة GitHub ومحلية</text>
+    <text x="260" y="1070" text-anchor="middle" class="box-text">Workspace ومكتبة التصاميم وأدوات سريعة</text>
+    <text x="260" y="1090" text-anchor="middle" class="box-text">تفعيل مراحل Pipeline</text>
+
+    <rect class="soft" x="0" y="1120" rx="16" ry="16" width="520" height="108"/>
+    <text x="260" y="1148" text-anchor="middle" class="box-title">Social</text>
+    <text x="260" y="1172" text-anchor="middle" class="box-text">منشورات Facebook بالذكاء الاصطناعي</text>
+    <text x="260" y="1192" text-anchor="middle" class="box-text">نشر على Facebook و Pinterest</text>
+    <text x="260" y="1212" text-anchor="middle" class="box-text">UI Bot و AI Agent و AI Pilot</text>
+
+    <rect class="soft" x="0" y="1242" rx="16" ry="16" width="520" height="108"/>
+    <text x="260" y="1270" text-anchor="middle" class="box-title">Redbubble + Amazon Hubs</text>
+    <text x="260" y="1294" text-anchor="middle" class="box-text">قراءة طابور SEO المشترك</text>
+    <text x="260" y="1314" text-anchor="middle" class="box-text">تحرير بيانات المنصات وفتح مدير الرفع</text>
+    <text x="260" y="1334" text-anchor="middle" class="box-text">أدوات Amazon: Normal / Pro / Filters / BSR</text>
+  </g>
+
+  <g transform="translate(790,300)">
+    <rect class="soft" x="0" y="0" rx="16" ry="16" width="380" height="88"/>
+    <text x="190" y="28" text-anchor="middle" class="box-title">Pipeline تلقائي</text>
+    <text x="190" y="52" text-anchor="middle" class="box-text">Trends → TMHunt → USPTO</text>
+    <text x="190" y="72" text-anchor="middle" class="box-text">→ TeePublic Analysis</text>
+
+    <rect class="soft" x="0" y="102" rx="16" ry="16" width="380" height="88"/>
+    <text x="190" y="130" text-anchor="middle" class="box-title">Niche Memory + Archive</text>
+    <text x="190" y="154" text-anchor="middle" class="box-text">استرجاع النتائج السابقة</text>
+    <text x="190" y="174" text-anchor="middle" class="box-text">Snapshots وأرشفة يومية</text>
+
+    <rect class="soft" x="0" y="204" rx="16" ry="16" width="380" height="88"/>
+    <text x="190" y="232" text-anchor="middle" class="box-title">Context Menu</text>
+    <text x="190" y="256" text-anchor="middle" class="box-text">إرسال صورة إلى Gemini</text>
+    <text x="190" y="276" text-anchor="middle" class="box-text">تشغيل Screen Recorder</text>
+
+    <rect class="soft" x="0" y="306" rx="16" ry="16" width="380" height="108"/>
+    <text x="190" y="334" text-anchor="middle" class="box-title">Screen Engine</text>
+    <text x="190" y="358" text-anchor="middle" class="box-text">Visible / Selected / Full Page</text>
+    <text x="190" y="378" text-anchor="middle" class="box-text">قص وتجميع وتنزيل</text>
+    <text x="190" y="398" text-anchor="middle" class="box-text">اختصارات لوحة المفاتيح</text>
+
+    <rect class="soft" x="0" y="428" rx="16" ry="16" width="380" height="88"/>
+    <text x="190" y="456" text-anchor="middle" class="box-title">Gemini Bridge</text>
+    <text x="190" y="480" text-anchor="middle" class="box-text">فتح Gemini تلقائيًا</text>
+    <text x="190" y="500" text-anchor="middle" class="box-text">اعتراض التنزيلات وإرسالها إلى Studio</text>
+
+    <rect class="soft" x="0" y="530" rx="16" ry="16" width="380" height="88"/>
+    <text x="190" y="558" text-anchor="middle" class="box-title">Facebook Publisher</text>
+    <text x="190" y="582" text-anchor="middle" class="box-text">نشر الصور والمنشورات</text>
+    <text x="190" y="602" text-anchor="middle" class="box-text">عبر Graph API</text>
+
+    <rect class="soft" x="0" y="632" rx="16" ry="16" width="380" height="88"/>
+    <text x="190" y="660" text-anchor="middle" class="box-title">Ghost Server Launcher</text>
+    <text x="190" y="684" text-anchor="middle" class="box-text">تشغيل الخادم المحلي</text>
+    <text x="190" y="704" text-anchor="middle" class="box-text">وإدارة منافذ المنصات</text>
+
+    <rect class="soft" x="0" y="734" rx="16" ry="16" width="380" height="88"/>
+    <text x="190" y="762" text-anchor="middle" class="box-title">Chrome Storage + IndexedDB</text>
+    <text x="190" y="786" text-anchor="middle" class="box-text">طوابير التصاميم والحالة</text>
+    <text x="190" y="806" text-anchor="middle" class="box-text">ومعاينات الصور والبيانات</text>
+  </g>
+
+  <g transform="translate(1310,300)">
+    <rect class="soft" x="0" y="0" rx="16" ry="16" width="480" height="88"/>
+    <text x="240" y="28" text-anchor="middle" class="box-title">USPTO Injector</text>
+    <text x="240" y="52" text-anchor="middle" class="box-text">تجهيز الصفحة وقراءة نتيجة الفحص</text>
+    <text x="240" y="72" text-anchor="middle" class="box-text">وإبلاغ الخلفية عند الجاهزية</text>
+
+    <rect class="soft" x="0" y="102" rx="16" ry="16" width="480" height="108"/>
+    <text x="240" y="130" text-anchor="middle" class="box-title">TeePublic Injector</text>
+    <text x="240" y="154" text-anchor="middle" class="box-text">تعبئة نموذج الرفع وتسجيل الدخول</text>
+    <text x="240" y="174" text-anchor="middle" class="box-text">رفع التصميم ومؤشر تقدم مباشر</text>
+    <text x="240" y="194" text-anchor="middle" class="box-text">حقن main_inject.js لتجاوز قيود الصفحة</text>
+
+    <rect class="soft" x="0" y="224" rx="16" ry="16" width="480" height="88"/>
+    <text x="240" y="252" text-anchor="middle" class="box-title">Gemini Injector</text>
+    <text x="240" y="276" text-anchor="middle" class="box-text">استقبال الصورة والبرومبت</text>
+    <text x="240" y="296" text-anchor="middle" class="box-text">وتنفيذ التشغيل التلقائي</text>
+
+    <rect class="soft" x="0" y="326" rx="16" ry="16" width="480" height="88"/>
+    <text x="240" y="354" text-anchor="middle" class="box-title">SEO Artisan</text>
+    <text x="240" y="378" text-anchor="middle" class="box-text">Google و Pinterest و Etsy و TeePublic</text>
+    <text x="240" y="398" text-anchor="middle" class="box-text">مع image injector</text>
+
+    <rect class="soft" x="0" y="428" rx="16" ry="16" width="480" height="88"/>
+    <text x="240" y="456" text-anchor="middle" class="box-title">TMHunt Content Script</text>
+    <text x="240" y="480" text-anchor="middle" class="box-text">تكامل الفحص من داخل tmhunt.com</text>
+    <text x="240" y="500" text-anchor="middle" class="box-text">واستخراج النتائج</text>
+
+    <rect class="soft" x="0" y="530" rx="16" ry="16" width="480" height="108"/>
+    <text x="240" y="558" text-anchor="middle" class="box-title">MerchGhost Injectors</text>
+    <text x="240" y="582" text-anchor="middle" class="box-text">Amazon Suggestions / Filters / BSR / Scraper</text>
+    <text x="240" y="602" text-anchor="middle" class="box-text">Redbubble helpers</text>
+    <text x="240" y="622" text-anchor="middle" class="box-text">TeePublic uploader bridge</text>
+  </g>
+
+  <g transform="translate(1310,1120)">
+    <rect class="soft" x="0" y="0" rx="16" ry="16" width="480" height="88"/>
+    <text x="240" y="28" text-anchor="middle" class="box-title">Ghost Server</text>
+    <text x="240" y="52" text-anchor="middle" class="box-text">Express + Puppeteer</text>
+    <text x="240" y="72" text-anchor="middle" class="box-text">بروفايلات محلية لكل حساب</text>
+
+    <rect class="soft" x="0" y="102" rx="16" ry="16" width="480" height="88"/>
+    <text x="240" y="130" text-anchor="middle" class="box-title">Upload Automation</text>
+    <text x="240" y="154" text-anchor="middle" class="box-text">رفع تلقائي للمنصات</text>
+    <text x="240" y="174" text-anchor="middle" class="box-text">وتعبئة SEO بالتسلسل</text>
+
+    <rect class="soft" x="0" y="204" rx="16" ry="16" width="480" height="88"/>
+    <text x="240" y="232" text-anchor="middle" class="box-title">Profiles Backup</text>
+    <text x="240" y="256" text-anchor="middle" class="box-text">تصدير واستعادة الجلسات</text>
+    <text x="240" y="276" text-anchor="middle" class="box-text">مع Safety Backup تلقائي</text>
+
+    <rect class="soft" x="0" y="306" rx="16" ry="16" width="480" height="88"/>
+    <text x="240" y="334" text-anchor="middle" class="box-title">Niche Memory + Archive</text>
+    <text x="240" y="358" text-anchor="middle" class="box-text">حفظ الذاكرة والأرشيف والنسخ الاحتياطية</text>
+    <text x="240" y="378" text-anchor="middle" class="box-text">Trend Snapshots يومية</text>
+
+    <rect class="soft" x="0" y="408" rx="16" ry="16" width="480" height="88"/>
+    <text x="240" y="436" text-anchor="middle" class="box-title">Storage Folders</text>
+    <text x="240" y="460" text-anchor="middle" class="box-text">server_profiles / profile_backups</text>
+    <text x="240" y="480" text-anchor="middle" class="box-text">metadata_store / server_logs</text>
+  </g>
+
+  <g transform="translate(1895,320)">
+    <rect class="soft" x="0" y="0" rx="16" ry="16" width="200" height="70"/>
+    <text x="100" y="28" text-anchor="middle" class="box-title">Gemini</text>
+    <text x="100" y="52" text-anchor="middle" class="box-text">API + Web</text>
+
+    <rect class="soft" x="0" y="90" rx="16" ry="16" width="200" height="70"/>
+    <text x="100" y="132" text-anchor="middle" class="box-title">TeePublic</text>
+
+    <rect class="soft" x="0" y="180" rx="16" ry="16" width="200" height="70"/>
+    <text x="100" y="222" text-anchor="middle" class="box-title">USPTO</text>
+
+    <rect class="soft" x="0" y="270" rx="16" ry="16" width="200" height="70"/>
+    <text x="100" y="312" text-anchor="middle" class="box-title">TMHunt</text>
+
+    <rect class="soft" x="0" y="360" rx="16" ry="16" width="200" height="70"/>
+    <text x="100" y="402" text-anchor="middle" class="box-title">Facebook</text>
+
+    <rect class="soft" x="0" y="450" rx="16" ry="16" width="200" height="70"/>
+    <text x="100" y="492" text-anchor="middle" class="box-title">Pinterest</text>
+
+    <rect class="soft" x="0" y="540" rx="16" ry="16" width="200" height="70"/>
+    <text x="100" y="582" text-anchor="middle" class="box-title">GitHub Sync</text>
+
+    <rect class="soft" x="0" y="630" rx="16" ry="16" width="200" height="70"/>
+    <text x="100" y="672" text-anchor="middle" class="box-title">Redbubble</text>
+
+    <rect class="soft" x="0" y="720" rx="16" ry="16" width="200" height="70"/>
+    <text x="100" y="762" text-anchor="middle" class="box-title">Amazon Merch</text>
+  </g>
+</svg>

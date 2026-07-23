@@ -1,0 +1,63 @@
+﻿# Dependencies
+node_modules/
+
+# Secrets & local env
+.env
+.env.*
+addon/cliproxyapi-local/config.yaml
+addon/cliproxyapi-local/auths/
+addon/cliproxyapi-local/cli-proxy-api.exe
+addon/cliproxyapi-local/*.exe
+utils/nhp-cliproxy-management.local.js
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Build outputs
+dist/
+build/
+
+# IDE / OS
+.vs/
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+server_logs/
+
+# Temp uploads & large local backups (keep repo lean)
+temp_uploads/
+generated_designs/
+temp_uploads_ai_bridge/
+temp_uploads_pinterest/
+profile_backups/
+profile_backups_pinterest/
+shortcut_backups_*/
+chrome_extension_fix_backup_*/
+
+# Browser/server local profiles (sensitive & huge)
+server_profiles/
+server_profiles_pinterest/
+server_profiles_creaty/
+server_profiles_creaty_preview/
+
+# Local metadata & temp screenshots
+metadata_store/
+tmp-*.png
+*.reg
+
+# Nested review clone (use submodule later if needed)
+.review-al-mahir-platform/
+
+# Nested CLIProxyAPI (separate repo)
+CLIProxyAPI-main/
+
+# Chrome extension load: never commit underscore-prefixed files in extension root (use server_logs/ or scripts/ instead)
+# Chrome MV3: filenames starting with "_" block "Load unpacked" except _locales and _metadata
+/_*.log
+/_*.py
+/_restart*
+tools/__pycache__/
+metadata_store/**/_ruleset*

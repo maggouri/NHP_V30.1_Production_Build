@@ -1,0 +1,249 @@
+.pnggen-root {
+  min-height: 100%;
+  color: var(--text);
+  padding: 14px;
+  background: #070a10;
+}
+
+.pnggen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.pnggen-kicker {
+  color: #38bdf8;
+  font-size: 11px;
+  font-weight: 800;
+  margin: 0 0 2px;
+}
+
+.pnggen-header h2 {
+  font-size: 22px;
+  font-weight: 900;
+  margin: 0;
+  color: #f8fafc;
+  letter-spacing: 0;
+}
+
+.pnggen-pill {
+  background: rgba(20, 184, 166, 0.14);
+  border: 1px solid rgba(45, 212, 191, 0.3);
+  color: #99f6e4;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.pnggen-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 340px) minmax(320px, 1fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.pnggen-panel {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.pnggen-panel-title {
+  color: #e2e8f0;
+  font-weight: 900;
+  font-size: 13px;
+  margin-bottom: 9px;
+}
+
+.pnggen-drop {
+  display: grid;
+  place-items: center;
+  min-height: 88px;
+  padding: 12px;
+  border: 1px dashed rgba(56, 189, 248, 0.38);
+  border-radius: 8px;
+  color: #93c5fd;
+  background: rgba(2, 6, 23, 0.52);
+  cursor: pointer;
+  text-align: center;
+  font-size: 12px;
+}
+
+.pnggen-drop.is-drag {
+  border-color: #2dd4bf;
+  background: rgba(20, 184, 166, 0.1);
+}
+
+.pnggen-drop input {
+  display: none;
+}
+
+.pnggen-preview {
+  margin-top: 10px;
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 8px;
+  background: #020617;
+  color: #64748b;
+  overflow: hidden;
+  text-align: center;
+  padding: 8px;
+  font-size: 12px;
+}
+
+.pnggen-preview img {
+  max-width: 100%;
+  max-height: 230px;
+  object-fit: contain;
+}
+
+.pnggen-control-panel textarea,
+.pnggen-control-panel input,
+.pnggen-control-panel select {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: #020617;
+  color: #e5e7eb;
+  border-radius: 7px;
+  padding: 9px;
+  outline: none;
+  font-size: 13px;
+}
+
+.pnggen-control-panel textarea {
+  resize: vertical;
+  min-height: 130px;
+}
+
+.pnggen-settings {
+  display: grid;
+  grid-template-columns: 1fr 120px 150px;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+.pnggen-settings-keys {
+  grid-template-columns: 1fr 1fr;
+}
+
+.pnggen-settings label span {
+  display: block;
+  color: #94a3b8;
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.pnggen-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.pnggen-btn {
+  border: 1px solid transparent;
+  border-radius: 7px;
+  min-height: 34px;
+  padding: 0 12px;
+  font-weight: 900;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.pnggen-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.pnggen-btn-primary {
+  background: #10b981;
+  color: #02130d;
+}
+
+.pnggen-btn-muted {
+  background: rgba(15, 23, 42, 0.9);
+  border-color: rgba(148, 163, 184, 0.22);
+  color: #cbd5e1;
+}
+
+.pnggen-status {
+  min-height: 18px;
+  color: #94a3b8;
+  font-size: 12px;
+  margin-top: 10px;
+}
+
+.pnggen-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.pnggen-result-card {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 8px;
+  background: #0f172a;
+  padding: 8px;
+}
+
+.pnggen-result-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  background: #000;
+  border-radius: 6px;
+}
+
+.pnggen-result-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.pnggen-scroll-tools {
+  position: sticky;
+  bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 44px;
+  margin-top: 12px;
+  margin-right: auto;
+  z-index: 5;
+}
+
+.pnggen-scroll-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(2, 6, 23, 0.72);
+  color: #e2e8f0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.pnggen-scroll-btn:hover {
+  background: rgba(15, 23, 42, 0.92);
+}
+
+@media (max-width: 820px) {
+  .pnggen-layout,
+  .pnggen-settings {
+    grid-template-columns: 1fr;
+  }
+}

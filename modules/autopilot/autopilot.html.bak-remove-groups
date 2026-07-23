@@ -1,0 +1,655 @@
+<!-- 1. إدارة التصاميم (Design Queue) -->
+<div class="ap-one-screen-grid">
+<div class="glass-card mb-4 ap-block ap-block-queue">
+    <div class="ap-queue-toolbar ap-compact-topbar">
+        <div class="ap-queue-title ap-compact-title">
+            <i class="fa-solid fa-images text-primary"></i>
+            <span>إدارة الرفع الجماعي</span>
+        </div>
+        <div class="ap-queue-actions ap-compact-topbar-actions">
+            <input type="file" id="ap-image-upload" accept="image/*" class="hidden" multiple>
+            <span class="ap-queue-count-pill" id="ap-queue-count">0 ملفات</span>
+            <button id="ap-upload-trigger" class="ap-queue-upload-btn ap-icon-btn" type="button" title="رفع التصاميم">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+            </button>
+            <button id="ap-clear-queue-btn" class="ap-queue-clear-btn ap-icon-btn" title="مسح الكل" type="button">
+                <i class="fa-solid fa-trash"></i>
+            </button>
+            <button id="ap-goto-seo" class="ap-icon-btn" title="الانتقال إلى محرك SEO" type="button">
+                <i class="fa-solid fa-brain"></i>
+            </button>
+        </div>
+    </div>
+
+    <div id="ap-queue-container" class="hidden mt-2 p-2 bg-black/20 rounded-lg border border-white/5">
+        <div id="ap-queue" class="queue-grid">
+            <!-- سيتم حقن التصاميم هنا -->
+        </div>
+    </div>
+</div>
+
+<!-- ═══ Middle column: Groups + Tabbed accounts ═══ -->
+<div class="ap-middle-column">
+<!-- ═══ v15.0 — Album Groups ═══ -->
+<div class="glass-card mb-4 ap-block ap-block-groups" id="ap-groups-card">
+    <div class="flex items-center justify-between mb-2">
+        <h3 class="text-sm font-bold flex items-center gap-2 ap-compact-section-title">
+            <i class="fa-solid fa-layer-group" style="color:#a855f7"></i>
+            مجموعات الحسابات (Albums)
+        </h3>
+        <button id="ap-new-group-btn" class="ap-icon-btn" title="مجموعة جديدة">
+            <i class="fa-solid fa-plus text-[0.625rem]"></i>
+        </button>
+    </div>
+
+    <!-- Create/Edit Group Form -->
+    <div id="ap-group-form" class="hidden mb-2 p-2 rounded-xl"
+         style="background:rgba(168,85,247,0.07);border:1px solid rgba(168,85,247,0.25);">
+        <input type="hidden" id="ap-group-edit-id">
+        <div class="flex gap-2 mb-2">
+            <input type="text" id="ap-group-emoji" class="modern-input text-center" maxlength="2"
+                   placeholder="🎯" style="width:2.75rem;flex-shrink:0;font-size:1.125rem;">
+            <input type="text" id="ap-group-name" class="modern-input text-[0.6875rem] flex-1"
+                   placeholder="اسم المجموعة (مثال: Pets & Animals)">
+            <select id="ap-group-color" class="modern-input text-[0.5625rem] bg-bg" style="width:5.3125rem;flex-shrink:0;">
+                <option value="#a855f7">بنفسجي 💜</option>
+                <option value="#6366f1">نيلي 💙</option>
+                <option value="#10B981">أخضر 💚</option>
+                <option value="#F59E0B">ذهبي 🌟</option>
+                <option value="#EC4899">وردي 💗</option>
+                <option value="#EF4444">أحمر ❤️</option>
+                <option value="#06B6D4">سماوي 🩵</option>
+            </select>
+        </div>
+        <input type="text" id="ap-group-desc" class="modern-input text-[0.625rem] mb-2 w-full"
+               placeholder="وصف مختصر للمجموعة (اختياري)">
+        <div class="flex gap-2">
+            <button id="ap-group-save-btn" class="action-btn action-btn-primary flex-1 py-1.5 text-[0.625rem]"
+                style="background:linear-gradient(135deg,#a855f7,#6366f1);">
+                <i class="fa-solid fa-save"></i> حفظ المجموعة
+            </button>
+            <button id="ap-group-cancel-btn" class="btn border border-border bg-surface2 text-[0.5625rem] px-4">إلغاء</button>
+        </div>
+    </div>
+
+    <!-- Albums Grid -->
+    <div id="ap-groups-grid" class="ap-groups-tabs" aria-label="مجموعات الحسابات"></div>
+
+    <!-- Active Filter Bar -->
+    <div id="ap-group-filter-bar" class="hidden mt-3 flex items-center gap-2 p-2 rounded-lg"
+         style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.25);">
+        <i class="fa-solid fa-filter text-[0.5625rem]" style="color:#a855f7;"></i>
+        <span class="text-[0.5625rem] text-slate-400">يعرض:</span>
+        <span id="ap-active-group-label" class="text-[0.625rem] font-black" style="color:#a855f7;"></span>
+        <button id="ap-clear-filter-btn"
+            style="margin-right:auto;font-size:0.5rem;color:#6B7280;background:none;border:none;
+                   cursor:pointer;font-family:'Tajawal',sans-serif;display:flex;align-items:center;gap:0.1875rem;">
+            <i class="fa-solid fa-xmark"></i> عرض الكل
+        </button>
+    </div>
+</div>
+
+<div class="glass-card mb-4 ap-block ap-accounts-hub" id="ap-accounts-hub">
+    <div class="ap-main-tabs-header" role="tablist" aria-label="إدارة الحسابات">
+        <button type="button" id="ap-main-tab-list-btn" class="ap-tab-pill ap-tab-pill-list is-active" role="tab" aria-selected="true" aria-controls="ap-main-tab-panel-list">قائمة الحسابات</button>
+        <button type="button" id="ap-main-tab-details-btn" class="ap-tab-pill ap-tab-pill-details" role="tab" aria-selected="false" aria-controls="ap-main-tab-panel-details">تفاصيل الحساب</button>
+    </div>
+
+    <div id="ap-main-tab-panel-list" class="ap-main-tab-panel is-active" role="tabpanel">
+    <div class="ap-accounts-section ap-accounts-list-section">
+        <style>
+            /* Styling for the sub-tabs */
+            .ap-accounts-tabs-header {
+                display: flex;
+                gap: 0.375rem;
+                margin-bottom: 0.5rem;
+            }
+            .ap-tab-pill {
+                flex: 1;
+                padding: 0.375rem 0.5rem;
+                font-size: 0.6875rem;
+                font-weight: 700;
+                border-radius: 0.375rem;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.15s ease;
+                background: rgba(15, 12, 35, 0.45);
+                border: 1px solid rgba(148, 163, 184, 0.15);
+                color: #94a3b8;
+            }
+            .ap-tab-pill:hover {
+                background: rgba(255, 255, 255, 0.05);
+                color: #e2e8f0;
+            }
+            .ap-tab-pill.is-active.ap-tab-pill-creaty {
+                background: rgba(168, 85, 247, 0.15);
+                border-color: rgba(168, 85, 247, 0.4);
+                color: #d8b4fe;
+            }
+            .ap-tab-pill.is-active.ap-tab-pill-normal {
+                background: rgba(99, 102, 241, 0.15);
+                border-color: rgba(99, 102, 241, 0.4);
+                color: #c7d2fe;
+            }
+            .ap-tab-pill .badge {
+                padding: 0.125rem 0.3125rem;
+                font-size: 0.5625rem;
+                border-radius: 0.25rem;
+                margin-inline-start: 0.25rem;
+            }
+            .ap-tab-pill-creaty .badge {
+                background: rgba(168, 85, 247, 0.25);
+                color: #e9d5ff;
+            }
+            .ap-tab-pill-normal .badge {
+                background: rgba(99, 102, 241, 0.25);
+                color: #e0e7ff;
+            }
+            
+            /* Operation location selector styling */
+            .operation-selector-wrap {
+                background: rgba(15, 12, 35, 0.6);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 0.5rem;
+                padding: 0.5rem;
+                margin-bottom: 0.5rem;
+            }
+            .operation-selector-wrap label {
+                display: block;
+                font-size: 0.625rem;
+                font-weight: 700;
+                color: #a7f3d0;
+                margin-bottom: 0.25rem;
+            }
+            
+            /* Toolbar buttons styling */
+            .ap-toolbar-buttons {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0.25rem;
+                margin-bottom: 0.5rem;
+            }
+            .ap-toolbar-buttons button {
+                padding: 0.375rem 0.25rem;
+                font-size: 0.625rem;
+                font-weight: 700;
+                border-radius: 0.375rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.25rem;
+                cursor: pointer;
+                transition: all 0.12s ease;
+                border: 1px solid transparent;
+            }
+            
+            .btn-action-copy {
+                background: rgba(99, 102, 241, 0.12);
+                border-color: rgba(99, 102, 241, 0.25);
+                color: #c7d2fe;
+            }
+            .btn-action-copy:hover {
+                background: rgba(99, 102, 241, 0.25);
+            }
+            
+            .btn-action-import {
+                background: rgba(168, 85, 247, 0.12);
+                border-color: rgba(168, 85, 247, 0.25);
+                color: #d8b4fe;
+            }
+            .btn-action-import:hover {
+                background: rgba(168, 85, 247, 0.25);
+            }
+            
+            .btn-action-add {
+                background: rgba(16, 185, 129, 0.12);
+                border-color: rgba(16, 185, 129, 0.25);
+                color: #a7f3d0;
+            }
+            .btn-action-add:hover {
+                background: rgba(16, 185, 129, 0.25);
+            }
+            
+            .btn-action-remove {
+                background: rgba(239, 68, 68, 0.12);
+                border-color: rgba(239, 68, 68, 0.25);
+                color: #fca5a5;
+            }
+            .btn-action-remove:hover {
+                background: rgba(239, 68, 68, 0.25);
+            }
+            
+            .btn-action-upload {
+                background: rgba(245, 158, 11, 0.12);
+                border-color: rgba(245, 158, 11, 0.25);
+                color: #fde68a;
+            }
+            .btn-action-upload:hover {
+                background: rgba(245, 158, 11, 0.25);
+            }
+            
+            .btn-action-backup {
+                background: rgba(100, 116, 139, 0.12);
+                border-color: rgba(100, 116, 139, 0.25);
+                color: #cbd5e1;
+            }
+            .btn-action-backup:hover {
+                background: rgba(100, 116, 139, 0.25);
+            }
+        </style>
+
+        <!-- Sub-tabs for Admin Tab -->
+        <div class="ap-accounts-tabs-header">
+            <button type="button" id="admin-tab-creaty-btn" class="ap-tab-pill ap-tab-pill-creaty is-active">
+                CREATY <span id="admin-creaty-count" class="badge">0</span>
+            </button>
+            <button type="button" id="admin-tab-normal-btn" class="ap-tab-pill ap-tab-pill-normal">
+                Normal <span id="admin-normal-count" class="badge">0</span>
+            </button>
+        </div>
+
+        <!-- Search input -->
+        <div class="mb-2">
+            <input type="text" id="admin-accounts-search" class="modern-input text-[0.625rem] w-full" placeholder="🔍 بحث في الحسابات...">
+        </div>
+
+        <!-- Operation selector -->
+        <div class="operation-selector-wrap">
+            <label>مصدر العملية / مكان الإضافة</label>
+            <div class="flex gap-2">
+                <select id="operation-location-select" class="modern-input text-[0.6875rem] flex-1 bg-surface2">
+                    <option value="active-tab">التبويب النشط حالياً</option>
+                    <option value="creaty-tab">تبويب CREATY</option>
+                    <option value="normal-tab">تبويب Normal</option>
+                    <option value="existing-group">مجموعة رفع قائمة</option>
+                    <option value="new-group">مجموعة رفع جديدة</option>
+                </select>
+                <select id="operation-group-select" class="modern-input text-[0.6875rem] flex-1 bg-surface2 hidden">
+                    <!-- filled dynamically -->
+                </select>
+                <input type="text" id="operation-new-group-name" class="modern-input text-[0.6875rem] flex-1 hidden" placeholder="اسم المجموعة الجديدة...">
+            </div>
+        </div>
+
+        <!-- Toolbar Buttons -->
+        <div class="ap-toolbar-buttons">
+            <button type="button" class="btn-action-copy" id="btn-op-copy">
+                <i class="fa-solid fa-copy"></i> نسخ
+            </button>
+            <button type="button" class="btn-action-import" id="btn-op-import">
+                <i class="fa-solid fa-file-import"></i> استيراد
+            </button>
+            <button type="button" class="btn-action-add" id="btn-op-add">
+                <i class="fa-solid fa-plus"></i> إضافة
+            </button>
+            <button type="button" class="btn-action-remove" id="btn-op-remove">
+                <i class="fa-solid fa-trash"></i> إزالة
+            </button>
+            <button type="button" class="btn-action-upload" id="btn-op-upload">
+                <i class="fa-solid fa-cloud-arrow-up"></i> رفع
+            </button>
+            <button type="button" class="btn-action-backup" id="btn-op-backup">
+                <i class="fa-solid fa-file-export"></i> تصدير
+            </button>
+        </div>
+
+        <div class="flex items-center justify-between mb-1 px-1" id="ap-accounts-control-bar">
+            <div class="flex items-center gap-1">
+                <label class="flex items-center gap-1 text-[0.625rem] cursor-pointer">
+                    <input type="checkbox" id="admin-accounts-select-all-cb" class="accent-primary w-3.5 h-3.5">
+                    <span>تحديد الكل</span>
+                </label>
+            </div>
+            <span id="ap-selected-count" class="ap-selected-count">
+                0 محدد
+            </span>
+        </div>
+
+        <div class="ap-accounts-list-wrap">
+            <div id="ap-accounts-list" class="ap-accounts-table-body overflow-y-auto pr-1">
+                <div class="text-center py-4 text-xs text-slate-500">لا توجد حسابات مضافة حالياً</div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <div id="ap-main-tab-panel-details" class="ap-main-tab-panel ap-block-accounts" role="tabpanel" hidden>
+    <div class="flex items-center justify-between mb-2">
+        <h3 class="text-sm font-bold flex items-center gap-2 ap-compact-section-title">
+            <i class="fa-solid fa-users-gear text-primary"></i>
+            إدارة الحسابات المتعددة
+        </h3>
+        <select id="ap-platform-select" class="modern-input text-[0.625rem] bg-surface2 w-auto py-1 px-2 border-primary/50 text-white rounded-md cursor-pointer outline-none focus:border-primary transition-colors">
+            <option value="teepublic">TeePublic 👕</option>
+            <option value="redbubble">Redbubble 🔴</option>
+            <option value="amazon">Merch by Amazon 🅰️</option>
+            <option value="pinterest">Pinterest 📌</option>
+        </select>
+    </div>
+
+    <div class="space-y-1 mb-2">
+        <div class="grid ap-input-row-2">
+            <input type="email" id="ap-email" class="modern-input" placeholder="ايميل الحساب">
+            <input type="password" id="ap-pass" class="modern-input" placeholder="كلمة السر">
+        </div>
+        <div class="grid ap-input-row-2">
+            <div class="relative">
+            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[0.625rem] text-slate-600 pointer-events-none">
+                <i class="fa-solid fa-tag"></i>
+            </span>
+            <input type="text" id="ap-display-name" class="modern-input text-[0.625rem]" placeholder="🏷️ اسم مستعار (Alias) — يظهر في القائمة بدل الإيميل (اختياري)" style="padding-right: 1.75rem;">
+            </div>
+            <input type="text" id="ap-proxy" class="modern-input text-[0.625rem]" placeholder="بروكسي (اتركه لجعل الحساب تلقائي)">
+        </div>
+
+        <div class="grid grid-cols-3 gap-1">
+            <input type="number" id="ap-quota" class="modern-input text-[0.625rem]" placeholder="الحد اليومي" value="50">
+            <select id="ap-niche-mapping" class="modern-input text-[0.625rem] bg-bg">
+                <option value="all">كل النيتشات</option>
+                <option value="cats">Cats & Pets</option>
+                <option value="quotes">Quotes & Typography</option>
+                <option value="anime">Anime & Manga</option>
+                <option value="retro">Retro & Vintage</option>
+            </select>
+        </div>
+
+        <!-- Group Assignment (v15.0) -->
+        <div class="relative">
+            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[0.625rem] text-slate-600 pointer-events-none">
+                <i class="fa-solid fa-layer-group"></i>
+            </span>
+            <select id="ap-group-assign" class="modern-input text-[0.625rem] bg-bg" style="padding-right:1.75rem;">
+                <option value="">📦 بدون مجموعة</option>
+                <!-- filled dynamically -->
+            </select>
+        </div>
+
+        <!-- SMART PROXY POOL (Advanced/Automatic) -->
+        <div class="bg-bg/50 border border-border/50 rounded-lg p-2 mt-2">
+            <div class="flex items-center justify-between cursor-pointer" id="toggle-proxy-pool">
+                <span class="text-[0.625rem] font-bold text-slate-400"><i class="fa-solid fa-server"></i> مخزن البروكسيات
+                    التلقائي</span>
+                <i class="fa-solid fa-chevron-down text-[0.5rem] text-slate-500"></i>
+            </div>
+            <div id="proxy-pool-wrap" class="hidden mt-2 space-y-2">
+                <textarea id="ap-proxy-pool" class="modern-input text-[0.625rem] h-16" placeholder="أدخل قائمة البروكسيات هنا (واحد في كل سطر)... 
+ip:port:user:pass"></textarea>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="ap-auto-rotate" class="accent-primary" checked>
+                    <label for="ap-auto-rotate" class="text-[0.5625rem] text-slate-400">تدوير تلقائي عند كل دخول 🔄</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="ap-action-btn-group">
+            <button class="action-btn action-btn-primary py-2 text-xs flex-1" id="ap-add-account" title="التحقق والحفظ">
+                <i class="fa-solid fa-plus-circle"></i> التحقق وحفظ الحساب
+            </button>
+            <button class="btn border border-border bg-surface2 text-[0.5625rem] px-2" id="ap-export-accounts" title="تصدير الحسابات">
+                <i class="fa-solid fa-file-export"></i> تصدير
+            </button>
+            <button class="btn border border-border bg-surface2 text-[0.5625rem] px-2" id="ap-import-accounts" title="استيراد الحسابات">
+                <i class="fa-solid fa-file-import"></i> استيراد
+            </button>
+            <button class="btn border border-red-500/30 bg-red-500/10 text-red-400 text-[0.5625rem] px-2 hover:bg-red-500/20 transition-colors" id="ap-delete-all-accounts" title="حذف كل الحسابات">
+                <i class="fa-solid fa-trash"></i>
+            </button>
+            <button class="btn border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-[0.5625rem] px-2 py-2 hover:bg-emerald-500/20 transition-colors" id="ap-export-session-backup" title="تصدير نسخة احتياطية للجلسات والحسابات">
+                <i class="fa-solid fa-floppy-disk"></i> تصدير الجلسات
+            </button>
+            <button class="btn border border-sky-500/30 bg-sky-500/10 text-sky-300 text-[0.5625rem] px-2 py-2 hover:bg-sky-500/20 transition-colors" id="ap-import-session-backup" title="استيراد نسخة احتياطية للجلسات والحسابات">
+                <i class="fa-solid fa-box-open"></i> استعادة الجلسات
+            </button>
+            <input type="file" id="ap-import-input" accept=".txt" class="hidden">
+        </div>
+        <div class="text-[0.5625rem] text-slate-500 mt-1 leading-4" id="ap-session-backup-note">
+            ينشئ ويستعيد نسخاً احتياطية محلية لجلسات الحسابات مع بيانات Autopilot المرتبطة بها.
+        </div>
+    </div>
+    </div>
+</div>
+</div>
+
+<div id="ap-account-tools-popup" class="ap-account-tools-popup" hidden aria-hidden="true">
+    <div class="ap-tools-backdrop" data-ap-tools-close="1"></div>
+    <div class="ap-tools-panel" role="dialog" aria-labelledby="ap-tools-title">
+        <div class="ap-tools-head">
+            <div>
+                <div id="ap-tools-title" class="ap-tools-title">إعدادات الحساب</div>
+                <div id="ap-tools-email" class="ap-tools-email"></div>
+            </div>
+            <button type="button" class="ap-tools-close" data-ap-tools-close="1" title="إغلاق">×</button>
+        </div>
+        <div class="ap-tools-body">
+            <div class="ap-tools-limits ap-limit-controls">
+                <label>Run
+                    <input type="number" id="ap-tools-batch-limit" class="ap-limit-input ap-batch-limit" min="1" max="50" placeholder="auto">
+                </label>
+                <label>Day
+                    <input type="number" id="ap-tools-daily-limit" class="ap-limit-input ap-daily-limit" min="1" max="500" placeholder="none">
+                </label>
+                <span id="ap-tools-day-used" class="ap-day-used" title="Uploaded today">0</span>
+            </div>
+            <div id="ap-tools-actions" class="ap-tools-actions ap-acc-actions"></div>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card mb-4 ap-block ap-block-settings">
+    <!-- ═══ Ghost Server Status Bar (v13.0) ═══ -->
+    <div class="ap-server-row">
+        <!-- Status Dot + Label -->
+        <div class="flex items-center gap-2">
+            <div id="ap-server-dot"
+                style="width: 0.625rem; height: 0.625rem; border-radius: 50%;
+                       background: radial-gradient(circle, #f87171, #dc2626);
+                       box-shadow: 0 0 8px rgba(248,113,113,0.6);
+                       transition: background 0.4s ease, box-shadow 0.4s ease;"
+                title="Ghost Server: Offline ❌">
+            </div>
+            <div>
+                <div class="text-[0.5625rem] uppercase font-black text-slate-400 tracking-widest">Ghost Server</div>
+                <div id="ap-server-status-text" class="text-[0.625rem] font-bold"
+                    style="color: #f87171;">غير متصل
+                </div>
+            </div>
+        </div>
+        <!-- Wake Up Button -->
+        <div class="flex gap-1">
+            <button id="ap-wakeup-btn" class="btn text-[0.5625rem] px-3 py-1 flex items-center gap-1" title="تشغيل سيرفر TeePublic المحلي عبر ملف الإعداد التلقائي">
+                <i class="fa-solid fa-power-off text-[0.625rem]"></i>
+                تشغيل سيرفر تيبابلك
+            </button>
+            <button id="ap-server-stop-btn" class="btn text-[0.5625rem] px-3 py-1 flex items-center gap-1" title="إيقاف Ghost Server">
+                <i class="fa-solid fa-stop text-[0.625rem]"></i>
+                إيقاف السيرفر
+            </button>
+        </div>
+    </div>
+
+  <!-- محرك SEO الذكي: تبويب SEO AI فقط (لا يُعرض في Automation) -->
+
+    <h3 class="text-sm font-bold mb-3 flex items-center gap-2">
+        <i class="fa-solid fa-sliders text-safe"></i>
+        إعدادات الرفع الجماعي الذكي
+    </h3>
+
+    <div class="grid grid-cols-2 gap-1 mb-2">
+        <div class="field-card">
+            <label class="text-[0.625rem] uppercase font-bold text-slate-400 mb-1 block">عدد التصاميم لكل حساب</label>
+            <input type="number" id="ap-designs-per-account" class="modern-input" value="5" min="1" max="50" title="يُطبَّق تلقائياً على الحسابات المحددة عند تغيير الرقم">
+        </div>
+        <div class="field-card">
+            <label class="text-[0.625rem] uppercase font-bold text-slate-400 mb-1 block">تأخير بين الرفع (ثواني)</label>
+            <input type="number" id="ap-delay" class="modern-input" value="45" min="10" max="300">
+        </div>
+    </div>
+
+    <div class="ap-compact-checks">
+        <div class="flex items-center gap-2">
+            <input type="checkbox" id="ap-visual-mode" class="accent-primary" checked>
+            <label for="ap-visual-mode" class="text-[0.625rem] font-bold text-slate-300">الوضع البصري (فتح التبويبات
+                أمامك)
+                👀</label>
+        </div>
+        <div class="flex items-center gap-2">
+            <input type="checkbox" id="ap-auto-login" class="accent-primary" checked>
+            <label for="ap-auto-login" class="text-[0.625rem] font-bold text-slate-300">دخول آلي 🔐</label>
+        </div>
+    </div>
+
+    <!-- توزيع التصاميم (Circular / Random) v13.0 -->
+    <div class="flex items-center gap-2 bg-bg/30 p-2 rounded-lg mb-2 border border-border/30">
+        <div class="flex items-center gap-2">
+            <input type="checkbox" id="ap-random-distribution" class="accent-primary" checked>
+            <label for="ap-random-distribution" class="text-[0.625rem] font-bold text-slate-300">
+                توزيع عشوائي 🎲
+                <span class="text-[0.5rem] text-slate-500 block">عطل: دائري (كل حساب يأخذ مجموعة مختلفة)</span>
+            </label>
+        </div>
+        <span class="text-[0.5rem] text-primary/70 font-mono">دائري</span>
+    </div>
+
+    <div class="field-card mb-2" style="background: rgba(108, 99, 255, 0.05); border-style: solid;">
+        <label class="text-[0.625rem] uppercase font-bold text-primary mb-2 block">نوع العملية (Action Type)</label>
+        <div class="ap-radio-pills">
+            <label class="flex items-center gap-1 cursor-pointer text-xs ap-pill-option">
+                <input type="radio" name="ap-action-type" value="publish" checked class="accent-primary">
+                <span class="text-white">نشر نهائي (Publish) 🚀</span>
+            </label>
+            <label class="flex items-center gap-1 cursor-pointer text-xs ap-pill-option">
+                <input type="radio" name="ap-action-type" value="draft" class="accent-primary">
+                <span class="text-slate-300">ملأ المعلومات فقط (Fill/Draft) 📝</span>
+            </label>
+        </div>
+    </div>
+
+    <!-- لون التي شيرت الافتراضي v13.0 -->
+    <div class="field-card mb-2" style="background: rgba(236,72,153,0.05); border-color: rgba(236,72,153,0.2);">
+        <label class="text-[0.625rem] uppercase font-bold text-slate-400 mb-2 block">
+            <i class="fa-solid fa-palette text-pink-400"></i> لون الخلفية الافتراضي
+        </label>
+        <div class="ap-radio-pills ap-color-pills">
+            <label class="flex items-center gap-1 cursor-pointer text-[0.625rem] ap-pill-option">
+                <input type="radio" name="ap-default-color" value="Black" checked class="accent-primary"> أسود
+            </label>
+            <label class="flex items-center gap-1 cursor-pointer text-[0.625rem] ap-pill-option">
+                <input type="radio" name="ap-default-color" value="White" class="accent-primary"> أبيض
+            </label>
+            <label class="flex items-center gap-1 cursor-pointer text-[0.625rem] ap-pill-option">
+                <input type="radio" name="ap-default-color" value="Navy" class="accent-primary"> كحلي
+            </label>
+            <label class="flex items-center gap-1 cursor-pointer text-[0.625rem] ap-pill-option">
+                <input type="radio" name="ap-default-color" value="Red" class="accent-primary"> أحمر
+            </label>
+        </div>
+    </div>
+
+    <div class="flex gap-2 ap-sticky-actions">
+        <button class="action-btn action-btn-primary flex-1" id="ap-start-btn"
+            style="background: linear-gradient(135deg, var(--primary), #EC4899);"
+            title="⚠️ Ghost Server غير متصل - شغّل السيرفر أولاً">
+            <i class="fa-solid fa-ghost"></i>
+            بدء عبر Ghost Server
+            <span id="ap-countdown-timer" class="hidden ml-2 px-2 py-0.5 bg-black/40 rounded text-[0.625rem] font-mono border border-white/10 animate-pulse">00:00</span>
+        </button>
+        <button class="btn" id="ap-reset-btn"
+            style="background: rgba(255, 255, 255, 0.05); color: #fff; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 0.625rem; padding: 0 0.9375rem; font-size: 0.6875rem; font-weight: 800; transition: all 0.2s;"
+            title="إعادة تعيين القائمة">
+            <i class="fa-solid fa-rotate-left"></i>
+            إعادة تعيين
+        </button>
+        <button class="btn hidden" id="ap-stop-btn"
+            style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; width: 2.8125rem; height: 2.8125rem; border-radius: 0.625rem; display: flex; align-items: center; justify-content: center; padding: 0;">
+            <i class="fa-solid fa-stop-circle text-xl"></i>
+        </button>
+        <button class="btn hidden" id="ap-retry-failed-btn"
+            style="background: rgba(245, 158, 11, 0.12); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.45); border-radius: 0.625rem; padding: 0 0.75rem; font-size: 0.6875rem; font-weight: 800; white-space: nowrap;"
+            title="Retry only failed accounts/designs">
+            <i class="fa-solid fa-rotate-right"></i>
+            Retry Failed
+        </button>
+    </div>
+</div>
+</div>
+
+<!-- ═══ v15.1 — Group Account Assign Modal ═══ -->
+<div id="ap-group-assign-modal"
+     style="display:none; position:fixed; inset:0; z-index:9999;
+            background:rgba(0,0,0,0.75); backdrop-filter:blur(8px);
+            align-items:center; justify-content:center;">
+    <div style="background:rgba(13,10,30,0.98); border:1px solid rgba(168,85,247,0.45);
+                border-radius:1.125rem; padding:1.25rem; width:19.375rem; max-height:82vh;
+                display:flex; flex-direction:column; gap:0.6875rem;
+                box-shadow:0 0 50px rgba(168,85,247,0.2), 0 0 0 1px rgba(168,85,247,0.1);">
+
+        <!-- Header -->
+        <div style="display:flex; align-items:flex-start; justify-content:space-between;">
+            <div>
+                <div id="ap-modal-group-title"
+                     style="font-size:0.8125rem; font-weight:900; color:#fff; margin-bottom:0.125rem;"></div>
+                <div style="font-size:0.5rem; color:#6B7280;">
+                    <i class="fa-solid fa-circle-info text-[0.4375rem]"></i>
+                    حدد الحسابات لتعيينها لهذه المجموعة
+                </div>
+            </div>
+            <button id="ap-modal-close"
+                style="width:1.75rem;height:1.75rem;background:rgba(239,68,68,0.1);
+                       border:1px solid rgba(239,68,68,0.25);color:#ef4444;border-radius:0.5rem;
+                       cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.6875rem;
+                       flex-shrink:0;transition:all 0.2s;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Search -->
+        <input type="text" id="ap-modal-search" class="modern-input text-[0.625rem]"
+               placeholder="🔍 بحث بالاسم أو الإيميل...">
+
+        <!-- Bulk Controls -->
+        <div style="display:flex; gap:0.375rem;">
+            <button id="ap-modal-select-all"
+                style="flex:1;background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.3);
+                       color:#a855f7;border-radius:0.5rem;padding:0.3125rem;font-size:0.5625rem;font-weight:800;
+                       cursor:pointer;font-family:'Tajawal',sans-serif;display:flex;align-items:center;
+                       justify-content:center;gap:0.25rem;transition:all 0.2s;">
+                <i class="fa-solid fa-check-double text-[0.5rem]"></i> تحديد الكل
+            </button>
+            <button id="ap-modal-deselect-all"
+                style="flex:1;background:rgba(107,114,128,0.08);border:1px solid rgba(107,114,128,0.2);
+                       color:#6B7280;border-radius:0.5rem;padding:0.3125rem;font-size:0.5625rem;font-weight:800;
+                       cursor:pointer;font-family:'Tajawal',sans-serif;display:flex;align-items:center;
+                       justify-content:center;gap:0.25rem;transition:all 0.2s;">
+                <i class="fa-regular fa-square text-[0.5rem]"></i> إلغاء الكل
+            </button>
+        </div>
+
+        <!-- Counter -->
+        <div style="font-size:0.5rem; color:#6B7280; text-align:center; margin:-0.25rem 0;">
+            <span id="ap-modal-counter" style="color:#a855f7; font-weight:800;">0</span>
+            حساب محدد من أصل
+            <span id="ap-modal-total">0</span>
+        </div>
+
+        <!-- Accounts List -->
+        <div id="ap-modal-accounts-list"
+             style="overflow-y:auto; max-height:17.5rem; display:flex;
+                    flex-direction:column; gap:0.3125rem; padding-right:0.125rem;"></div>
+
+        <!-- Footer -->
+        <div style="display:flex; gap:0.5rem; border-top:1px solid rgba(255,255,255,0.06); padding-top:0.75rem; margin-top:0.125rem;">
+            <button id="ap-modal-save"
+                style="flex:1;background:linear-gradient(135deg,#a855f7,#6366f1);border:none;
+                       color:#fff;border-radius:0.625rem;padding:0.5625rem;font-size:0.6875rem;font-weight:800;
+                       cursor:pointer;font-family:'Tajawal',sans-serif;transition:all 0.2s;">
+                <i class="fa-solid fa-save"></i> حفظ التعيينات
+            </button>
+            <button id="ap-modal-cancel"
+                style="background:rgba(107,114,128,0.1);border:1px solid rgba(107,114,128,0.2);
+                       color:#6B7280;border-radius:0.625rem;padding:0.5625rem 0.875rem;font-size:0.6875rem;
+                       cursor:pointer;font-family:'Tajawal',sans-serif;transition:all 0.2s;">
+                إلغاء
+            </button>
+        </div>
+    </div>
+</div>

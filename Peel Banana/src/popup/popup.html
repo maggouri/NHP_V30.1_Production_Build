@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Peel Banana</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="logo-container">
+        <img src="../../assets/peelbanana.png" alt="Peel Banana Logo" class="logo-img">
+      </div>
+      <h1>Peel Banana</h1>
+      <p class="subtitle">Remove Gemini Watermarks</p>
+    </header>
+
+    <!-- Drop Zone -->
+    <div id="drop-zone" class="drop-zone">
+      <div class="corner corner-tl"></div>
+      <div class="corner corner-tr"></div>
+      <div class="corner corner-bl"></div>
+      <div class="corner corner-br"></div>
+      <div class="drop-zone-content">
+        <div class="icon-wrapper">
+          <svg class="upload-icon" viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
+            <path d="M5 20h14v-2H5v2zm0-10h4v6h6v-6h4l-7-7-7 7z" />
+          </svg>
+        </div>
+        <p class="drop-text">Drop images here</p>
+        <p class="drop-subtext">or click to browse</p>
+        <p class="support-text">Supports PNG & WebP</p>
+
+        <div class="feature-badges">
+          <div class="feature-badge">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+              <path d="M7 2v11h3v9l7-12h-4l4-8z" />
+            </svg>
+            <span>Fast Restoration</span>
+          </div>
+          <div class="feature-badge">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+              <path
+                d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
+            </svg>
+            <span>Lossless Quality</span>
+          </div>
+        </div>
+
+        <input type="file" id="file-input" accept="image/png,image/webp" multiple hidden>
+      </div>
+    </div>
+
+    <!-- Processing Queue -->
+    <div id="queue-section" class="queue-section hidden">
+      <div class="queue-header">
+        <h2>Queue</h2>
+        <span id="queue-count" class="queue-count">0 images</span>
+      </div>
+      <div id="queue-list" class="queue-list"></div>
+      <div class="queue-actions">
+        <button id="clear-queue" class="btn btn-secondary">Clear</button>
+        <button id="process-all" class="btn btn-primary">
+          <span class="btn-icon">🍌</span>
+          Peel All
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading Section -->
+    <div id="loading-section" class="loading-section hidden">
+      <div class="spinner-container">
+        <div class="spinner-ring"></div>
+        <div class="spinner-core"></div>
+      </div>
+      <h3 class="loading-title">Processing</h3>
+      <p class="loading-subtitle">Removing watermark...</p>
+    </div>
+
+    <!-- Results Section -->
+    <div id="results-section" class="results-section hidden">
+      <div id="success-banner" class="success-banner hidden">
+        <svg class="check-icon" viewBox="0 0 24 24" width="18" height="18">
+          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+        </svg>
+        Watermark successfully removed
+      </div>
+
+      <!-- Single Result Container -->
+      <div id="single-result-container" class="single-result-container hidden">
+        <img id="single-result-img" src="" alt="Processed Image">
+      </div>
+
+      <!-- Selection Controls -->
+      <div id="selection-controls" class="selection-controls hidden">
+        <button id="select-all-btn" class="selection-btn">Select All</button>
+        <button id="unselect-all-btn" class="selection-btn">Unselect All</button>
+        <span id="selection-count" class="selection-count">0 selected</span>
+      </div>
+
+      <!-- Multiple Results Grid -->
+      <div id="results-list" class="results-list hidden"></div>
+
+      <div class="results-actions">
+        <button id="reupload-btn" class="btn btn-secondary action-btn">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path
+              d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+          </svg>
+          Re-upload
+        </button>
+        <button id="download-result-btn" class="btn btn-primary action-btn">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+          </svg>
+          Download
+        </button>
+      </div>
+    </div>
+
+    <!-- Status Messages -->
+    <div id="status-bar" class="status-bar hidden">
+      <span id="status-text"></span>
+      <div id="progress-bar" class="progress-bar">
+        <div id="progress-fill" class="progress-fill"></div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <div class="safety-badge">
+        <svg class="shield-icon" viewBox="0 0 24 24" width="16" height="16">
+          <path
+            d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z" />
+        </svg>
+        <p>Privacy safe - 100% local, images never uploaded</p>
+      </div>
+      <a href="https://niche-commander-pro-ouod.onrender.com/" target="_blank" class="powered-by">Powered by Niche Commander Pro</a>
+    </footer>
+  </div>
+
+  <script src="../lib/jszip.min.js"></script>
+  <script type="module" src="popup.js"></script>
+</body>
+
+</html>

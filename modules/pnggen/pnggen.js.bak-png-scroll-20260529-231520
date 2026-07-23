@@ -1,0 +1,217 @@
+const PNGGEN_MODEL_KEY = 'nhpPngGenModel';
+const PNGGEN_SIZE_KEY = 'nhpPngGenSize';
+const PNGGEN_COUNT_KEY = 'nhpPngGenCount';
+const PNGGEN_BASE_URL_KEY = 'nhpProxyBaseUrl';
+const PNGGEN_API_KEY_KEY = 'nhpGptApiKey';
+
+let pngGenBound = false;
+let pngGenSourceDataUrl = '';
+let pngGenSourceName = '';
+let pngGenHelpers = { showToast: () => {} };
+
+function pngGenEls() {
+  return {
+    root: document.querySelector('.pnggen-root'),
+    drop: document.getElementById('pnggen-drop'),
+    dropText: document.getElementById('pnggen-drop-text'),
+    input: document.getElementById('pnggen-image-input'),
+    preview: document.getElementById('pnggen-source-preview'),
+    clearImage: document.getElementById('pnggen-clear-image'),
+    prompt: document.getElementById('pnggen-user-prompt'),
+    baseUrl: document.getElementById('pnggen-base-url'),
+    apiKey: document.getElementById('pnggen-api-key'),
+    model: document.getElementById('pnggen-model'),
+    modelPill: document.getElementById('pnggen-model-pill'),
+    count: document.getElementById('pnggen-count'),
+    size: document.getElementById('pnggen-size'),
+    generate: document.getElementById('pnggen-generate'),
+    clearResults: document.getElementById('pnggen-clear-results'),
+    status: document.getElementById('pnggen-status'),
+    results: document.getElementById('pnggen-results')
+  };
+}
+
+function pngGenSetStatus(message, error = false) {
+  const { status } = pngGenEls();
+  if (!status) return;
+  status.textContent = message || 'Ready.';
+  status.style.color = error ? '#fca5a5' : '#94a3b8';
+}
+
+function pngGenFileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(reader.error || new Error('Unable to read image.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function pngGenRenderSource() {
+  const { preview, dropText } = pngGenEls();
+  if (dropText) dropText.textContent = pngGenSourceName || 'Drop image here or click to select';
+  if (!preview) return;
+  if (!pngGenSourceDataUrl) {
+    preview.textContent = 'No image selected';
+    return;
+  }
+  preview.innerHTML = '';
+  const img = document.createElement('img');
+  img.src = pngGenSourceDataUrl;
+  img.alt = pngGenSourceName || '';
+  preview.appendChild(img);
+}
+
+async function pngGenSetSourceFromFile(file) {
+  if (!file) return;
+  if (!/^image\/(png|jpeg|webp)$/i.test(file.type || '')) {
+    pngGenSetStatus('Unsupported image format. Use PNG, JPG, or WebP.', true);
+    return;
+  }
+  pngGenSourceDataUrl = await pngGenFileToDataUrl(file);
+  pngGenSourceName = file.name || `source_${Date.now()}.png`;
+  pngGenRenderSource();
+  pngGenSetStatus(`Source ready: ${pngGenSourceName}`);
+}
+
+function pngGenRenderResults(dataUrls = []) {
+  const { results } = pngGenEls();
+  if (!results) return;
+  const list = Array.isArray(dataUrls) ? dataUrls.filter(Boolean) : [];
+  if (!list.length) {
+    results.innerHTML = '';
+    return;
+  }
+  results.innerHTML = '';
+  list.forEach((src, index) => {
+    const card = document.createElement('article');
+    card.className = 'pnggen-result-card';
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = `Generated design ${index + 1}`;
+    const actions = document.createElement('div');
+    actions.className = 'pnggen-result-actions';
+    const download = document.createElement('a');
+    download.className = 'pnggen-btn pnggen-btn-muted';
+    download.href = src;
+    download.download = `nhp_design_${Date.now()}_${index + 1}.png`;
+    download.textContent = 'Download';
+    actions.appendChild(download);
+    card.appendChild(img);
+    card.appendChild(actions);
+    results.appendChild(card);
+  });
+}
+
+async function pngGenPersistSettings() {
+  const { model, count, size, modelPill, baseUrl, apiKey } = pngGenEls();
+  const nextModel = String(model?.value || 'auto').trim() || 'auto';
+  const nextCount = Math.max(1, Math.min(4, Number(count?.value || 4) || 4));
+  const nextSize = String(size?.value || '1024x1024');
+  const nextBaseUrl = String(baseUrl?.value || 'http://127.0.0.1:8317/v1').trim() || 'http://127.0.0.1:8317/v1';
+  const nextApiKey = String(apiKey?.value || '').trim();
+  if (count) count.value = String(nextCount);
+  if (modelPill) modelPill.textContent = nextModel;
+  await chrome.storage.local.set({
+    [PNGGEN_MODEL_KEY]: nextModel,
+    [PNGGEN_COUNT_KEY]: nextCount,
+    [PNGGEN_SIZE_KEY]: nextSize,
+    [PNGGEN_BASE_URL_KEY]: nextBaseUrl,
+    ...(nextApiKey ? { [PNGGEN_API_KEY_KEY]: nextApiKey } : {})
+  });
+}
+
+async function pngGenRestoreSettings() {
+  const { model, count, size, modelPill, baseUrl, apiKey } = pngGenEls();
+  const stored = await chrome.storage.local.get([
+    PNGGEN_MODEL_KEY, PNGGEN_COUNT_KEY, PNGGEN_SIZE_KEY,
+    PNGGEN_BASE_URL_KEY, PNGGEN_API_KEY_KEY
+  ]);
+  const nextModel = String(stored[PNGGEN_MODEL_KEY] || 'auto');
+  const nextCount = String(stored[PNGGEN_COUNT_KEY] || 4);
+  const nextSize = String(stored[PNGGEN_SIZE_KEY] || '1024x1024');
+  const nextBaseUrl = String(stored[PNGGEN_BASE_URL_KEY] || 'http://127.0.0.1:8317/v1');
+  const nextApiKey = String(stored[PNGGEN_API_KEY_KEY] || 'nhp_95TmDQKQNbsEWNYQK8IqcIK_snqF6uJq');
+  if (model) model.value = nextModel;
+  if (count) count.value = nextCount;
+  if (size) size.value = nextSize;
+  if (baseUrl) baseUrl.value = nextBaseUrl;
+  if (apiKey) apiKey.value = nextApiKey;
+  if (modelPill) modelPill.textContent = nextModel;
+}
+
+async function pngGenGenerate() {
+  const { prompt, model, count, size, generate, baseUrl, apiKey } = pngGenEls();
+  const userPrompt = String(prompt?.value || '').trim();
+  if (!userPrompt && !pngGenSourceDataUrl) {
+    pngGenSetStatus('Add an image, a prompt, or both.', true);
+    return;
+  }
+  await pngGenPersistSettings();
+  if (generate) generate.disabled = true;
+  pngGenSetStatus('Generating designs...');
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'NHP_PNGGEN_GENERATE',
+      dataUrl: pngGenSourceDataUrl,
+      promptText: userPrompt,
+      model: String(model?.value || 'auto').trim() || 'auto',
+      count: Math.max(1, Math.min(4, Number(count?.value || 4) || 4)),
+      size: String(size?.value || '1024x1024'),
+      baseUrl: String(baseUrl?.value || '').trim(),
+      apiKey: String(apiKey?.value || '').trim()
+    });
+    if (!response?.success) throw new Error(response?.error || 'Generation failed.');
+    pngGenRenderResults(response.dataUrls || (response.dataUrl ? [response.dataUrl] : []));
+    const routed = response.routedModel && response.routedModel !== response.model ? ` -> ${response.routedModel}` : '';
+    pngGenSetStatus(`Done with ${response.model || 'auto'}${routed}.`);
+    pngGenHelpers.showToast?.('تم توليد التصاميم عبر NHP');
+  } catch (error) {
+    pngGenSetStatus(error?.message || 'Generation failed.', true);
+  } finally {
+    if (generate) generate.disabled = false;
+  }
+}
+
+export function initPngGenModule(helpers = {}) {
+  pngGenHelpers = { ...pngGenHelpers, ...helpers };
+  if (pngGenBound) return;
+  pngGenBound = true;
+
+  const els = pngGenEls();
+  pngGenRestoreSettings().catch(() => {});
+  pngGenRenderSource();
+
+  els.input?.addEventListener('change', (event) => {
+    const file = event.target?.files?.[0] || null;
+    pngGenSetSourceFromFile(file).catch((error) => pngGenSetStatus(error?.message || 'Unable to read image.', true));
+    if (event.target) event.target.value = '';
+  });
+
+  els.drop?.addEventListener('dragover', (event) => {
+    event.preventDefault();
+    els.drop?.classList.add('is-drag');
+  });
+  els.drop?.addEventListener('dragleave', () => els.drop?.classList.remove('is-drag'));
+  els.drop?.addEventListener('drop', (event) => {
+    event.preventDefault();
+    els.drop?.classList.remove('is-drag');
+    const file = event.dataTransfer?.files?.[0] || null;
+    pngGenSetSourceFromFile(file).catch((error) => pngGenSetStatus(error?.message || 'Unable to read image.', true));
+  });
+
+  els.clearImage?.addEventListener('click', () => {
+    pngGenSourceDataUrl = '';
+    pngGenSourceName = '';
+    pngGenRenderSource();
+    pngGenSetStatus('Image cleared.');
+  });
+  els.generate?.addEventListener('click', () => pngGenGenerate());
+  els.clearResults?.addEventListener('click', () => {
+    pngGenRenderResults([]);
+    pngGenSetStatus('Results cleared.');
+  });
+  [els.baseUrl, els.apiKey, els.model, els.count, els.size].filter(Boolean).forEach((el) => {
+    el.addEventListener('change', () => pngGenPersistSettings().catch(() => {}));
+  });
+}
