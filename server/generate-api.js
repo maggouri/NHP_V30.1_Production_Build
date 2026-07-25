@@ -1987,7 +1987,12 @@ function buildDesignRowsFromStorageMeta(storageId, meta, libDir) {
     };
     if (meta.source) base.source = meta.source;
     if (meta.originalDesignId) base.originalDesignId = meta.originalDesignId;
+    if (meta.siteDesignId) base.siteDesignId = meta.siteDesignId;
+    if (meta.oracleObjectKey) base.oracleObjectKey = meta.oracleObjectKey;
     if (meta.versionLabel) base.versionLabel = meta.versionLabel;
+    if (meta.nicheName || meta.niche) base.nicheName = meta.nicheName || meta.niche;
+    if (meta.nicheId) base.nicheId = meta.nicheId;
+    if (meta.contentHash) base.contentHash = meta.contentHash;
 
     if (splits.length) {
         return splits.map((f, i) => {
@@ -2161,8 +2166,26 @@ function flattenLibraryIndexForDesigns(rawIndex, readMetaFn, libraryDir) {
                 if (meta?.originalDesignId || item.originalDesignId) {
                     row.originalDesignId = meta?.originalDesignId || item.originalDesignId;
                 }
+                if (meta?.siteDesignId || item.siteDesignId) {
+                    row.siteDesignId = meta?.siteDesignId || item.siteDesignId;
+                }
                 if (meta?.oracleObjectKey || item.oracleObjectKey) {
                     row.oracleObjectKey = meta?.oracleObjectKey || item.oracleObjectKey;
+                }
+                if (meta?.nicheName || meta?.niche || item.nicheName || item.niche) {
+                    row.nicheName = meta?.nicheName || meta?.niche || item.nicheName || item.niche;
+                }
+                if (meta?.nicheId || item.nicheId) {
+                    row.nicheId = meta?.nicheId || item.nicheId;
+                }
+                if (meta?.contentHash || item.contentHash) {
+                    row.contentHash = meta?.contentHash || item.contentHash;
+                }
+                if (meta?.source || item.source) {
+                    row.source = meta?.source || item.source;
+                }
+                if (meta?.versionLabel || item.versionLabel) {
+                    row.versionLabel = meta?.versionLabel || item.versionLabel;
                 }
                 if (!libraryEntryHasImageFile(libraryDir, row)) return;
                 seen.add(designId);
@@ -2270,6 +2293,67 @@ function registerGenerateApi(app, { rootDir: rootDirInput, logFn = console.log }
             log(`Library index reconciled from disk: ${raw.length} → ${reconciled.length} entries`, 'WARN');
         }
         return reconciled;
+    }
+
+    /**
+     * One-time-safe migrate: Live Sync rows wrongly used originalDesignId (Edited tab)
+     * and/or technical dsg_ display names. Moves site id → siteDesignId, prefers nicheName.
+     */
+    function repairLiveSyncLibraryEntries() {
+        let repaired = 0;
+        try {
+            if (!fs.existsSync(LIBRARY_DIR)) return 0;
+            for (const ent of fs.readdirSync(LIBRARY_DIR, { withFileTypes: true })) {
+                if (!ent.isDirectory() || !isLibraryStorageFolderName(ent.name)) continue;
+                const libDir = path.join(LIBRARY_DIR, ent.name);
+                const meta = readLibraryMeta(libDir);
+                if (!meta) continue;
+                let changed = false;
+                const src = String(meta.source || '').trim().toLowerCase().replace(/-/g, '_');
+                const orig = String(meta.originalDesignId || '').trim();
+                const looksLive = src === 'emailcore_live_sync'
+                    || /^dsg_/i.test(orig)
+                    || !!meta.siteDesignId;
+                if (!looksLive) continue;
+
+                if (src !== 'emailcore_live_sync') {
+                    meta.source = 'emailcore_live_sync';
+                    changed = true;
+                }
+                if (orig && /^dsg_/i.test(orig)) {
+                    if (!meta.siteDesignId) meta.siteDesignId = orig;
+                    delete meta.originalDesignId;
+                    changed = true;
+                }
+                const nicheName = sanitizeLibraryTitleCandidate(meta.nicheName || meta.niche || '')
+                    || sanitizeDisplayName(meta.nicheName || meta.niche || '');
+                if (nicheName) {
+                    if (!meta.nicheName) {
+                        meta.nicheName = nicheName;
+                        meta.niche = nicheName;
+                        changed = true;
+                    }
+                    const dn = String(meta.displayName || '').trim();
+                    if (!dn || /^dsg_/i.test(dn) || !sanitizeLibraryTitleCandidate(dn)) {
+                        meta.displayName = nicheName;
+                        meta.promptPreview = nicheName.slice(0, 120);
+                        changed = true;
+                    }
+                }
+                if (changed) {
+                    fs.writeFileSync(path.join(libDir, 'meta.json'), JSON.stringify(meta, null, 2), 'utf8');
+                    repaired += 1;
+                }
+            }
+            if (repaired > 0) {
+                const next = reconcileLibraryIndexFromDisk(LIBRARY_DIR, readLibraryIndex(), readLibraryMeta);
+                writeLibraryIndex(next);
+                log(`Live Sync library migrate: repaired ${repaired} entr(y/ies)`, 'INFO');
+            }
+        } catch (err) {
+            log(`Live Sync library migrate failed: ${err.message}`, 'WARN');
+        }
+        return repaired;
     }
 
     function readLibraryMeta(libDir) {
@@ -2382,37 +2466,66 @@ function registerGenerateApi(app, { rootDir: rootDirInput, logFn = console.log }
 
     async function saveUploadedImageToLibrary(imageBuffer, opts = {}) {
         const originalName = String(opts.originalName || '').trim();
-        let displayName = sanitizeLibraryTitleCandidate(opts.displayName || '');
-        if (!displayName && opts.originalDesignId) {
-            displayName = librarySmartRename.resolveLibraryDisplayNameFromId(opts.originalDesignId);
-        }
-        if (!displayName) {
-            displayName = sanitizeLibraryTitleCandidate(originalName) || 'رفع يدوي';
-        }
-        const source = String(opts.source || 'upload').trim() || 'upload';
-        const originalDesignId = String(opts.originalDesignId || '').trim();
+        const rawSource = String(opts.source || 'upload').trim() || 'upload';
+        const source = /^emailcore[-_]live[-_]sync$/i.test(rawSource)
+            ? 'emailcore_live_sync'
+            : rawSource;
+        const isLiveSync = source === 'emailcore_live_sync';
+        const siteDesignId = String(opts.siteDesignId || '').trim()
+            || (isLiveSync ? String(opts.originalDesignId || '').trim() : '');
+        // Live Sync must NOT set originalDesignId (that flag = Edited design).
+        const originalDesignId = isLiveSync
+            ? ''
+            : String(opts.originalDesignId || '').trim();
         const oracleObjectKey = String(opts.oracleObjectKey || '').trim();
         const versionLabel = String(opts.versionLabel || '').trim();
+        const nicheId = String(opts.nicheId || '').trim();
+        const nicheName = sanitizeLibraryTitleCandidate(opts.nicheName || opts.niche || '')
+            || sanitizeDisplayName(opts.nicheName || opts.niche || '');
 
-        // Dedupe Live Sync / site imports by site design id or oracle object key.
-        if (originalDesignId || oracleObjectKey) {
+        let displayName = sanitizeLibraryTitleCandidate(opts.displayName || '');
+        if (!displayName && nicheName) displayName = nicheName;
+        if (!displayName && originalDesignId) {
+            displayName = librarySmartRename.resolveLibraryDisplayNameFromId(originalDesignId);
+        }
+        if (!displayName) {
+            displayName = sanitizeLibraryTitleCandidate(originalName)
+                || nicheName
+                || (isLiveSync ? 'Live Sync' : 'رفع يدوي');
+        }
+        // Prefer niche identity for Live Sync file/display names.
+        if (isLiveSync && nicheName) displayName = nicheName;
+
+        // Dedupe Live Sync / site imports by site design id, oracle key, or content hash.
+        const contentHashEarly = crypto.createHash('sha256').update(imageBuffer).digest('hex');
+        if (siteDesignId || oracleObjectKey || (isLiveSync && contentHashEarly)) {
             try {
                 const raw = ensureLibraryIndexSynced();
                 const items = flattenLibraryIndexForDesigns(raw, readLibraryMeta, LIBRARY_DIR);
                 for (const item of items) {
                     const storageId = String(item.storageId || item.id || '').replace(/__d\d+$/i, '').trim();
                     const meta = storageId ? readLibraryMeta(path.join(LIBRARY_DIR, storageId)) : null;
+                    const existingSite = String(
+                        item.siteDesignId || meta?.siteDesignId || ''
+                    ).trim();
+                    // Legacy: site id was stored in originalDesignId.
                     const existingOriginal = String(
                         item.originalDesignId || meta?.originalDesignId || ''
                     ).trim();
                     const existingOracle = String(
                         item.oracleObjectKey || meta?.oracleObjectKey || ''
                     ).trim();
-                    if (originalDesignId && existingOriginal && existingOriginal === originalDesignId) {
+                    const existingHash = String(
+                        item.contentHash || meta?.contentHash || ''
+                    ).trim();
+                    if (siteDesignId && (
+                        existingSite === siteDesignId
+                        || existingOriginal === siteDesignId
+                    )) {
                         return {
                             skipped: true,
-                            reason: 'duplicate_originalDesignId',
-                            item: { ...item, originalDesignId: existingOriginal },
+                            reason: 'duplicate_siteDesignId',
+                            item: { ...item, siteDesignId },
                         };
                     }
                     if (oracleObjectKey && existingOracle && existingOracle === oracleObjectKey) {
@@ -2420,6 +2533,20 @@ function registerGenerateApi(app, { rootDir: rootDirInput, logFn = console.log }
                             skipped: true,
                             reason: 'duplicate_oracleObjectKey',
                             item: { ...item, oracleObjectKey: existingOracle },
+                        };
+                    }
+                    if (isLiveSync && contentHashEarly && existingHash === contentHashEarly) {
+                        return {
+                            skipped: true,
+                            reason: 'duplicate_contentHash',
+                            item: { ...item, contentHash: existingHash },
+                        };
+                    }
+                    if (!isLiveSync && originalDesignId && existingOriginal && existingOriginal === originalDesignId) {
+                        return {
+                            skipped: true,
+                            reason: 'duplicate_originalDesignId',
+                            item: { ...item, originalDesignId: existingOriginal },
                         };
                     }
                 }
@@ -2444,6 +2571,7 @@ function registerGenerateApi(app, { rootDir: rootDirInput, logFn = console.log }
             throw new Error(`صيغة الصورة غير مدعومة: ${err.message}`);
         }
 
+        const contentHash = crypto.createHash('sha256').update(pngBuf).digest('hex');
         const fileName = sanitizeLibraryFileName(displayName);
         fs.writeFileSync(path.join(libDir, fileName), pngBuf);
 
@@ -2474,11 +2602,18 @@ function registerGenerateApi(app, { rootDir: rootDirInput, logFn = console.log }
             batchTotal: 1,
             compositeFilename: originalName || fileName,
             source,
-            files
+            files,
+            contentHash
         };
         if (originalDesignId) meta.originalDesignId = originalDesignId;
+        if (siteDesignId) meta.siteDesignId = siteDesignId;
         if (oracleObjectKey) meta.oracleObjectKey = oracleObjectKey;
         if (versionLabel) meta.versionLabel = versionLabel;
+        if (nicheId) meta.nicheId = nicheId;
+        if (nicheName) {
+            meta.nicheName = nicheName;
+            meta.niche = nicheName;
+        }
         if (imageWidth > 0 && imageHeight > 0) {
             meta.width = imageWidth;
             meta.height = imageHeight;
@@ -2500,11 +2635,18 @@ function registerGenerateApi(app, { rootDir: rootDirInput, logFn = console.log }
             fileName,
             thumbUrl: `/api/library/${libId}/file/${fileName}`,
             role: 'design',
-            source
+            source,
+            contentHash
         };
         if (originalDesignId) row.originalDesignId = originalDesignId;
+        if (siteDesignId) row.siteDesignId = siteDesignId;
         if (oracleObjectKey) row.oracleObjectKey = oracleObjectKey;
         if (versionLabel) row.versionLabel = versionLabel;
+        if (nicheId) row.nicheId = nicheId;
+        if (nicheName) {
+            row.nicheName = nicheName;
+            row.niche = nicheName;
+        }
         await updateLibraryIndex((entries) => {
             const next = entries.filter((e) => e.id !== libId && e.storageId !== libId);
             next.unshift({ ...row });
@@ -3988,6 +4130,7 @@ function registerGenerateApi(app, { rootDir: rootDirInput, logFn = console.log }
 
     app.get('/api/library', (_req, res) => {
         runLibraryIndexLocked(() => {
+            repairLiveSyncLibraryEntries();
             const raw = ensureLibraryIndexSynced();
             const items = flattenLibraryIndexForDesigns(raw, readLibraryMeta, LIBRARY_DIR);
             res.json({
@@ -4069,8 +4212,11 @@ function registerGenerateApi(app, { rootDir: rootDirInput, logFn = console.log }
                     displayName: req.body?.displayName || '',
                     source: req.body?.source || '',
                     originalDesignId: req.body?.originalDesignId || '',
+                    siteDesignId: req.body?.siteDesignId || '',
                     oracleObjectKey: req.body?.oracleObjectKey || '',
-                    versionLabel: req.body?.versionLabel || ''
+                    versionLabel: req.body?.versionLabel || '',
+                    nicheId: req.body?.nicheId || '',
+                    nicheName: req.body?.nicheName || req.body?.niche || ''
                 });
                 if (saved?.skipped) {
                     skipped += 1;

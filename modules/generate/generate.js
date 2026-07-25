@@ -1279,6 +1279,9 @@ function generateEls() {
     confirmOk: document.getElementById('generate-confirm-ok'),
     confirmCancel: document.getElementById('generate-confirm-cancel'),
     confirmBackdrop: document.getElementById('generate-confirm-backdrop'),
+    confirmOpt: document.getElementById('generate-confirm-opt'),
+    confirmOptCheck: document.getElementById('generate-confirm-opt-check'),
+    confirmOptLabel: document.getElementById('generate-confirm-opt-label'),
     libSelectedCount: document.getElementById('generate-lib-selected-count'),
     libSelectCount: document.getElementById('generate-lib-select-count'),
     libSendStudio: document.getElementById('generate-lib-send-studio'),
@@ -3278,22 +3281,50 @@ async function generateInvokeStudioFullPipeline(options) {
   throw new Error('وحدة Studio غير جاهزة — افتح تبويب Studio وأعد المحاولة');
 }
 
-function generateShowConfirm(message) {
-  const { confirmModal, confirmText, confirmOk, confirmCancel, confirmBackdrop } = generateEls();
+/**
+ * In-extension confirm modal (never window.confirm for library clear UX).
+ * @param {string} message
+ * @param {{ checkboxLabel?: string, checkboxDefault?: boolean, returnDetails?: boolean }} [opts]
+ * @returns {Promise<boolean|{ok:boolean,checked:boolean}>}
+ */
+function generateShowConfirm(message, opts = {}) {
+  const {
+    confirmModal,
+    confirmText,
+    confirmOk,
+    confirmCancel,
+    confirmBackdrop,
+    confirmOpt,
+    confirmOptCheck,
+    confirmOptLabel
+  } = generateEls();
+  const checkboxLabel = String(opts?.checkboxLabel || '').trim();
+  const returnDetails = opts?.returnDetails === true || !!checkboxLabel;
   if (!confirmModal || !confirmText) {
-    return Promise.resolve(window.confirm(message));
+    const ok = window.confirm(message);
+    return Promise.resolve(returnDetails ? { ok, checked: false } : ok);
   }
   return new Promise((resolve) => {
     confirmText.textContent = message;
+    if (confirmOpt && confirmOptCheck && confirmOptLabel && checkboxLabel) {
+      confirmOptLabel.textContent = checkboxLabel;
+      confirmOptCheck.checked = opts?.checkboxDefault === true;
+      confirmOpt.classList.remove('is-hidden');
+    } else if (confirmOpt) {
+      confirmOpt.classList.add('is-hidden');
+      if (confirmOptCheck) confirmOptCheck.checked = false;
+    }
     confirmModal.classList.remove('is-hidden');
     confirmModal.setAttribute('aria-hidden', 'false');
     const done = (ok) => {
+      const checked = !!(checkboxLabel && confirmOptCheck?.checked);
       confirmModal.classList.add('is-hidden');
       confirmModal.setAttribute('aria-hidden', 'true');
+      confirmOpt?.classList.add('is-hidden');
       confirmOk?.removeEventListener('click', onOk);
       confirmCancel?.removeEventListener('click', onCancel);
       confirmBackdrop?.removeEventListener('click', onCancel);
-      resolve(ok);
+      resolve(returnDetails ? { ok, checked } : ok);
     };
     const onOk = () => done(true);
     const onCancel = () => done(false);
@@ -3302,6 +3333,8 @@ function generateShowConfirm(message) {
     confirmBackdrop?.addEventListener('click', onCancel);
   });
 }
+
+window.generateShowConfirm = generateShowConfirm;
 
 function generateSwitchSection(sectionId) {
   const id = String(sectionId || 'chat');
@@ -5714,7 +5747,18 @@ async function generateDeleteLibraryAll() {
     generateHelpers.showToast?.('المكتبة فارغة');
     return;
   }
-  if (!confirm('هل تريد حذف جميع التصاميم؟')) return;
+  const decision = await generateShowConfirm(
+    `هل تريد تفريغ المكتبة المحلية (${generateLibraryItems.length} تصميم)؟\n\nالافتراضي: حذف محلي فقط — لن يُمس موقع EmailCore.`,
+    {
+      checkboxLabel: 'أيضاً احذف التصاميم من موقع EmailCore (اختياري — غير مفعّل افتراضياً)',
+      checkboxDefault: false,
+      returnDetails: true
+    }
+  );
+  if (!decision?.ok) return;
+  const siteIds = generateLibraryItems
+    .map((it) => String(it.siteDesignId || (/^dsg_/i.test(String(it.originalDesignId || '')) ? it.originalDesignId : '') || '').trim())
+    .filter(Boolean);
   try {
     const res = await fetch(generateGhostUrl('/api/library/all'), { method: 'DELETE' });
     const data = await res.json().catch(() => ({}));
@@ -5724,7 +5768,27 @@ async function generateDeleteLibraryAll() {
     generateSaveLibraryIndexLocal([]);
     generateCloseLibraryPreview();
     await generateFetchLibrary({ force: true, retries: GENERATE_LIBRARY_FETCH_RETRY_MAX });
-    generateHelpers.showToast?.('تم تفريغ المكتبة');
+    if (decision.checked && siteIds.length) {
+      try {
+        await chrome.runtime.sendMessage({
+          action: 'EMAILCORE_DELETE_SITE_DESIGNS',
+          ids: siteIds
+        });
+        generateHelpers.showToast?.('تم تفريغ المكتبة المحلية + طلب حذف من الموقع');
+      } catch (_) {
+        generateHelpers.showToast?.('تم التفريغ محلياً — تعذّر حذف الموقع');
+      }
+    } else {
+      if (siteIds.length) {
+        try {
+          await chrome.runtime.sendMessage({
+            action: 'EMAILCORE_LIVE_SYNC_DISMISS',
+            ids: siteIds
+          });
+        } catch (_) { /* ignore */ }
+      }
+      generateHelpers.showToast?.('تم تفريغ المكتبة المحلية فقط (الموقع لم يُمس)');
+    }
   } catch (err) {
     generateHelpers.showToast?.(`❌ ${err.message || 'فشل التفريغ'}`);
   }

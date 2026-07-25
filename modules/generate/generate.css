@@ -541,6 +541,32 @@
   font-size: 0.75rem;
   line-height: 1.5;
   text-align: center;
+  white-space: pre-line;
+}
+
+.generate-confirm-opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: 0.4375rem;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(30, 41, 59, 0.55);
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: #cbd5e1;
+  text-align: start;
+  cursor: pointer;
+}
+
+.generate-confirm-opt.is-hidden {
+  display: none;
+}
+
+.generate-confirm-opt input {
+  margin-top: 0.125rem;
+  flex-shrink: 0;
 }
 
 .generate-confirm-actions {

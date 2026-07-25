@@ -232,16 +232,41 @@ function canvaPreviewItems() {
   return canvaFilteredLibraryItems();
 }
 
+function canvaNormalizeLibrarySource(source) {
+  return String(source || '').trim().toLowerCase().replace(/-/g, '_');
+}
+
+/** Site Live Sync / imported generated designs — never the Edited tab. */
+function canvaIsLiveSyncImport(item) {
+  if (!item) return false;
+  const source = canvaNormalizeLibrarySource(item.source || item.meta?.source);
+  if (source === 'emailcore_live_sync') return true;
+  if (item.siteDesignId || item.meta?.siteDesignId) return true;
+  const orig = String(item.originalDesignId || item.meta?.originalDesignId || '').trim();
+  // Legacy Live Sync wrongly stored the site design id in originalDesignId.
+  if (/^dsg_/i.test(orig)) return true;
+  return false;
+}
+
+function canvaLooksLikeLocalLibraryRef(id) {
+  const s = String(id || '').trim();
+  return /^(lib_|canva_)/i.test(s) || /__d\d+$/i.test(s);
+}
+
 function canvaIsEditedDesign(item) {
   if (!item) return false;
-  const source = item.source || item.meta?.source;
+  // Site-imported generated designs keep niche identity on Generated/Library — not Edited.
+  if (canvaIsLiveSyncImport(item)) return false;
+  const source = canvaNormalizeLibrarySource(item.source || item.meta?.source);
   const versionLabel = item.versionLabel || item.meta?.versionLabel;
   const originalDesignId = item.originalDesignId || item.meta?.originalDesignId;
   if (source === 'canva') return true;
   if (versionLabel === 'Canva Edited') return true;
   if (versionLabel === CANVA_TEEMASTER_EDITED_VERSION) return true;
   if (source === 'teemaster') return true;
-  if (originalDesignId) return true;
+  // Only local parent refs mean "edited version of …" (not site dsg_ ids).
+  if (originalDesignId && canvaLooksLikeLocalLibraryRef(originalDesignId)) return true;
+  if (originalDesignId && !/^dsg_/i.test(String(originalDesignId))) return true;
   return false;
 }
 
@@ -281,22 +306,24 @@ function canvaGetOriginalDesignRef(item) {
   return String(item?.originalDesignId || item?.meta?.originalDesignId || '').trim();
 }
 
-/** Best display title for a library row (inherits from originalDesignId when needed). */
+/** Best display title for a library row (niche name > own title > originalDesignId inherit). */
 function canvaResolveItemDisplayName(item) {
   if (!item) return '';
+  const niche = String(item.nicheName || item.niche || item.meta?.nicheName || item.meta?.niche || '').trim();
+  if (niche && !/^dsg_/i.test(niche)) return niche;
   const direct = String(item.displayName || item.title || '').trim();
-  if (direct) return direct;
+  if (direct && !/^dsg_/i.test(direct)) return direct;
   const origId = canvaGetOriginalDesignRef(item);
   if (origId) {
     const orig = canvaFindLibraryItem(origId);
     if (orig) {
-      const fromOrig = String(orig.displayName || orig.title || '').trim();
-      if (fromOrig) return fromOrig;
+      const fromOrig = String(orig.nicheName || orig.displayName || orig.title || '').trim();
+      if (fromOrig && !/^dsg_/i.test(fromOrig)) return fromOrig;
     }
   }
   const fromFile = String(item.fileName || '').replace(/\.[^.]+$/, '').trim();
-  if (fromFile && !/^design_\d+$/i.test(fromFile) && !/^composite$/i.test(fromFile)) return fromFile;
-  return String(item.promptPreview || '').trim();
+  if (fromFile && !/^design_\d+$/i.test(fromFile) && !/^composite$/i.test(fromFile) && !/^dsg_/i.test(fromFile)) return fromFile;
+  return niche || String(item.promptPreview || '').trim();
 }
 
 /** Mirror server sanitizeLibraryFileName for SEO download / upload labels. */
@@ -1814,8 +1841,34 @@ async function canvaEmptyCurrentTabLibrary() {
     return;
   }
   const tabLabel = canvaLibraryView === 'edited' ? 'التصاميم المعدّلة' : 'مكتبة التصاميم';
-  if (!confirm(`هل تريد تفريغ «${tabLabel}» (${items.length} تصميم)؟\n\nلن تُحذف التصاميم في التبويب الآخر.`)) return;
+  const showConfirm = typeof window.generateShowConfirm === 'function'
+    ? window.generateShowConfirm
+    : null;
+  let decision = { ok: false, checked: false };
+  if (showConfirm) {
+    decision = await showConfirm(
+      `هل تريد تفريغ «${tabLabel}» محلياً (${items.length} تصميم)؟\n\nلن تُحذف التصاميم في التبويب الآخر.\nالافتراضي: المكتبة المحلية فقط — موقع EmailCore لا يُمس.`,
+      {
+        checkboxLabel: 'أيضاً احذف من موقع EmailCore (اختياري — غير مفعّل افتراضياً)',
+        checkboxDefault: false,
+        returnDetails: true
+      }
+    );
+  } else {
+    // Fallback still avoids silent site delete; no browser confirm preferred but last resort.
+    decision = {
+      ok: window.confirm(`تفريغ «${tabLabel}» محلياً فقط (${items.length})؟`),
+      checked: false
+    };
+  }
+  if (!decision?.ok) return;
+
   const ids = items.map((it) => it.id).filter(Boolean);
+  const siteIds = items
+    .map((it) => String(it.siteDesignId || (/^dsg_/i.test(String(it.originalDesignId || '')) ? it.originalDesignId : '') || '').trim())
+    .filter(Boolean);
+  const alsoDeleteSite = decision.checked === true;
+
   canvaSetLoading(true, 'جاري تفريغ العرض الحالي...');
   try {
     const res = await fetch(canvaHelpers.ghostUrl('/api/library/bulk'), {
@@ -1830,8 +1883,27 @@ async function canvaEmptyCurrentTabLibrary() {
     if (removedIds.length) canvaRemoveLibrarySelection(removedIds);
     if (typeof canvaHelpers.fetchLibrary === 'function') await canvaHelpers.fetchLibrary();
     canvaRenderLibrary();
-    const toastMsg = data.message
-      || (data.success ? `تم تفريغ ${tabLabel} (${data.count || removedIds.length} تصميم).` : (data.error || 'فشل التفريغ'));
+
+    if (alsoDeleteSite && siteIds.length) {
+      try {
+        await chrome.runtime.sendMessage({
+          action: 'EMAILCORE_DELETE_SITE_DESIGNS',
+          ids: siteIds
+        });
+      } catch (_) { /* local clear already done */ }
+    } else if (siteIds.length) {
+      try {
+        await chrome.runtime.sendMessage({
+          action: 'EMAILCORE_LIVE_SYNC_DISMISS',
+          ids: siteIds
+        });
+      } catch (_) { /* ignore */ }
+    }
+
+    let toastMsg = data.message
+      || (data.success ? `تم تفريغ ${tabLabel} محلياً (${data.count || removedIds.length}).` : (data.error || 'فشل التفريغ'));
+    if (alsoDeleteSite) toastMsg += ' · طلب حذف الموقع مُرسل';
+    else toastMsg += ' · الموقع لم يُمس';
     canvaSetMsg(toastMsg, data.partial && !data.success ? 'warning' : 'success');
     canvaHelpers.showToast?.(data.partial ? `⚠️ ${toastMsg}` : toastMsg);
   } catch (err) {

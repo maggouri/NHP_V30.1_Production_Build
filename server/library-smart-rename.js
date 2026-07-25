@@ -29,6 +29,28 @@ function sanitizeDisplayName(value = '') {
         .slice(0, MAX_DISPLAY_NAME_LEN);
 }
 
+/** True for site/local technical ids that must never become niche display names. */
+function isTechnicalLibraryTitle(value = '') {
+    const s = String(value || '').trim();
+    if (!s) return true;
+    if (/^dsg_[a-z0-9]+(_\d+)?$/i.test(s)) return true;
+    if (/^(lib_|canva_)[a-z0-9_]+(__d\d+)?$/i.test(s)) return true;
+    if (/^(design|split|composite)(_\d+)?$/i.test(s)) return true;
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)) return true;
+    if (/^live\s*sync$/i.test(s)) return true;
+    return false;
+}
+
+/**
+ * Human title for library rows — rejects raw site ids (dsg_…) / storage ids.
+ * Prefer nicheName at the call site; this only cleans a candidate string.
+ */
+function sanitizeLibraryTitleCandidate(value = '') {
+    const cleaned = sanitizeDisplayName(value);
+    if (!cleaned || isTechnicalLibraryTitle(cleaned)) return '';
+    return cleaned;
+}
+
 function parseRenameNoteContext(raw) {
     if (!raw) return [];
     try {
@@ -657,6 +679,8 @@ module.exports = {
     createLibrarySmartRename,
     parseRenameNoteContext,
     sanitizeDisplayName,
+    sanitizeLibraryTitleCandidate,
+    isTechnicalLibraryTitle,
     sanitizeLibraryFileName,
     safeLibraryFileSegment,
     resolveLibraryDisplayNameFromId

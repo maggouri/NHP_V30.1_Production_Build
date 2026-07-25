@@ -80,6 +80,7 @@
     const EMAILCORE_LIVE_SYNC_ENABLED_KEY = 'emailcore_live_sync_enabled';
     const EMAILCORE_LIVE_SYNC_META_KEY = 'emailcore_live_sync_meta';
     const EMAILCORE_LIVE_SYNC_BUSY = 'emailcore_live_sync_busy';
+    const EMAILCORE_LIVE_SYNC_DISMISSED_KEY = 'emailcore_live_sync_dismissed_ids';
     const EMAILCORE_GHOST_LIBRARY_URL = 'http://127.0.0.1:3019/api/library';
     const EMAILCORE_SESSION_KEYS = {
         sessionToken: 'emailcore_session_token',
@@ -1967,6 +1968,72 @@
             return true;
         }
 
+        if (action === 'EMAILCORE_LIVE_SYNC_DISMISS') {
+            const ids = (Array.isArray(request.ids) ? request.ids : [])
+                .map((id) => String(id || '').trim())
+                .filter(Boolean);
+            chrome.storage.local.get([EMAILCORE_LIVE_SYNC_DISMISSED_KEY], (stored) => {
+                const prev = Array.isArray(stored[EMAILCORE_LIVE_SYNC_DISMISSED_KEY])
+                    ? stored[EMAILCORE_LIVE_SYNC_DISMISSED_KEY]
+                    : [];
+                const next = [...new Set([...prev, ...ids])].slice(-2000);
+                chrome.storage.local.set({ [EMAILCORE_LIVE_SYNC_DISMISSED_KEY]: next }, () => {
+                    sendResponse({ success: true, ok: true, dismissed: next.length });
+                });
+            });
+            return true;
+        }
+
+        if (action === 'EMAILCORE_DELETE_SITE_DESIGNS') {
+            const ids = (Array.isArray(request.ids) ? request.ids : [])
+                .map((id) => String(id || '').trim())
+                .filter(Boolean);
+            (async () => {
+                try {
+                    const stored = await chrome.storage.local.get([
+                        CREATY_STORAGE_KEYS.apiBase,
+                        CREATY_STORAGE_KEYS.userId,
+                        CREATY_STORAGE_KEYS.token,
+                    ]);
+                    const apiBase = normalizeEmailCoreApiBase(stored[CREATY_STORAGE_KEYS.apiBase]);
+                    const userId = String(stored[CREATY_STORAGE_KEYS.userId] || DEFAULT_EMAILCORE_CREATY_USER_ID).trim();
+                    const token = String(stored[CREATY_STORAGE_KEYS.token] || DEFAULT_EMAILCORE_CREATY_TOKEN).trim();
+                    if (!userId || !token || !ids.length) {
+                        sendResponse({ success: false, error: 'missing_creaty_or_ids' });
+                        return;
+                    }
+                    const url = new URL(`${apiBase}/api/extension/designs/generated`);
+                    url.searchParams.set('userId', userId);
+                    const res = await fetch(url, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-creaty-token': token,
+                            'x-extension-id': chrome.runtime.id,
+                        },
+                        body: JSON.stringify({ ids }),
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || data?.ok === false) {
+                        sendResponse({ success: false, error: data?.error || `HTTP ${res.status}` });
+                        return;
+                    }
+                    // Also dismiss so Live Sync won't re-pull before site propagates.
+                    const prevStore = await chrome.storage.local.get([EMAILCORE_LIVE_SYNC_DISMISSED_KEY]);
+                    const prev = Array.isArray(prevStore[EMAILCORE_LIVE_SYNC_DISMISSED_KEY])
+                        ? prevStore[EMAILCORE_LIVE_SYNC_DISMISSED_KEY]
+                        : [];
+                    await chrome.storage.local.set({
+                        [EMAILCORE_LIVE_SYNC_DISMISSED_KEY]: [...new Set([...prev, ...ids])].slice(-2000),
+                    });
+                    sendResponse({ success: true, ok: true, ...data });
+                } catch (err) {
+                    sendResponse({ success: false, error: err?.message || String(err) });
+                }
+            })();
+            return true;
+        }
+
         if (action === 'EMAILCORE_EXTENSION_LOGIN') {
             (async () => {
                 try {
@@ -2515,10 +2582,30 @@
         return name ? `${name}|${niche}` : '';
     }
 
+    function isTechnicalLiveSyncTitle(value) {
+        const s = String(value || '').trim();
+        if (!s) return true;
+        if (/^dsg_[a-z0-9]+(_\d+)?$/i.test(s)) return true;
+        if (/^(lib_|canva_)[a-z0-9_]+/i.test(s)) return true;
+        if (/^live\s*sync$/i.test(s)) return true;
+        return false;
+    }
+
+    /** Product rule: every imported design keeps the niche name it was born from. */
+    function resolveLiveSyncDisplayName(design) {
+        const nicheName = String(design?.nicheName || design?.niche || '').trim();
+        const title = String(design?.displayName || design?.title || '').trim();
+        if (nicheName && !isTechnicalLiveSyncTitle(nicheName)) return nicheName;
+        if (title && !isTechnicalLiveSyncTitle(title)) return title;
+        if (nicheName) return nicheName;
+        return 'Live Sync';
+    }
+
     async function loadLocalLibraryDedupeIndex() {
         const ids = new Set();
         const oracleKeys = new Set();
         const nameKeys = new Set();
+        const contentHashes = new Set();
         try {
             const res = await fetch(EMAILCORE_GHOST_LIBRARY_URL, { method: 'GET' });
             const data = await res.json().catch(() => ({}));
@@ -2539,41 +2626,52 @@
                     || ''
                 ).trim();
                 if (oracleKey) oracleKeys.add(oracleKey);
+                const hash = String(item?.contentHash || item?.metadata?.contentHash || '').trim();
+                if (hash) contentHashes.add(hash);
                 const nk = normalizeLiveSyncNameKey(
                     item?.displayName || item?.fileName || item?.title,
-                    item?.nicheId,
-                    item?.nicheName
+                    item?.nicheId || item?.siteDesignId,
+                    item?.nicheName || item?.niche
                 );
                 if (nk) nameKeys.add(nk);
             }
         } catch (err) {
             throw new Error(`Ghost library unreachable (127.0.0.1:3019): ${err?.message || err}`);
         }
-        return { ids, oracleKeys, nameKeys };
+        return { ids, oracleKeys, nameKeys, contentHashes };
     }
 
     function isLiveSyncDuplicate(design, index) {
         const siteId = String(design?.id || '').trim();
         const extId = String(design?.extensionLibraryId || '').trim();
         const oracleKey = String(design?.oracleObjectKey || '').trim();
-        const nameKey = normalizeLiveSyncNameKey(design?.displayName, design?.nicheId, design?.nicheName);
+        const displayName = resolveLiveSyncDisplayName(design);
+        const nameKey = normalizeLiveSyncNameKey(displayName, design?.nicheId, design?.nicheName);
         if (siteId && index.ids.has(siteId)) return true;
         if (extId && index.ids.has(extId)) return true;
         if (oracleKey && index.oracleKeys.has(oracleKey)) return true;
-        if (nameKey && index.nameKeys.has(nameKey)) return true;
+        // Same niche title alone is NOT enough — multiple designs can share a niche.
+        // Name-key dedupe only when combined with niche id and no oracle key (legacy).
+        if (!oracleKey && !siteId && nameKey && index.nameKeys.has(nameKey)) return true;
         return false;
     }
 
     async function uploadSiteDesignToGhostLibrary(design, imageBlob, auth) {
         const form = new FormData();
-        const fileName = `${String(design.displayName || design.id || 'design').replace(/[^\w\u0600-\u06FF.-]+/g, '_').slice(0, 80)}.png`;
+        const displayName = resolveLiveSyncDisplayName(design);
+        const nicheName = String(design.nicheName || design.niche || '').trim();
+        const nicheId = String(design.nicheId || '').trim();
+        const siteDesignId = String(design.id || '').trim();
+        const fileName = `${displayName.replace(/[^\w\u0600-\u06FF.\s-]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80) || 'Live Sync'}.png`;
         form.append('file', imageBlob, fileName);
-        form.append('displayName', String(design.displayName || design.id || 'Live Sync'));
-        form.append('source', 'emailcore-live-sync');
-        form.append('originalDesignId', String(design.id || ''));
+        form.append('displayName', displayName);
+        form.append('source', 'emailcore_live_sync');
+        // siteDesignId = site generated id; do NOT use originalDesignId (that marks Edited).
+        if (siteDesignId) form.append('siteDesignId', siteDesignId);
         form.append('oracleObjectKey', String(design.oracleObjectKey || ''));
-        form.append('nicheId', String(design.nicheId || ''));
-        form.append('nicheName', String(design.nicheName || ''));
+        if (nicheId) form.append('nicheId', nicheId);
+        if (nicheName) form.append('nicheName', nicheName);
+        if (nicheName) form.append('niche', nicheName);
         if (auth?.userId) form.append('siteUserId', String(auth.userId));
 
         const res = await fetch(`${EMAILCORE_GHOST_LIBRARY_URL}/upload`, {
@@ -2655,8 +2753,19 @@
 
             const designs = Array.isArray(listData?.designs) ? listData.designs : [];
             const index = await loadLocalLibraryDedupeIndex();
+            const dismissedStore = await chrome.storage.local.get([EMAILCORE_LIVE_SYNC_DISMISSED_KEY]);
+            const dismissed = new Set(
+                (Array.isArray(dismissedStore[EMAILCORE_LIVE_SYNC_DISMISSED_KEY])
+                    ? dismissedStore[EMAILCORE_LIVE_SYNC_DISMISSED_KEY]
+                    : []).map((id) => String(id || '').trim()).filter(Boolean)
+            );
 
             for (const design of designs) {
+                const siteId = String(design?.id || '').trim();
+                if (siteId && dismissed.has(siteId)) {
+                    skipped += 1;
+                    continue;
+                }
                 if (isLiveSyncDuplicate(design, index)) {
                     skipped += 1;
                     continue;
