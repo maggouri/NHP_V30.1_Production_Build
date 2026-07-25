@@ -11,6 +11,7 @@
   const PROMPTS_KEY = 'nhpPromptBagPrompts';
   const IMAGES_KEY = 'nhpPromptBagImages';
   const NOTE_DATA_KEY = 'teepublic_manager_data';
+  const OVERLAY_ENABLED_KEY = 'nhpPromptBagOverlayEnabled';
   const MAX_PROMPTS = 120;
   const MAX_IMAGES = 80;
 
@@ -26,7 +27,7 @@
   const host = document.createElement('div');
   host.id = 'nhp-prompt-bag-overlay-host';
   const shadow = host.attachShadow({ mode: 'open' });
-  document.documentElement.appendChild(host);
+  // Mounted only when nhpPromptBagOverlayEnabled !== false (see applyOverlayEnabled).
 
   shadow.innerHTML = `
     <style>
@@ -945,6 +946,9 @@
 
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName !== 'local') return;
+    if (Object.prototype.hasOwnProperty.call(changes, OVERLAY_ENABLED_KEY)) {
+      applyOverlayEnabled(changes[OVERLAY_ENABLED_KEY].newValue);
+    }
     let changed = false;
     if (changes[PROMPTS_KEY]) {
       prompts = Array.isArray(changes[PROMPTS_KEY].newValue) ? changes[PROMPTS_KEY].newValue : [];
@@ -958,12 +962,37 @@
       noteNiches = normalizeNoteNiches(changes[NOTE_DATA_KEY].newValue);
       changed = true;
     }
-    if (changed) {
+    if (changed && host.isConnected) {
       render();
       void autoGenerateMissingImagePrompts();
       setStatus(`Prompts: ${prompts.length} | Images: ${images.length} | Notes: ${noteNiches.length}`);
     }
   });
+
+  function isOverlayEnabled(value) {
+    return value !== false;
+  }
+
+  function applyOverlayEnabled(value) {
+    const enabled = isOverlayEnabled(value);
+    if (enabled) {
+      if (!host.isConnected) {
+        (document.documentElement || document.body)?.appendChild(host);
+      }
+      return;
+    }
+    isOpen = false;
+    panel.classList.remove('open');
+    if (host.isConnected) host.remove();
+  }
+
+  try {
+    chrome.storage.local.get([OVERLAY_ENABLED_KEY], (res) => {
+      applyOverlayEnabled(res?.[OVERLAY_ENABLED_KEY]);
+    });
+  } catch (_) {
+    applyOverlayEnabled(true);
+  }
 
   document.addEventListener('focusin', (event) => {
     rememberEditable(event.target);

@@ -83,7 +83,13 @@ const ADMIN_I18N = {
     menuStop: { ar: 'إيقاف', en: 'Stop' },
     menuRestart: { ar: 'إعادة', en: 'Restart' },
     menuTerminal: { ar: 'طرفية', en: 'Terminal' },
-    menuToggle: { ar: 'تعطيل/تفعيل', en: 'Disable/enable' }
+    menuToggle: { ar: 'تعطيل/تفعيل', en: 'Disable/enable' },
+    promptBagUiTitle: { ar: 'واجهة Prompt Bag', en: 'Prompt Bag UI' },
+    promptBagOverlay: { ar: 'حقيبة البرومبت العائمة', en: 'Floating Prompt Bag' },
+    promptBagOverlayDesc: {
+        ar: 'إظهار أو إخفاء أيقونة الحقيبة العائمة (Notes / Images / Prompts / GEM / GPT) على الصفحات',
+        en: 'Show or hide the floating bag icon (Notes / Images / Prompts / GEM / GPT) on pages'
+    }
 };
 
 function adminIsRtl() {
@@ -729,6 +735,7 @@ async function nhpAdminDefaultProxyBaseUrl() {
 }
 const AUTO_LITE_ASSIST_KEY = 'nhpAutoLiteAssist';
 const FORCE_I3_MODE_KEY = 'nhpForceI3Ram2GbMode';
+const PROMPT_BAG_OVERLAY_ENABLED_KEY = 'nhpPromptBagOverlayEnabled';
 const isLowSpecModeEnabled = () => !!window.NHP_IS_LIGHT_MODE || !!window.NHP_LOW_SPEC_MODE;
 let latestFullScanReportText = '';
 const NHP_UI_DIAG_LOG_LIMIT = 220;
@@ -884,6 +891,7 @@ const PRIVATE_PREFERENCE_KEY_WHITELIST = [
     'smartSyncEnabled',
     AUTO_LITE_ASSIST_KEY,
     FORCE_I3_MODE_KEY,
+    PROMPT_BAG_OVERLAY_ENABLED_KEY,
     'nhpPerformanceMode'
 ];
 
@@ -1559,6 +1567,10 @@ export async function initAdminModule(helpers) {
             const i3ModeEl = document.getElementById('toggle-i3-ram-2gb-mode');
             if (i3ModeEl) i3ModeEl.checked = importedPreferences[FORCE_I3_MODE_KEY] === true;
         }
+        if (Object.prototype.hasOwnProperty.call(importedPreferences, PROMPT_BAG_OVERLAY_ENABLED_KEY)) {
+            const promptBagEl = document.getElementById('toggle-prompt-bag-overlay');
+            if (promptBagEl) promptBagEl.checked = importedPreferences[PROMPT_BAG_OVERLAY_ENABLED_KEY] !== false;
+        }
         if (Object.prototype.hasOwnProperty.call(importedPreferences, 'cloudSyncEnabled')) {
             const cloudEl = document.getElementById('toggle-cloud-sync');
             if (cloudEl) cloudEl.checked = importedPreferences.cloudSyncEnabled !== false;
@@ -1781,6 +1793,7 @@ export async function initAdminModule(helpers) {
                 'toggle-smart-sync',
                 'toggle-auto-lite-assist',
                 'toggle-i3-ram-2gb-mode',
+                'toggle-prompt-bag-overlay',
                 'admin-ai-key-gemini',
                 'admin-ai-key-cursor',
                 'admin-ai-key-gpt',
@@ -1922,6 +1935,7 @@ export async function initAdminModule(helpers) {
                 'smartSyncEnabled',
                 AUTO_LITE_ASSIST_KEY,
                 FORCE_I3_MODE_KEY,
+                PROMPT_BAG_OVERLAY_ENABLED_KEY,
                 'nhpPerformanceMode',
                 'savedDesignQueue',
                 'teepublic_manager_data',
@@ -1935,6 +1949,7 @@ export async function initAdminModule(helpers) {
             push('OK', 'Setting:smartSyncEnabled', String(data.smartSyncEnabled));
             push('OK', `Setting:${AUTO_LITE_ASSIST_KEY}`, String(data[AUTO_LITE_ASSIST_KEY]));
             push('OK', `Setting:${FORCE_I3_MODE_KEY}`, String(data[FORCE_I3_MODE_KEY]));
+            push('OK', `Setting:${PROMPT_BAG_OVERLAY_ENABLED_KEY}`, String(data[PROMPT_BAG_OVERLAY_ENABLED_KEY]));
             push('OK', 'Setting:nhpPerformanceMode', String(data.nhpPerformanceMode || 'performance(default)'));
             push(Array.isArray(data.savedDesignQueue) ? 'OK' : 'WARN', 'savedDesignQueue', Array.isArray(data.savedDesignQueue) ? `items=${data.savedDesignQueue.length}` : 'not array');
             const keyCandidate = String(
@@ -3486,6 +3501,21 @@ export async function initAdminModule(helpers) {
                 showToast(enabled
                     ? '🐢 تم تفعيل وضع I3 RAM 2GB (Ultra Lite)'
                     : '⚡ تم تعطيل وضع I3 RAM 2GB');
+            });
+        });
+    }
+
+    const togglePromptBagOverlay = document.getElementById('toggle-prompt-bag-overlay');
+    if (togglePromptBagOverlay) {
+        chrome.storage.local.get([PROMPT_BAG_OVERLAY_ENABLED_KEY], (res) => {
+            togglePromptBagOverlay.checked = res[PROMPT_BAG_OVERLAY_ENABLED_KEY] !== false;
+        });
+        togglePromptBagOverlay.addEventListener('change', (e) => {
+            const enabled = !!e.target.checked;
+            chrome.storage.local.set({ [PROMPT_BAG_OVERLAY_ENABLED_KEY]: enabled }, () => {
+                showToast(enabled
+                    ? '🎒 تم تفعيل حقيبة البرومبت العائمة'
+                    : '⏸ تم إخفاء حقيبة البرومبت العائمة');
             });
         });
     }
