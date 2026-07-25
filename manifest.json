@@ -1,12 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "Niche Hunter Pro - USPTO + TeePublic + AI",
+  "default_locale": "en",
+  "name": "__MSG_extName__",
+  "short_name": "Niche Hunter Pro",
   "version": "40.0.4",
-  "description": "أداة متكاملة: فحص USPTO + تحليل TeePublic + Niche Commander بالذكاء الاصطناعي",
+  "description": "__MSG_extDescription__",
   "icons": {
-    "16": "icon.png",
-    "48": "icon.png",
-    "128": "icon.png"
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   },
   "permissions": [
     "activeTab",
@@ -39,7 +42,7 @@
       }
     ]
   },
-    "host_permissions": [
+  "host_permissions": [
     "https://*.emailcore.app/*",
     "https://emailcore.app/*",
     "https://nocochat.com/*",
@@ -91,10 +94,12 @@
   },
   "action": {
     "default_popup": "launcher.html",
+    "default_title": "__MSG_extName__",
     "default_icon": {
-      "16": "icon.png",
-      "48": "icon.png",
-      "128": "icon.png"
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
     }
   },
   "background": {
@@ -165,8 +170,8 @@
     {
       "matches": [
         "https://*.emailcore.app/*",
-    "https://emailcore.app/*",
-    "https://tmsearch.uspto.gov/*",
+        "https://emailcore.app/*",
+        "https://tmsearch.uspto.gov/*",
         "https://www.teepublic.com/*",
         "*://*.facebook.com/*",
         "*://web.facebook.com/*",

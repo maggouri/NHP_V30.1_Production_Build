@@ -1,0 +1,10 @@
+﻿{
+  "extName": {
+    "message": "Niche Hunter Pro",
+    "description": "Extension display name"
+  },
+  "extDescription": {
+    "message": "منصة ذكاء اصطناعي لاكتشاف النيتشات، تحليل الترندات، التحقق من العلامات التجارية، وتوليد التصاميم وأتمتة سير العمل.",
+    "description": "Extension description"
+  }
+}

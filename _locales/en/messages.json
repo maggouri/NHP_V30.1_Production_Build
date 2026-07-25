@@ -1,0 +1,10 @@
+﻿{
+  "extName": {
+    "message": "Niche Hunter Pro",
+    "description": "Extension display name"
+  },
+  "extDescription": {
+    "message": "AI-powered suite for niche discovery, trademark safety, trend intelligence, design generation, and workflow automation.",
+    "description": "Extension store / chrome://extensions description"
+  }
+}
