@@ -532,7 +532,7 @@ async function loadAdminSetupPanel(showToast) {
     const host = document.getElementById('admin-setup-host');
     if (!host || adminSetupLoaded) return;
     try {
-        const htmlUrl = chrome.runtime.getURL('modules/admin/setup.html?v=setup_wizard_v2');
+        const htmlUrl = chrome.runtime.getURL('modules/admin/setup.html?v=setup_wizard_v3');
         const res = await fetch(htmlUrl);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         host.innerHTML = await res.text();

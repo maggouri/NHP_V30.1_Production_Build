@@ -109,17 +109,19 @@
         padding: 0 0.25rem;
         border: none;
         background: transparent;
-        cursor: default;
+        cursor: pointer;
         font: inherit;
         color: inherit;
     }
 
-    .wizard-stepper-item.clickable {
-        cursor: pointer;
+    .wizard-stepper-item:hover .wizard-stepper-dot {
+        transform: scale(1.08);
     }
 
-    .wizard-stepper-item.clickable:hover .wizard-stepper-dot {
-        transform: scale(1.08);
+    .wizard-stepper-item:focus-visible {
+        outline: 2px solid rgba(99, 102, 241, 0.55);
+        outline-offset: 2px;
+        border-radius: 0.5rem;
     }
 
     .wizard-stepper-item::after {
@@ -535,24 +537,56 @@
         color: #e0e7ff;
     }
 
-    .wizard-nav button:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
+    /* Soft help banner */
+    .wizard-help-banner {
+        font-size: 0.625rem;
+        font-weight: 700;
+        color: #a5b4fc;
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.28);
+        border-radius: 0.5625rem;
+        padding: 0.5rem 0.75rem;
+        line-height: 1.45;
     }
 
-    /* Modal & drawer */
+    .wizard-ack-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+        padding: 0.625rem 0.75rem;
+        border-radius: 0.5625rem;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        background: rgba(2, 6, 23, 0.45);
+        font-size: 0.625rem;
+        color: #cbd5e1;
+        line-height: 1.45;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .wizard-ack-row input {
+        margin-top: 0.125rem;
+        flex-shrink: 0;
+        accent-color: #818cf8;
+    }
+
+    /* Modal overlays — fixed to viewport; JS may reparent to body to escape admin overflow */
     .wizard-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(2, 6, 23, 0.72);
+        background: rgba(2, 6, 23, 0.78);
         z-index: 2147483000;
         display: none;
         align-items: center;
         justify-content: center;
         padding: 1rem;
+        box-sizing: border-box;
     }
 
-    .wizard-overlay.is-open { display: flex; }
+    .wizard-overlay.is-open {
+        display: flex !important;
+    }
 
     .wizard-modal {
         width: min(100%, 36rem);
@@ -560,8 +594,16 @@
         overflow: auto;
         border-radius: 0.875rem;
         border: 1px solid var(--wiz-border);
-        background: rgba(15, 23, 42, 0.96);
+        background: rgba(15, 23, 42, 0.98);
         padding: 1.25rem;
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+    }
+
+    .wizard-modal.wizard-log-modal {
+        width: min(100%, 28rem);
+        max-height: min(88vh, 36rem);
+        display: flex;
+        flex-direction: column;
     }
 
     .wizard-modal-head {
@@ -569,6 +611,8 @@
         align-items: center;
         justify-content: space-between;
         margin-bottom: 1rem;
+        gap: 0.75rem;
+        flex-shrink: 0;
     }
 
     .wizard-modal-head h4 {
@@ -576,6 +620,19 @@
         font-size: 0.875rem;
         font-weight: 800;
         color: #e2e8f0;
+    }
+
+    .wizard-modal-head button {
+        border: 1px solid var(--wiz-border);
+        background: rgba(51, 65, 85, 0.5);
+        color: #e2e8f0;
+        border-radius: 0.4375rem;
+        width: 2rem;
+        height: 2rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .wizard-files-grid {
@@ -603,57 +660,40 @@
         margin: 0.125rem 0 0.375rem;
     }
 
-    .wizard-drawer {
-        position: fixed;
-        top: 0;
-        bottom: 0;
-        width: min(100%, 22rem);
-        background: rgba(15, 23, 42, 0.98);
-        border: 1px solid var(--wiz-border);
-        z-index: 2147483001;
-        display: none;
-        flex-direction: column;
-        padding: 1rem;
-        box-shadow: -8px 0 32px rgba(0, 0, 0, 0.4);
-        transition: transform 0.25s ease;
-    }
-
-    .admin-setup-root[dir="rtl"] .wizard-drawer,
-    .wizard-drawer[dir="rtl"] {
-        left: 0;
-        transform: translateX(-100%);
-        border-right: none;
-    }
-
-    .admin-setup-root[dir="ltr"] .wizard-drawer,
-    .wizard-drawer[dir="ltr"] {
-        right: 0;
-        transform: translateX(100%);
-        border-left: none;
-    }
-
-    .wizard-drawer.is-open {
-        display: flex;
-        transform: translateX(0);
-    }
-
     .wizard-log-preview {
         flex: 1;
-        min-height: 12rem;
+        min-height: 14rem;
+        max-height: min(55vh, 22rem);
         overflow: auto;
         font-family: ui-monospace, monospace;
-        font-size: 0.5625rem;
-        line-height: 1.45;
+        font-size: 0.625rem;
+        line-height: 1.5;
         color: #94a3b8;
-        padding: 0.625rem;
-        border-radius: 0.4375rem;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
         border: 1px solid var(--wiz-border);
-        background: rgba(2, 6, 23, 0.65);
+        background: rgba(2, 6, 23, 0.72);
         white-space: pre-wrap;
         word-break: break-word;
         direction: ltr;
         text-align: left;
         margin-top: 0.5rem;
+    }
+
+    .wizard-log-preview.is-empty {
+        color: #64748b;
+        font-family: inherit;
+        font-size: 0.6875rem;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        direction: inherit;
+    }
+
+    .wizard-nav button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
     }
 
     .wizard-hidden { display: none !important; }
@@ -670,15 +710,17 @@
     <div class="wizard-topbar">
         <div class="wizard-brand">
             <h2 id="wizard-title">⚙️ التهيئة</h2>
-            <p id="wizard-subtitle">معالج خطوة بخطوة لتجهيز NHP على هذا الجهاز</p>
+            <p id="wizard-subtitle">التهيئة مجال للمساعدة وليس للتعقيد — مرّ بحرية وتخطَّ ما تشاء</p>
         </div>
         <div class="wizard-top-actions">
-            <button type="button" id="btn-setup-advanced"><i class="fa-solid fa-toolbox"></i> <span data-i18n="advancedTools">أدوات متقدمة</span></button>
-            <button type="button" id="btn-setup-log-drawer"><i class="fa-solid fa-scroll"></i> <span data-i18n="setupLog">سجل التهيئة</span></button>
-            <button type="button" id="btn-setup-refresh" title="Refresh"><i class="fa-solid fa-rotate"></i></button>
+            <button type="button" id="btn-setup-advanced" aria-haspopup="dialog"><i class="fa-solid fa-toolbox"></i> <span data-i18n="advancedTools">أدوات متقدمة</span></button>
+            <button type="button" id="btn-setup-log-drawer" aria-haspopup="dialog"><i class="fa-solid fa-scroll"></i> <span data-i18n="setupLog">سجل التهيئة</span></button>
+            <button type="button" id="btn-setup-refresh" title="Refresh" aria-label="Refresh"><i class="fa-solid fa-rotate"></i></button>
         </div>
         <div class="wizard-step-counter" id="wizard-step-counter">الخطوة 1 من 6</div>
     </div>
+
+    <div class="wizard-help-banner" id="wizard-help-banner" data-i18n="helpBanner">التهيئة مساعدة اختيارية — الفحص قد يفشل حتى مع وجود الأدوات. يمكنك التأكيد والمتابعة أو القفز لأي خطوة.</div>
 
     <div class="wizard-stepper-wrap">
         <nav class="wizard-stepper" id="wizard-stepper" aria-label="Setup steps"></nav>
@@ -702,19 +744,23 @@
             <!-- Step 1: Requirements -->
             <div class="wizard-step-content" data-step="1">
                 <h3 data-i18n="step1Title">المتطلبات</h3>
-                <p class="wizard-lead" data-i18n="step1Lead">تأكد من تثبيت Chrome و Node.js قبل المتابعة.</p>
+                <p class="wizard-lead" data-i18n="step1Lead">فحص اختياري لـ Chrome و Node.js — قد يفشل الكشف حتى وهما مثبتان. أكّد يدوياً وتابع بحرية.</p>
                 <div class="wizard-status-grid">
                     <div class="wizard-status-card" id="wiz-req-chrome">
                         <div class="icon-row"><i class="fa-brands fa-chrome" style="color:#fbbf24"></i><span class="name">Google Chrome</span></div>
                         <span class="status-pill warn" id="wiz-chrome-pill">…</span>
-                        <span class="hint" data-i18n="chromeHint">متصفح Chrome مطلوب لتحميل الإضافة</span>
+                        <span class="hint" data-i18n="chromeHint">متصفح Chrome لتحميل الإضافة (مساعدة فقط)</span>
                     </div>
                     <div class="wizard-status-card" id="wiz-req-node">
                         <div class="icon-row"><i class="fa-brands fa-node-js" style="color:#34d399"></i><span class="name">Node.js</span></div>
                         <span class="status-pill warn" id="wiz-node-pill">…</span>
-                        <span class="hint" data-i18n="nodeHint">مطلوب لتشغيل السيرفرات المحلية</span>
+                        <span class="hint" data-i18n="nodeHint">لتشغيل السيرفرات المحلية (مساعدة فقط)</span>
                     </div>
                 </div>
+                <label class="wizard-ack-row" id="wiz-req-ack-row" for="wiz-req-ack">
+                    <input type="checkbox" id="wiz-req-ack">
+                    <span data-i18n="ackTools">لديّ هذه الأدوات على جهازي — المتابعة مسموحة حتى لو فشل الفحص</span>
+                </label>
                 <div class="wizard-actions">
                     <button type="button" id="btn-setup-download-chrome"><i class="fa-brands fa-chrome"></i> <span data-i18n="downloadChrome">تحميل Chrome</span></button>
                     <button type="button" id="btn-setup-download-node"><i class="fa-brands fa-node-js"></i> <span data-i18n="downloadNode">تحميل Node.js</span></button>
@@ -850,22 +896,24 @@
         </div>
     </div>
 
-    <!-- Setup Log Drawer -->
-    <div class="wizard-overlay" id="wizard-log-overlay" aria-hidden="true"></div>
-    <aside class="wizard-drawer" id="wizard-log-drawer" aria-hidden="true">
-        <div class="wizard-modal-head">
-            <h4 data-i18n="setupLog">سجل التهيئة</h4>
-            <button type="button" id="btn-log-close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+    <!-- Setup Log Modal (visible panel; reparented to body on open) -->
+    <div class="wizard-overlay" id="wizard-log-overlay" aria-hidden="true">
+        <div class="wizard-modal wizard-log-modal" id="wizard-log-drawer" role="dialog" aria-labelledby="wizard-log-title" aria-modal="true">
+            <div class="wizard-modal-head">
+                <h4 id="wizard-log-title" data-i18n="setupLog">سجل التهيئة</h4>
+                <button type="button" id="btn-log-close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="wizard-lead" data-i18n="logLead" style="margin:0">سجل أحداث التهيئة في هذه الجلسة — مساعدة للتشخيص، وليس قفلاً.</p>
+            <details class="wizard-tech-details">
+                <summary data-i18n="techDetails">تفاصيل تقنية</summary>
+                <div class="tech-body" id="setup-log-path">—</div>
+            </details>
+            <div class="wizard-actions">
+                <button type="button" id="btn-setup-copy-report"><i class="fa-regular fa-copy"></i> <span data-i18n="copyReport">نسخ التقرير</span></button>
+                <button type="button" id="btn-setup-open-log"><span data-i18n="openLog">فتح السجل</span></button>
+                <button type="button" id="btn-setup-clear-log-view"><span data-i18n="clearView">مسح العرض</span></button>
+            </div>
+            <div class="wizard-log-preview is-empty" id="setup-log-preview" data-i18n-empty="logEmpty">لا توجد إدخالات بعد — نفّذ إجراءً أو حدّث الحالة لملء السجل.</div>
         </div>
-        <details class="wizard-tech-details">
-            <summary data-i18n="techDetails">تفاصيل تقنية</summary>
-            <div class="tech-body" id="setup-log-path">—</div>
-        </details>
-        <div class="wizard-actions">
-            <button type="button" id="btn-setup-copy-report"><i class="fa-regular fa-copy"></i> <span data-i18n="copyReport">نسخ التقرير</span></button>
-            <button type="button" id="btn-setup-open-log"><span data-i18n="openLog">فتح السجل</span></button>
-            <button type="button" id="btn-setup-clear-log-view"><span data-i18n="clearView">مسح العرض</span></button>
-        </div>
-        <div class="wizard-log-preview" id="setup-log-preview"></div>
-    </aside>
+    </div>
 </div>
