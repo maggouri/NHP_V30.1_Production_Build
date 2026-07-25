@@ -1984,6 +1984,23 @@
             return true;
         }
 
+        if (action === 'EMAILCORE_NHP40_PUSH') {
+            const designs = Array.isArray(request.designs) ? request.designs : [];
+            (async () => {
+                try {
+                    const result = await pushNhp40Designs(designs);
+                    sendResponse({ success: true, ok: true, ...result });
+                } catch (err) {
+                    sendResponse({
+                        success: false,
+                        ok: false,
+                        error: err?.message || String(err),
+                    });
+                }
+            })();
+            return true;
+        }
+
         if (action === 'EMAILCORE_DELETE_SITE_DESIGNS') {
             const ids = (Array.isArray(request.ids) ? request.ids : [])
                 .map((id) => String(id || '').trim())
@@ -2692,6 +2709,146 @@
         return { ok: true, data };
     }
 
+    async function fetchLiveSyncDesignBlob(design, auth) {
+        const key = String(design?.oracleObjectKey || '').trim();
+        const apiBase = auth?.apiBase || '';
+        const userId = auth?.userId || '';
+        const token = auth?.token || '';
+        if (key && apiBase && userId && token) {
+            const mediaUrl = new URL(
+                design.mediaUrl && String(design.mediaUrl).includes('/api/extension/designs/media')
+                    ? (String(design.mediaUrl).startsWith('http')
+                        ? design.mediaUrl
+                        : `${apiBase}${design.mediaUrl}`)
+                    : `${apiBase}/api/extension/designs/media`
+            );
+            if (!mediaUrl.searchParams.get('key')) mediaUrl.searchParams.set('key', key);
+            mediaUrl.searchParams.set('userId', userId);
+            const mediaRes = await fetch(mediaUrl, {
+                headers: {
+                    'x-creaty-token': token,
+                    'x-extension-id': chrome.runtime.id,
+                },
+            });
+            if (mediaRes.ok) {
+                const blob = await mediaRes.blob();
+                if (blob && blob.size) return blob;
+            }
+        }
+        const fallback = String(design?.mediaUrl || '').trim();
+        if (fallback && /^https?:\/\//i.test(fallback)) {
+            const res = await fetch(fallback);
+            if (res.ok) {
+                const blob = await res.blob();
+                if (blob && blob.size) return blob;
+            }
+        }
+        return null;
+    }
+
+    async function importDesignsToGhostLibrary(designs, auth, { dismissed = new Set() } = {}) {
+        const index = await loadLocalLibraryDedupeIndex();
+        let imported = 0;
+        let skipped = 0;
+        let failed = 0;
+        for (const design of designs) {
+            const siteId = String(design?.id || '').trim();
+            if (siteId && dismissed.has(siteId)) {
+                skipped += 1;
+                continue;
+            }
+            if (isLiveSyncDuplicate(design, index)) {
+                skipped += 1;
+                continue;
+            }
+            const key = String(design?.oracleObjectKey || '').trim();
+            const hasMedia = !!(key || String(design?.mediaUrl || '').trim());
+            if (!hasMedia) {
+                skipped += 1;
+                continue;
+            }
+            try {
+                const blob = await fetchLiveSyncDesignBlob(design, auth);
+                if (!blob || !blob.size) {
+                    failed += 1;
+                    continue;
+                }
+                const result = await uploadSiteDesignToGhostLibrary(design, blob, auth);
+                if (result?.skipped) {
+                    skipped += 1;
+                } else {
+                    imported += 1;
+                    const oracleKey = String(design.oracleObjectKey || '').trim();
+                    const nameKey = normalizeLiveSyncNameKey(
+                        resolveLiveSyncDisplayName(design),
+                        design?.nicheId,
+                        design?.nicheName
+                    );
+                    if (siteId) index.ids.add(siteId);
+                    if (oracleKey) index.oracleKeys.add(oracleKey);
+                    if (nameKey) index.nameKeys.add(nameKey);
+                }
+            } catch (err) {
+                failed += 1;
+                console.warn('[EmailCore][LiveSync] import failed', design?.id, err?.message || err);
+            }
+        }
+        return { imported, skipped, failed, listed: designs.length };
+    }
+
+    async function pushNhp40Designs(designs) {
+        const list = (Array.isArray(designs) ? designs : [])
+            .map((d) => ({
+                id: String(d?.id || '').trim(),
+                oracleObjectKey: String(d?.oracleObjectKey || '').trim(),
+                displayName: String(d?.displayName || '').trim(),
+                nicheName: String(d?.nicheName || d?.niche || d?.displayName || '').trim(),
+                nicheId: String(d?.nicheId || '').trim(),
+                mediaUrl: String(d?.mediaUrl || '').trim(),
+            }))
+            .filter((d) => d.id && (d.oracleObjectKey || d.mediaUrl));
+        if (!list.length) {
+            return { imported: 0, skipped: 0, failed: 0, listed: 0, reason: 'no_designs' };
+        }
+        const flags = await chrome.storage.local.get([
+            CREATY_STORAGE_KEYS.apiBase,
+            CREATY_STORAGE_KEYS.userId,
+            CREATY_STORAGE_KEYS.token,
+            EMAILCORE_LIVE_SYNC_BUSY,
+        ]);
+        if (flags[EMAILCORE_LIVE_SYNC_BUSY] === true) {
+            // Allow NHP40 to wait briefly then proceed — user-initiated push.
+            await new Promise((r) => setTimeout(r, 800));
+        }
+        const apiBase = normalizeEmailCoreApiBase(flags[CREATY_STORAGE_KEYS.apiBase]);
+        const userId = String(flags[CREATY_STORAGE_KEYS.userId] || DEFAULT_EMAILCORE_CREATY_USER_ID).trim();
+        const token = String(flags[CREATY_STORAGE_KEYS.token] || DEFAULT_EMAILCORE_CREATY_TOKEN).trim();
+        if (!userId || !token) {
+            throw new Error('missing_creaty');
+        }
+        await chrome.storage.local.set({ [EMAILCORE_LIVE_SYNC_BUSY]: true });
+        try {
+            const auth = { apiBase, userId, token };
+            const stats = await importDesignsToGhostLibrary(list, auth);
+            const meta = {
+                lastRunAt: new Date().toISOString(),
+                source: 'nhp40',
+                ...stats,
+            };
+            await chrome.storage.local.set({ [EMAILCORE_LIVE_SYNC_META_KEY]: meta });
+            if (stats.imported > 0) {
+                try {
+                    chrome.runtime.sendMessage({ action: 'GENERATE_LIBRARY_REFRESH', source: 'nhp40' });
+                } catch {
+                    /* ignore */
+                }
+            }
+            return stats;
+        } finally {
+            await chrome.storage.local.set({ [EMAILCORE_LIVE_SYNC_BUSY]: false });
+        }
+    }
+
     async function pollLiveSyncLibrary({ force = false } = {}) {
         const flags = await chrome.storage.local.get([
             EMAILCORE_LIVE_SYNC_ENABLED_KEY,
@@ -2716,9 +2873,6 @@
         // force=true (bridge SET) still imports when local was just enabled even if server lags briefly.
         await chrome.storage.local.set({ [EMAILCORE_LIVE_SYNC_BUSY]: true });
         const auth = { apiBase, userId, token };
-        let imported = 0;
-        let skipped = 0;
-        let failed = 0;
         try {
             const listUrl = new URL(`${apiBase}/api/extension/designs/generated`);
             listUrl.searchParams.set('userId', userId);
@@ -2752,7 +2906,6 @@
             }
 
             const designs = Array.isArray(listData?.designs) ? listData.designs : [];
-            const index = await loadLocalLibraryDedupeIndex();
             const dismissedStore = await chrome.storage.local.get([EMAILCORE_LIVE_SYNC_DISMISSED_KEY]);
             const dismissed = new Set(
                 (Array.isArray(dismissedStore[EMAILCORE_LIVE_SYNC_DISMISSED_KEY])
@@ -2760,74 +2913,18 @@
                     : []).map((id) => String(id || '').trim()).filter(Boolean)
             );
 
-            for (const design of designs) {
-                const siteId = String(design?.id || '').trim();
-                if (siteId && dismissed.has(siteId)) {
-                    skipped += 1;
-                    continue;
-                }
-                if (isLiveSyncDuplicate(design, index)) {
-                    skipped += 1;
-                    continue;
-                }
-                const key = String(design.oracleObjectKey || '').trim();
-                if (!key) {
-                    skipped += 1;
-                    continue;
-                }
-                try {
-                    const mediaUrl = new URL(
-                        design.mediaUrl
-                            ? (String(design.mediaUrl).startsWith('http')
-                                ? design.mediaUrl
-                                : `${apiBase}${design.mediaUrl}`)
-                            : `${apiBase}/api/extension/designs/media`
-                    );
-                    if (!mediaUrl.searchParams.get('key')) mediaUrl.searchParams.set('key', key);
-                    mediaUrl.searchParams.set('userId', userId);
-                    const mediaRes = await fetch(mediaUrl, {
-                        headers: {
-                            'x-creaty-token': token,
-                            'x-extension-id': chrome.runtime.id,
-                        },
-                    });
-                    if (!mediaRes.ok) {
-                        failed += 1;
-                        continue;
-                    }
-                    const blob = await mediaRes.blob();
-                    if (!blob || !blob.size) {
-                        failed += 1;
-                        continue;
-                    }
-                    const result = await uploadSiteDesignToGhostLibrary(design, blob, auth);
-                    if (result?.skipped) {
-                        skipped += 1;
-                    } else {
-                        imported += 1;
-                        const siteId = String(design.id || '').trim();
-                        const oracleKey = String(design.oracleObjectKey || '').trim();
-                        const nameKey = normalizeLiveSyncNameKey(design.displayName, design.nicheId, design.nicheName);
-                        if (siteId) index.ids.add(siteId);
-                        if (oracleKey) index.oracleKeys.add(oracleKey);
-                        if (nameKey) index.nameKeys.add(nameKey);
-                    }
-                } catch (err) {
-                    failed += 1;
-                    console.warn('[EmailCore][LiveSync] import failed', design?.id, err?.message || err);
-                }
-            }
+            const stats = await importDesignsToGhostLibrary(designs, auth, { dismissed });
 
             const meta = {
                 lastRunAt: new Date().toISOString(),
-                imported,
-                skipped,
-                failed,
+                imported: stats.imported,
+                skipped: stats.skipped,
+                failed: stats.failed,
                 listed: designs.length,
                 live_sync_enabled: hasServerFlag ? listData.live_sync_enabled === true : localEnabled,
             };
             await chrome.storage.local.set({ [EMAILCORE_LIVE_SYNC_META_KEY]: meta });
-            if (imported > 0) {
+            if (stats.imported > 0) {
                 try {
                     chrome.runtime.sendMessage({ action: 'GENERATE_LIBRARY_REFRESH', source: 'live-sync' });
                 } catch {
