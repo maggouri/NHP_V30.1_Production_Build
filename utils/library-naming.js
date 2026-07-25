@@ -57,6 +57,38 @@ export function nicheTitleFromFileName(name) {
     .trim();
 }
 
+/** Strip compress/retry noise: "Cliff Burton_opt" → "Cliff Burton". */
+export function stripPipelineNameNoise(name) {
+  const fn = typeof globalThis !== 'undefined' && globalThis.NHP_stripPipelineNameNoise;
+  if (typeof fn === 'function') return fn(name);
+  return nicheTitleFromFileName(name)
+    .replace(/(_opt)+(?=(?:_\d+)?$)/i, '')
+    .trim();
+}
+
+/** True for pipeline/temp stems that must not become library display names. */
+export function isPipelineTempFileStem(name) {
+  const fn = typeof globalThis !== 'undefined' && globalThis.NHP_isPipelineTempFileStem;
+  if (typeof fn === 'function') return fn(name);
+  const raw = nicheTitleFromFileName(name);
+  if (!raw) return true;
+  const stem = stripPipelineNameNoise(raw) || raw;
+  const compact = stem.replace(/[\s_-]+/g, '_').toLowerCase();
+  if (/^(reference|prompt_bag|prompt-bag|image|img|upload|input|composite|composite_grid|composite_batch|untitled|temp|tmp)$/i.test(compact)) {
+    return true;
+  }
+  if (/^reference(_retry|_opt|_\d+)*$/i.test(compact)) return true;
+  if (/^retry(_opt|_\d+)*$/i.test(compact)) return true;
+  if (/^reference_retry/i.test(compact)) return true;
+  if (/^retry_opt/i.test(compact)) return true;
+  // File-like stems only (no spaces): design_1, split_2, nhp_ref, …
+  if (!/\s/.test(stem) && /^(design|split|gallery|nhp|nhp_ref|nhp_result|nhp_grid|nhp_generate)(_?\d+)?$/i.test(compact)) {
+    return true;
+  }
+  if (/^composite(_batch)?(_\d+)?$/i.test(compact)) return true;
+  return false;
+}
+
 export function nicheKeyFromTitle(title) {
   const fn = typeof globalThis !== 'undefined' && globalThis.NHP_nicheKey;
   if (typeof fn === 'function') return fn(title);
