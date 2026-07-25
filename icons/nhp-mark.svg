@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Niche Hunter Pro">
+  <rect width="512" height="512" rx="108" fill="#1a1d23"/>
+  <!-- Magnifying glass lens -->
+  <circle cx="214" cy="214" r="118" fill="none" stroke="#eef2f7" stroke-width="28" stroke-linecap="round"/>
+  <!-- Target ring (hunt) -->
+  <circle cx="214" cy="214" r="68" fill="none" stroke="#a78bfa" stroke-width="20" stroke-linecap="round"/>
+  <!-- EmailCore teal hex (shared brand geometry) -->
+  <polygon fill="#00d1b2" points="214,184 242,200 242,232 214,248 186,232 186,200"/>
+  <!-- Handle -->
+  <line x1="302" y1="302" x2="412" y2="412" stroke="#eef2f7" stroke-width="34" stroke-linecap="round"/>
+</svg>
