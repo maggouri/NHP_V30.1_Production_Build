@@ -4373,9 +4373,13 @@ if (document.readyState === 'loading') {
   startPopupInitialization();
 }
 
-// Pro Upgrade Btn
+// Pro Upgrade Btn → EmailCore Pricing (Coming Soon)
 bindOptionalClick('proUpgradeBtn', () => {
-  chrome.tabs.create({ url: 'https://maggouriverse.gumroad.com/l/yjgby' });
+  if (typeof NhpBillingHooks !== 'undefined' && NhpBillingHooks.openPricingPage) {
+    NhpBillingHooks.openPricingPage();
+    return;
+  }
+  chrome.tabs.create({ url: 'https://emailcore.app/admin#pricing' });
 });
 
 // Launch as Independent App Window

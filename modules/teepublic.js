@@ -159,10 +159,11 @@ export function initTeePublicModule(helpers) {
             }
 
             chrome.storage.local.get('isPro', licenseData => {
-                const isPro = true; 
+                // Paywall stub kept for history; enforcement stays off (EmailCore will command billing later).
+                const isPro = true;
                 if (!isPro && arr.length > 5) {
                     TP.alertEl.style.display = 'block';
-                    TP.alertEl.innerHTML = '⚠️ النسخة المجانية تسمح بفحص 5 نيتشات كحد أقصى.<br><br><a href="https://maggouriverse.gumroad.com/l/yjgby" target="_blank" style="color:var(--primary); text-decoration:none; cursor:pointer; font-weight:bold; background:rgba(108, 99, 255, 0.1); padding:5px 10px; border-radius:5px; margin-top:5px; display:inline-block;">💎 الترقية للنسخة Pro الآن</a>';
+                    TP.alertEl.innerHTML = '⚠️ النسخة المجانية تسمح بفحص 5 نيتشات كحد أقصى.<br><br><a href="https://emailcore.app/admin#pricing" target="_blank" rel="noopener noreferrer" style="color:var(--primary); text-decoration:none; cursor:pointer; font-weight:bold; background:rgba(108, 99, 255, 0.1); padding:5px 10px; border-radius:5px; margin-top:5px; display:inline-block;">💎 الأسعار والعضوية (قريباً)</a>';
                     return;
                 }
 

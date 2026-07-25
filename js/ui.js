@@ -27,9 +27,13 @@ export function switchTab(name) {
 window.switchTab = switchTab;
 
 export function initCommonUI() {
-    // Pro Upgrade Btn
+    // Pro Upgrade Btn → EmailCore Pricing (Coming Soon; no live checkout)
     document.getElementById('proUpgradeBtn').addEventListener('click', () => {
-        chrome.tabs.create({ url: 'https://maggouriverse.gumroad.com/l/yjgby' });
+        const open =
+            typeof NhpBillingHooks !== 'undefined' && NhpBillingHooks.openPricingPage
+                ? () => NhpBillingHooks.openPricingPage()
+                : () => chrome.tabs.create({ url: 'https://emailcore.app/admin#pricing' });
+        open();
     });
 
     // Expand to Tab Mode Btn
