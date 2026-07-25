@@ -7,20 +7,11 @@
 
     const ADMIN_SOURCE = 'emailcore-admin';
     const EXT_SOURCE = 'emailcore-extension';
-    const BRIDGE_VERSION = '1.3.2';
+    const BRIDGE_VERSION = '1.3.0';
 
     const ACTION_ALIASES = {
         NHP_SEND_TO_PROMPT_BAG: 'RADAR_SEND_TO_PROMPT_BAG',
     };
-
-    /** Serialize Prompt Bag relays — parallel hydrations overwhelm the service worker. */
-    let promptBagRelayQueue = Promise.resolve();
-
-    function enqueuePromptBagRelay(task) {
-        const run = promptBagRelayQueue.then(() => task());
-        promptBagRelayQueue = run.catch(() => {});
-        return run;
-    }
 
     function isAdminHost() {
         const host = String(location.hostname || '').toLowerCase();
@@ -180,15 +171,7 @@
     async function hydratePromptBagPayload(payload = {}) {
         const items = Array.isArray(payload.items) ? payload.items : [];
         if (!items.length) return payload;
-        const needsHydration = items.some((item) => {
-            const inline = String(item?.dataUrl || '').trim();
-            return !inline.startsWith('data:image/');
-        });
-        if (!needsHydration) return payload;
-        const hydrated = [];
-        for (const item of items) {
-            hydrated.push(await hydratePromptBagItemFromPage(item));
-        }
+        const hydrated = await Promise.all(items.map((item) => hydratePromptBagItemFromPage(item)));
         return { ...payload, items: hydrated };
     }
 
@@ -271,25 +254,11 @@
         }
 
         const action = ACTION_ALIASES[type] || type;
+        let forwardPayload = payload;
         if (type === 'NHP_SEND_TO_PROMPT_BAG') {
-            const result = await enqueuePromptBagRelay(async () => {
-                const items = Array.isArray(payload.items) ? payload.items : [];
-                const allInline = items.length > 0 && items.every((item) => {
-                    const inline = String(item?.dataUrl || '').trim();
-                    return inline.startsWith('data:image/');
-                });
-                const forwardPayload = (payload.skipHydrate || allInline)
-                    ? payload
-                    : await hydratePromptBagPayload(payload);
-                return forwardToBackground(action, forwardPayload);
-            });
-            if (result?.success !== false || result?.extensionId) {
-                markExtensionReady({ extensionId: result.extensionId || chrome.runtime.id });
-            }
-            reply(requestId, `${type}_RESULT`, result);
-            return;
+            forwardPayload = await hydratePromptBagPayload(payload);
         }
-        const result = await forwardToBackground(action, payload);
+        const result = await forwardToBackground(action, forwardPayload);
         if (result?.success !== false || result?.extensionId) {
             markExtensionReady({ extensionId: result.extensionId || chrome.runtime.id });
         }

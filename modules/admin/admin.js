@@ -64,7 +64,6 @@ const ADMIN_I18N = {
     statusOnline: { ar: 'متصل', en: 'Online' },
     statusOffline: { ar: 'غير متصل', en: 'Offline' },
     statusDisabled: { ar: 'معطّل', en: 'Disabled' },
-    statusDisabledInSettings: { ar: 'معطّل في الإعدادات', en: 'Disabled in settings' },
     statusEnabled: { ar: 'مفعّل', en: 'Enabled' },
     statusConfigured: { ar: 'مهيّأ', en: 'Configured' },
     statusNotConfigured: { ar: 'غير مهيّأ', en: 'Not configured' },
@@ -106,70 +105,50 @@ function adminT(ar, en) { return adminIsRtl() ? ar : en; }
 function summarizeNhpLocalServers(servers = []) {
     const list = Array.isArray(servers) ? servers : [];
     const enabled = list.filter((item) => !item.disabled);
-    const onlineTotal = list.filter((item) => item.online).length;
     const onlineEnabled = enabled.filter((item) => item.online).length;
     const disabledCount = list.filter((item) => item.disabled).length;
-    const disabledOnlineCount = list.filter((item) => item.disabled && item.online).length;
     const offlineEnabled = enabled.filter((item) => !item.online).map((item) => item.label || item.id);
     return {
-        onlineTotal,
         onlineEnabled,
         enabledTotal: enabled.length,
         total: list.length,
         disabledCount,
-        disabledOnlineCount,
         offlineEnabled,
-        allOnline: list.length > 0 && onlineTotal === list.length,
         allEnabledOnline: enabled.length > 0 && onlineEnabled === enabled.length
     };
 }
 
 function formatNhpLocalServersStatusMessage(servers = []) {
     const summary = summarizeNhpLocalServers(servers);
-    if (!summary.total) {
-        return adminT('لا توجد خدمات', 'No services');
-    }
-    const parts = [
-        adminT(`${summary.onlineTotal} متصل`, `${summary.onlineTotal} online`)
-    ];
     if (summary.disabledCount > 0) {
-        parts.push(adminI18n('statusDisabledInSettings') + ` (${summary.disabledCount})`);
+        return adminT(
+            `${summary.onlineEnabled} / ${summary.enabledTotal} نشطة (${summary.disabledCount} معطّلة)`,
+            `${summary.onlineEnabled} / ${summary.enabledTotal} active (${summary.disabledCount} disabled)`
+        );
     }
-    if (summary.offlineEnabled.length > 0) {
-        parts.push(adminT(
-            `${summary.offlineEnabled.length} غير متصل (مفعّل)`,
-            `${summary.offlineEnabled.length} offline (enabled)`
-        ));
-    }
-    parts.push(adminT(
-        `${summary.onlineTotal}/${summary.total} يعمل`,
-        `${summary.onlineTotal}/${summary.total} running`
-    ));
-    return parts.join(' · ');
+    return adminT(
+        `${summary.onlineEnabled} / ${summary.total} سيرفرات متصلة`,
+        `${summary.onlineEnabled} / ${summary.total} servers online`
+    );
 }
 
 function nhpLocalServersStatusTone(servers = []) {
     const summary = summarizeNhpLocalServers(servers);
-    if (!summary.total) return 'slate';
-    if (summary.allOnline) return 'emerald';
-    return summary.onlineTotal > 0 ? 'slate' : 'rose';
+    if (summary.enabledTotal === 0) return 'slate';
+    return summary.allEnabledOnline ? 'emerald' : (summary.onlineEnabled > 0 ? 'slate' : 'rose');
 }
 
 function nhpLocalServerStatusBadge(server = {}) {
+    if (server.disabled) {
+        if (server.online) {
+            return `<span class="ac-badge warn">${adminEscapeHtml(adminT('معطّل (يعمل)', 'Disabled (running)'))}</span>`;
+        }
+        return `<span class="ac-badge">${adminEscapeHtml(adminI18n('statusDisabled'))}</span>`;
+    }
     if (server.online) {
         return `<span class="ac-badge ok">${adminEscapeHtml(adminI18n('statusOnline'))}</span>`;
     }
-    if (server.disabled) {
-        return `<span class="ac-badge">${adminEscapeHtml(adminI18n('statusDisabled'))}</span>`;
-    }
     return `<span class="ac-badge fail">${adminEscapeHtml(adminI18n('statusOffline'))}</span>`;
-}
-
-function nhpLocalServerDetailsCell(server = {}) {
-    if (server.disabled) {
-        return `<span class="ac-badge info">${adminEscapeHtml(adminI18n('statusDisabledInSettings'))}</span>`;
-    }
-    return '—';
 }
 
 function loadAdminCenterStyles() {
@@ -281,10 +260,9 @@ function getAdminActiveServers(servers = adminLastServersSnapshot?.servers || []
 function summarizeAdminServices(servers = adminLastServersSnapshot?.servers || []) {
     const summary = summarizeNhpLocalServers(servers);
     return {
-        online: summary.onlineTotal,
-        total: summary.total || 8,
-        offline: summary.offlineEnabled,
-        disabledInSettings: summary.disabledCount
+        online: summary.onlineEnabled,
+        total: summary.enabledTotal || summary.total || 8,
+        offline: summary.offlineEnabled
     };
 }
 
@@ -306,8 +284,12 @@ function adminStatusCheckedLabel() {
 }
 
 function isAdminCloudSyncConfigured() {
+    if (typeof window.GitHubSync === 'undefined') return false;
+    if (typeof window.GitHubSync.hasValidToken === 'function') {
+        return window.GitHubSync.hasValidToken();
+    }
     const token = window.GitHubSync?.config?.token;
-    return typeof window.GitHubSync !== 'undefined' && !!token && token !== 'YOUR_GITHUB_TOKEN';
+    return !!String(token || '').trim() && token !== 'YOUR_GITHUB_TOKEN';
 }
 
 async function refreshAdminLocalServersSnapshot() {
@@ -388,20 +370,15 @@ function renderAdminOverviewStatus() {
     };
     const servers = adminLastServersSnapshot?.servers || [];
     const summary = summarizeNhpLocalServers(servers);
-    const servicesTotal = summary.total || 8;
-    const servicesDetailParts = [];
-    if (summary.disabledCount > 0) {
-        servicesDetailParts.push(`${adminI18n('statusDisabledInSettings')} (${summary.disabledCount})`);
-    }
-    if (summary.offlineEnabled.length) {
-        servicesDetailParts.push(`${adminT('متوقف', 'Offline')}: ${summary.offlineEnabled.join(', ')}`);
-    }
-    servicesDetailParts.push(adminStatusCheckedLabel());
+    const servicesTotal = summary.enabledTotal || summary.total || 8;
+    const servicesDetails = summary.offlineEnabled.length
+        ? `${adminT('متوقف', 'Offline')}: ${summary.offlineEnabled.join(', ')} · ${adminStatusCheckedLabel()}`
+        : `${adminT('سيرفرات NHP', 'NHP servers')} · ${adminStatusCheckedLabel()}`;
     pushRow(
         adminT('الخدمات المحلية', 'Local services'),
-        adminLastServersSnapshot ? `${summary.onlineTotal}/${servicesTotal}` : '—',
-        !adminLastServersSnapshot ? 'info' : (summary.allOnline ? 'ok' : (summary.onlineTotal > 0 ? 'warn' : 'fail')),
-        servicesDetailParts.filter(Boolean).join(' · ') || '—'
+        adminLastServersSnapshot ? `${summary.onlineEnabled}/${servicesTotal}` : '—',
+        !adminLastServersSnapshot ? 'info' : (summary.allEnabledOnline ? 'ok' : (summary.onlineEnabled > 0 ? 'warn' : 'fail')),
+        servicesDetails.trim() || '—'
     );
 
     const nativeOk = isAdminNativeHostOk();
@@ -450,12 +427,12 @@ function renderAdminOverviewStatus() {
 async function updateAdminKpiCards() {
     const servers = adminLastServersSnapshot?.servers || [];
     const summary = summarizeNhpLocalServers(servers);
-    const servicesTotal = summary.total || 8;
+    const servicesTotal = summary.enabledTotal || summary.total || 8;
     const servicesVal = document.getElementById('admin-kpi-services-value');
-    if (servicesVal) servicesVal.textContent = adminLastServersSnapshot ? `${summary.onlineTotal}/${servicesTotal}` : '—';
+    if (servicesVal) servicesVal.textContent = adminLastServersSnapshot ? `${summary.onlineEnabled}/${servicesTotal}` : '—';
     setAdminKpiDot(
         'admin-kpi-services-dot',
-        !adminLastServersSnapshot ? 'gray' : (summary.allOnline ? 'green' : (summary.onlineTotal > 0 ? 'amber' : 'red'))
+        !adminLastServersSnapshot ? 'gray' : (summary.allEnabledOnline ? 'green' : (summary.onlineEnabled > 0 ? 'amber' : 'red'))
     );
     chrome.storage.local.get(['cloudSyncEnabled', 'smartSyncEnabled'], (res) => {
         const syncVal = document.getElementById('admin-kpi-sync-value');
@@ -549,7 +526,7 @@ async function loadAdminSetupPanel(showToast) {
     const host = document.getElementById('admin-setup-host');
     if (!host || adminSetupLoaded) return;
     try {
-        const htmlUrl = chrome.runtime.getURL('modules/admin/setup.html?v=setup_wizard_v3');
+        const htmlUrl = chrome.runtime.getURL('modules/admin/setup.html?v=setup_wizard_v2');
         const res = await fetch(htmlUrl);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         host.innerHTML = await res.text();
@@ -2687,12 +2664,10 @@ export async function initAdminModule(helpers) {
             const row = document.createElement('tr');
             row.dataset.serverId = server.id;
             const statusBadge = nhpLocalServerStatusBadge(server);
-            const detailsCell = nhpLocalServerDetailsCell(server);
             row.innerHTML = `
                 <td data-label="${adminEscapeHtml(adminI18n('colService'))}">${adminEscapeHtml(server.label || server.id)}</td>
                 <td data-label="${adminEscapeHtml(adminI18n('colPort'))}">${adminEscapeHtml(String(server.port || '—'))}</td>
                 <td data-label="${adminEscapeHtml(adminI18n('colStatus'))}">${statusBadge}</td>
-                <td data-label="${adminEscapeHtml(adminI18n('colDetails'))}">${detailsCell}</td>
                 <td data-label="${adminEscapeHtml(adminI18n('colActions'))}">
                     <div class="ac-menu-wrap">
                         <button type="button" class="ac-btn ac-btn-sm ac-menu-btn ac-service-menu-trigger"><i class="fa-solid fa-ellipsis"></i></button>
@@ -3435,6 +3410,39 @@ export async function initAdminModule(helpers) {
         toggleCloudSync.addEventListener('change', (e) => {
             chrome.storage.local.set({ cloudSyncEnabled: e.target.checked });
             showToast(e.target.checked ? '☁️ تم تفعيل المزامنة السحابية' : '⏸ تم إيقاف المزامنة السحابية');
+        });
+    }
+
+    const adminGithubTokenInput = document.getElementById('admin-github-token');
+    const btnAdminSaveGithubToken = document.getElementById('btn-admin-save-github-token');
+    if (adminGithubTokenInput) {
+        chrome.storage.local.get(['githubToken'], (res) => {
+            if (res.githubToken) adminGithubTokenInput.placeholder = '•••••• (محفوظ — اتركه فارغاً للإبقاء)';
+        });
+        if (typeof window.GitHubSync !== 'undefined') {
+            window.GitHubSync.loadTokenFromStorage().then(() => {
+                if (window.GitHubSync.hasValidToken()) {
+                    adminGithubTokenInput.placeholder = '•••••• (محفوظ — اتركه فارغاً للإبقاء)';
+                }
+            }).catch(() => {});
+        }
+    }
+    if (btnAdminSaveGithubToken && adminGithubTokenInput) {
+        btnAdminSaveGithubToken.addEventListener('click', () => {
+            const raw = adminGithubTokenInput.value.trim();
+            if (!raw) {
+                showToast('ℹ️ لم يُدخل توكن — اترك الحقل فارغاً أو الصق PAT جديد');
+                return;
+            }
+            if (typeof window.GitHubSync === 'undefined') {
+                showToast('❌ محرك GitHub Sync غير جاهز');
+                return;
+            }
+            window.GitHubSync.setToken(raw);
+            adminGithubTokenInput.value = '';
+            adminGithubTokenInput.placeholder = '•••••• (محفوظ)';
+            showToast('✅ تم حفظ توكن GitHub محلياً');
+            updateAdminKpiCards();
         });
     }
 

@@ -1095,7 +1095,19 @@ document.addEventListener('click', async (event) => {
       return;
     }
     if (button.dataset.action === 'open-gem' || button.dataset.action === 'open-gpt') {
-      const url = button.dataset.action === 'open-gem' ? GEMINI_IMAGE_GEM_URL : CHATGPT_IMAGE_GPT_URL;
+      const isGem = button.dataset.action === 'open-gem';
+      const url = isGem ? GEMINI_IMAGE_GEM_URL : CHATGPT_IMAGE_GPT_URL;
+      // Prefer send image+prompt (same path as per-card GEM/GPT) when bag has an image.
+      const image = images.find((item) => item?.dataUrl) || images[0] || null;
+      if (image?.dataUrl) {
+        const card = document.querySelector(`.image-card[data-id="${CSS.escape(image.id)}"]`);
+        const prompt = isGem
+          ? (card?.querySelector('[data-role="prompt-gemini"]')?.value ?? image.promptGemini ?? '').trim()
+          : (card?.querySelector('[data-role="prompt-gpt"]')?.value ?? image.promptGpt ?? '').trim();
+        setStatus(isGem ? 'جاري إرسال الصورة إلى Gemini...' : 'جاري إرسال الصورة إلى ChatGPT...', 'ok');
+        await sendImage(image, url, prompt);
+        return;
+      }
       const opened = window.open(url, '_blank', 'popup=yes,width=980,height=760');
       if (!opened) setStatus('Unable to open AI popup', 'error');
       return;

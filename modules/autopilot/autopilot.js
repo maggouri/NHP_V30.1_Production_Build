@@ -2581,14 +2581,33 @@ async function checkServerStatusNow() {
         return;
     }
     const port = SERVER_PORTS[resolvedPlatform] || 3019;
-    try {
-        const res = await fetchWithTimeout(await apLocalUrl(port, '/ping'), {}, 3000);
-        if (res.ok) {
+    const gc = typeof globalThis !== 'undefined' ? globalThis.NhpGhostConnect : null;
+    if (gc?.probePortWithRetry) {
+        const probed = await gc.probePortWithRetry(port, {
+            attempts: gc.RETRY?.ATTEMPTS ?? 3,
+            delayMs: gc.RETRY?.DELAY_MS ?? 2000,
+            timeoutMs: 3000,
+            onRetry: () => {
+                if (AP.serverStatusText) {
+                    AP.serverStatusText.textContent = 'جاري الاتصال...';
+                    AP.serverStatusText.style.color = '#fbbf24';
+                }
+            }
+        });
+        if (probed?.ok) {
             setServerStatus(true, port, 'direct-ping');
             return;
         }
-    } catch (err) {
-        console.warn('[Autopilot][ServerCheck] direct ping failed', err);
+    } else {
+        try {
+            const res = await fetchWithTimeout(await apLocalUrl(port, '/ping'), {}, 3000);
+            if (res.ok) {
+                setServerStatus(true, port, 'direct-ping');
+                return;
+            }
+        } catch (err) {
+            console.warn('[Autopilot][ServerCheck] direct ping failed', err);
+        }
     }
 
     try {
@@ -4742,18 +4761,26 @@ function computeApAccountUploadLimit(account, effectiveCountPer) {
         ? 0
         : (dailyCap == null ? Infinity : Math.max(0, dailyCap - uploadedToday));
     const remainingBatch = batchCap == null ? Infinity : Math.max(0, batchCap - uploadedSession);
-    const caps = [remainingToday, remainingBatch];
-    if (effectiveCountPer != null && Number.isFinite(Number(effectiveCountPer)) && Number(effectiveCountPer) > 0) {
-        caps.push(Number(effectiveCountPer));
+    const countPerAuto = effectiveCountPer == null;
+    const caps = [remainingToday];
+    // «تلقائي» = daily shield only — per-account batch limits must not skew fair split.
+    if (!countPerAuto) {
+        caps.push(remainingBatch);
+        if (Number.isFinite(Number(effectiveCountPer)) && Number(effectiveCountPer) > 0) {
+            caps.push(Number(effectiveCountPer));
+        }
     }
     const finiteCaps = caps.filter((v) => Number.isFinite(v));
-    const limit = finiteCaps.length ? Math.min(...finiteCaps) : 0;
-    return Math.max(0, limit);
+    if (!finiteCaps.length) {
+        return countPerAuto ? Infinity : 0;
+    }
+    return Math.max(0, Math.min(...finiteCaps));
 }
 
 function fairDistributeDesignCountsPreview(totalDesigns, limits) {
     const safeLimits = (Array.isArray(limits) ? limits : []).map((limit) => {
         const n = Number(limit);
+        if (n === Infinity) return Infinity;
         return Number.isFinite(n) && n > 0 ? n : 0;
     });
     const assigned = safeLimits.map(() => 0);

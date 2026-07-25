@@ -1,292 +1,320 @@
 <div class="admin-module-root admin-center admin-ui-shell" id="admin-center-root" dir="rtl">
 
-    <nav class="admin-subnav" aria-label="Admin Center navigation">
-        <button type="button" class="admin-subnav-btn is-active" id="admin-nav-dashboard" data-i18n="admin.nav.dashboard">لوحة التحكم</button>
-        <button type="button" class="admin-subnav-btn" id="admin-nav-setup" data-i18n="admin.nav.setup">الإعداد الأولي</button>
+    <nav class="admin-subnav" aria-label="Admin sections">
+        <button type="button" class="admin-subnav-btn is-active" id="admin-nav-dashboard" data-admin-view="main">
+            <span data-i18n="navAdminCenter">مركز الإدارة</span>
+        </button>
+        <button type="button" class="admin-subnav-btn" id="admin-nav-setup" data-admin-view="setup">
+            <span data-i18n="navSetup">التهيئة</span>
+        </button>
     </nav>
 
     <div class="admin-view-main" id="admin-view-main">
 
         <header class="admin-center-header">
             <div class="admin-center-title-block">
-                <h1 id="pageTitle" data-i18n="admin.header.title">مركز الإدارة</h1>
-                <p id="pageSubtitle" data-i18n="admin.header.subtitle">لوحة SaaS لإدارة الحساب، المزامنة، الخدمات، والتشخيص من مكان واحد.</p>
+                <h1 data-i18n="pageTitle">مركز الإدارة</h1>
+                <p data-i18n="pageSubtitle">إدارة الحساب، المزامنة، الخدمات، والتشخيص من لوحة واحدة.</p>
             </div>
             <div class="admin-center-header-actions">
-                <button type="button" class="ac-btn ac-btn-ghost ac-btn-sm" id="btn-admin-lang-toggle" data-i18n="admin.header.langToggle" aria-label="Toggle language">EN</button>
-                <button type="button" class="ac-btn ac-btn-primary ac-btn-sm" id="btn-start-ai-image-sender-top" title="Start AI Bridge 3031 and Chrome 9331 for GPT/Gemini image sending.">
-                    <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
-                    <span data-i18n="admin.header.aiSender">AI Sender 3031/9331</span>
+                <button type="button" class="ac-btn ac-btn-ghost ac-btn-sm" id="btn-admin-lang-toggle" title="Language">EN</button>
+                <button type="button" id="btn-start-ai-image-sender-top" class="ac-btn ac-btn-primary ac-btn-sm" title="AI Bridge 3031 + Chrome 9331">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span data-i18n="aiSender">إرسال الصور</span>
                 </button>
             </div>
         </header>
 
-        <div class="ac-kpi-row" role="group" aria-label="Key metrics">
+        <div class="ac-kpi-row" id="admin-kpi-row">
             <div class="ac-kpi-card" id="admin-kpi-services">
-                <div class="ac-kpi-label" data-i18n="admin.kpi.services">الخدمات</div>
+                <div class="ac-kpi-label" data-i18n="kpiSystem">حالة النظام</div>
                 <div class="ac-kpi-value">
-                    <span class="ac-status-dot gray" id="admin-kpi-services-dot" aria-hidden="true"></span>
+                    <span class="ac-status-dot gray" id="admin-kpi-services-dot"></span>
                     <span id="admin-kpi-services-value">—</span>
                 </div>
             </div>
             <div class="ac-kpi-card" id="admin-kpi-sync">
-                <div class="ac-kpi-label" data-i18n="admin.kpi.sync">المزامنة</div>
+                <div class="ac-kpi-label" data-i18n="kpiSync">المزامنة</div>
                 <div class="ac-kpi-value">
-                    <span class="ac-status-dot gray" id="admin-kpi-sync-dot" aria-hidden="true"></span>
+                    <span class="ac-status-dot gray" id="admin-kpi-sync-dot"></span>
                     <span id="admin-kpi-sync-value">—</span>
                 </div>
             </div>
             <div class="ac-kpi-card" id="admin-kpi-account">
-                <div class="ac-kpi-label" data-i18n="admin.kpi.account">الحساب</div>
+                <div class="ac-kpi-label" data-i18n="kpiAccount">الحساب</div>
                 <div class="ac-kpi-value">
-                    <span class="ac-status-dot gray" id="admin-kpi-account-dot" aria-hidden="true"></span>
+                    <span class="ac-status-dot gray" id="admin-kpi-account-dot"></span>
                     <span id="admin-kpi-account-value">—</span>
                 </div>
             </div>
             <div class="ac-kpi-card" id="admin-kpi-scan">
-                <div class="ac-kpi-label" data-i18n="admin.kpi.scan">آخر فحص</div>
+                <div class="ac-kpi-label" data-i18n="kpiFullScan">الفحص الشامل</div>
                 <div class="ac-kpi-value">
-                    <span class="ac-status-dot gray" id="admin-kpi-scan-dot" aria-hidden="true"></span>
+                    <span class="ac-status-dot gray" id="admin-kpi-scan-dot"></span>
                     <span id="admin-kpi-scan-value">—</span>
                 </div>
             </div>
             <div class="ac-kpi-card" id="admin-kpi-lastsync">
-                <div class="ac-kpi-label" data-i18n="admin.kpi.lastSync">آخر مزامنة</div>
+                <div class="ac-kpi-label" data-i18n="kpiLastSync">آخر مزامنة</div>
                 <div class="ac-kpi-value">
-                    <span class="ac-status-dot gray" id="admin-kpi-lastsync-dot" aria-hidden="true"></span>
+                    <span class="ac-status-dot blue" id="admin-kpi-lastsync-dot"></span>
                     <span id="admin-kpi-lastsync-value">—</span>
                 </div>
             </div>
         </div>
 
-        <div class="ac-tabs" role="tablist" aria-label="Admin Center sections">
-            <button type="button" class="ac-tab-btn is-active" data-admin-tab="overview" id="admin-tab-btn-overview" role="tab" aria-selected="true" aria-controls="admin-tab-panel-overview" data-i18n="admin.tab.overview">نظرة عامة</button>
-            <button type="button" class="ac-tab-btn" data-admin-tab="account" id="admin-tab-btn-account" role="tab" aria-selected="false" aria-controls="admin-tab-panel-account" data-i18n="admin.tab.account">الحساب</button>
-            <button type="button" class="ac-tab-btn" data-admin-tab="sync" id="admin-tab-btn-sync" role="tab" aria-selected="false" aria-controls="admin-tab-panel-sync" data-i18n="admin.tab.sync">المزامنة</button>
-            <button type="button" class="ac-tab-btn" data-admin-tab="preferences" id="admin-tab-btn-preferences" role="tab" aria-selected="false" aria-controls="admin-tab-panel-preferences" data-i18n="admin.tab.preferences">التفضيلات</button>
-            <button type="button" class="ac-tab-btn" data-admin-tab="services" id="admin-tab-btn-services" role="tab" aria-selected="false" aria-controls="admin-tab-panel-services" data-i18n="admin.tab.services">الخدمات</button>
-            <button type="button" class="ac-tab-btn" data-admin-tab="integrations" id="admin-tab-btn-integrations" role="tab" aria-selected="false" aria-controls="admin-tab-panel-integrations" data-i18n="admin.tab.integrations">التكاملات</button>
-            <button type="button" class="ac-tab-btn" data-admin-tab="diagnostics" id="admin-tab-btn-diagnostics" role="tab" aria-selected="false" aria-controls="admin-tab-panel-diagnostics" data-i18n="admin.tab.diagnostics">التشخيص</button>
+        <div class="ac-tabs" role="tablist" aria-label="Admin Center tabs">
+            <button type="button" class="ac-tab-btn is-active" data-admin-tab="overview" id="admin-tab-overview" role="tab" aria-selected="true">
+                <span data-i18n="tabOverview">نظرة عامة</span>
+            </button>
+            <button type="button" class="ac-tab-btn" data-admin-tab="account" id="admin-tab-account" role="tab">
+                <span data-i18n="tabAccount">الحساب والأمان</span>
+            </button>
+            <button type="button" class="ac-tab-btn" data-admin-tab="sync" id="admin-tab-sync" role="tab">
+                <span data-i18n="tabSync">المزامنة والنسخ</span>
+            </button>
+            <button type="button" class="ac-tab-btn" data-admin-tab="preferences" id="admin-tab-preferences" role="tab">
+                <span data-i18n="tabPreferences">التفضيلات</span>
+            </button>
+            <button type="button" class="ac-tab-btn" data-admin-tab="services" id="admin-tab-services" role="tab">
+                <span data-i18n="tabServices">الخدمات</span>
+            </button>
+            <button type="button" class="ac-tab-btn" data-admin-tab="integrations" id="admin-tab-integrations" role="tab">
+                <span data-i18n="tabIntegrations">التكاملات</span>
+            </button>
+            <button type="button" class="ac-tab-btn" data-admin-tab="diagnostics" id="admin-tab-diagnostics" role="tab">
+                <span data-i18n="tabDiagnostics">التشخيص</span>
+            </button>
         </div>
 
         <!-- Tab 1: Overview -->
-        <section class="ac-tab-panel is-active" id="admin-tab-panel-overview" role="tabpanel" aria-labelledby="admin-tab-btn-overview">
+        <section class="ac-tab-panel is-active" id="admin-tab-panel-overview" data-admin-panel="overview" role="tabpanel">
             <div class="ac-card">
                 <div class="ac-card-head">
-                    <h3 data-i18n="admin.overview.statusTitle">حالة النظام</h3>
-                    <span class="ac-badge info" data-i18n="admin.overview.statusBadge">مباشر</span>
+                    <h3 data-i18n="overviewStatusTitle">حالة النظام</h3>
+                    <a href="#setup" class="ac-link" id="admin-link-setup" data-i18n="openSetup">فتح صفحة التهيئة</a>
                 </div>
                 <div class="ac-card-body">
                     <div class="ac-table-wrap">
-                        <table class="ac-table">
+                        <table class="ac-table" id="admin-overview-status-table">
                             <thead>
                                 <tr>
-                                    <th data-i18n="admin.overview.col.component">المكوّن</th>
-                                    <th data-i18n="admin.overview.col.status">الحالة</th>
-                                    <th data-i18n="admin.overview.col.detail">التفاصيل</th>
+                                    <th data-i18n="colComponent">المكوّن</th>
+                                    <th data-i18n="colStatus">الحالة</th>
+                                    <th data-i18n="colDetails">التفاصيل</th>
                                 </tr>
                             </thead>
                             <tbody id="admin-overview-status-body">
-                                <tr>
-                                    <td data-label="المكوّن" data-i18n="admin.overview.loading">جاري التحميل…</td>
-                                    <td data-label="الحالة">—</td>
-                                    <td data-label="التفاصيل">—</td>
-                                </tr>
+                                <tr><td colspan="3" data-i18n="loading">جاري التحميل…</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
-
-            <div class="ac-card" id="admin-alerts-card">
-                <div class="ac-card-head">
-                    <h3 data-i18n="admin.overview.alertsTitle">التنبيهات</h3>
-                </div>
-                <div class="ac-card-body">
-                    <div class="ac-alert info" data-i18n="admin.overview.alertsEmpty">لا توجد تنبيهات حالياً.</div>
-                </div>
-            </div>
-
-            <p class="ac-toolbar">
-                <a href="#setup" class="ac-link" id="admin-link-setup" data-i18n="admin.overview.setupLink">فتح معالج الإعداد الأولي</a>
-            </p>
-        </section>
-
-        <!-- Tab 2: Account -->
-        <section class="ac-tab-panel" id="admin-tab-panel-account" role="tabpanel" aria-labelledby="admin-tab-btn-account">
             <div class="ac-card">
                 <div class="ac-card-head">
-                    <h3 data-i18n="admin.account.loginTitle">تسجيل الدخول</h3>
-                    <span class="ac-badge info" data-i18n="admin.account.loginBadge">الحساب والحماية</span>
+                    <h3 data-i18n="alertsTitle">التنبيهات</h3>
+                </div>
+                <div class="ac-card-body" id="admin-alerts-card">
+                    <div class="ac-alert info" data-i18n="alertsEmpty">لا توجد تنبيهات حالياً.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 2: Account & Security -->
+        <section class="ac-tab-panel" id="admin-tab-panel-account" data-admin-panel="account" role="tabpanel">
+            <div class="ac-card">
+                <div class="ac-card-head">
+                    <h3 data-i18n="accountLoginTitle">تسجيل الدخول</h3>
+                    <span class="ac-badge info" data-i18n="accountSecurityBadge">الحساب والحماية</span>
                 </div>
                 <div class="ac-card-body">
                     <div id="authBox">
                         <div class="ac-auth-grid">
-                            <input type="text" id="authNickname" class="ac-input modern-input" data-i18n-placeholder="admin.account.nicknamePlaceholder" placeholder="الاسم المستعار">
-                            <input type="password" id="authPassword" class="ac-input modern-input" data-i18n-placeholder="admin.account.passwordPlaceholder" placeholder="كلمة المرور">
+                            <input type="text" id="authNickname" class="modern-input ac-input" data-i18n-placeholder="phNickname" placeholder="الاسم المستعار">
+                            <input type="password" id="authPassword" class="modern-input ac-input" data-i18n-placeholder="phPassword" placeholder="كلمة المرور">
                         </div>
-                        <div class="ac-toolbar">
-                            <button type="button" class="ac-btn ac-btn-primary" id="btnLogin" data-i18n="admin.account.loginBtn">تسجيل الدخول / إنشاء حساب</button>
+                        <button id="btnLogin" class="ac-btn ac-btn-primary" style="width:100%;margin-top:0.5rem;">
+                            <span data-i18n="btnLogin">تسجيل الدخول / إنشاء حساب</span>
+                        </button>
+                        <div id="authStatus" class="ac-auth-status" style="display:none;"></div>
+                        <div style="text-align:center;margin-top:0.375rem;">
+                            <a href="#" id="forgotPasswordLink" class="ac-link" data-i18n="forgotPassword">نسيت كلمة السر؟</a>
                         </div>
-                        <div id="authStatus" class="ac-auth-status" style="display:none"></div>
-                        <p class="ac-toolbar">
-                            <a href="#" id="forgotPasswordLink" class="ac-link" data-i18n="admin.account.forgotPassword">نسيت كلمة السر؟</a>
-                        </p>
                     </div>
-
-                    <div id="userInfo" style="display:none">
+                    <div id="userInfo" style="display:none;">
                         <div class="ac-user-banner">
                             <div>
-                                <div class="ac-row-desc" data-i18n="admin.account.activeAccount">الحساب النشط</div>
-                                <div class="ac-user-email" id="userEmailDisplay"></div>
+                                <div style="font-size:0.6875rem;color:#64748b;" data-i18n="activeAccount">الحساب النشط</div>
+                                <div id="userEmailDisplay" class="ac-user-email"></div>
                             </div>
-                            <button type="button" class="ac-btn ac-btn-danger ac-btn-sm" id="btnLogout" data-i18n="admin.account.logout">تسجيل الخروج</button>
+                            <button id="btnLogout" class="ac-btn ac-btn-danger ac-btn-sm" data-i18n="btnLogout">تسجيل الخروج</button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="ac-card" id="admin-panel" style="display:none">
+            <div id="admin-panel" class="ac-card" style="display:none;">
                 <div class="ac-card-head">
-                    <h3 data-i18n="admin.account.ownerPanelTitle">لوحة الإدارة العليا</h3>
-                    <span class="ac-badge warn" data-i18n="admin.account.ownerOnly">Owner Only</span>
+                    <h3 data-i18n="ownerPanelTitle">لوحة الإدارة العليا</h3>
+                    <span class="ac-badge warn">Owner Only</span>
                 </div>
                 <div class="ac-card-body">
-                    <input type="text" id="admin-target-email" class="ac-input modern-input" data-i18n-placeholder="admin.account.targetEmailPlaceholder" placeholder="إيميل أو معرف العضو المستهدف">
-                    <div class="ac-toolbar">
-                        <button type="button" class="ac-btn ac-btn-primary" id="btn-admin-send-queue" data-i18n="admin.account.sendQueue">
-                            <i class="fa-solid fa-paper-plane" aria-hidden="true"></i> إرسال الطابور
+                    <input type="text" id="admin-target-email" class="modern-input ac-input" data-i18n-placeholder="phTargetEmail" placeholder="إيميل أو معرف العضو المستهدف">
+                    <div class="ac-grid-2" style="margin-top:0.5rem;">
+                        <button id="btn-admin-send-queue" class="ac-btn ac-btn-primary">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span data-i18n="btnSendQueue">إرسال الطابور</span>
+                        </button>
+                        <button id="btn-admin-reset-pass" class="ac-btn ac-btn-danger" data-i18n="btnResetPass">إعادة تعيين كلمة السر</button>
+                        <button id="btn-sync-legacy-users" class="ac-btn">
+                            <i class="fa-solid fa-rotate"></i>
+                            <span data-i18n="btnSyncLegacy">مزامنة الأعضاء القدامى</span>
                         </button>
                     </div>
-                    <div class="ac-grid-2">
-                        <button type="button" class="ac-btn ac-btn-danger" id="btn-admin-reset-pass" data-i18n="admin.account.resetPassword">إعادة تعيين كلمة السر</button>
-                        <button type="button" class="ac-btn" id="btn-sync-legacy-users" data-i18n="admin.account.syncLegacy">
-                            <i class="fa-solid fa-rotate" aria-hidden="true"></i> مزامنة الأعضاء القدامى
-                        </button>
-                    </div>
-                    <div class="ac-card-head">
-                        <h3 data-i18n="admin.account.usersListTitle">السجل المركزي للأعضاء</h3>
-                    </div>
-                    <div id="admin-users-list" class="ac-table-wrap"></div>
+                    <details class="ac-details" style="margin-top:0.625rem;">
+                        <summary data-i18n="showDetails">عرض التفاصيل</summary>
+                        <div class="ac-details-body">
+                            <div data-i18n="membersRegistry">السجل المركزي للأعضاء</div>
+                            <div id="admin-users-list" class="admin-users-scroll" style="max-height:12rem;overflow-y:auto;margin-top:0.375rem;"></div>
+                        </div>
+                    </details>
                 </div>
             </div>
         </section>
 
-        <!-- Tab 3: Sync -->
-        <section class="ac-tab-panel" id="admin-tab-panel-sync" role="tabpanel" aria-labelledby="admin-tab-btn-sync">
+        <!-- Tab 3: Sync & Backup -->
+        <section class="ac-tab-panel" id="admin-tab-panel-sync" data-admin-panel="sync" role="tabpanel">
             <div class="ac-card">
                 <div class="ac-card-head">
-                    <h3 data-i18n="admin.sync.togglesTitle">خيارات المزامنة</h3>
+                    <h3 data-i18n="syncSettingsTitle">إعدادات المزامنة</h3>
                 </div>
                 <div class="ac-card-body">
                     <div class="ac-row-toggle">
                         <div>
-                            <span data-i18n="admin.sync.emailcoreSearchTools">مزامنة Search Tools من EmailCore</span>
-                            <div class="ac-row-desc" data-i18n="admin.sync.emailcoreSearchToolsDesc">ترندات كل 15د · باقي الفروع كل 6س</div>
+                            <label for="toggle-emailcore-search-tools-sync" data-i18n="syncEmailCore">مزامنة Search Tools من EmailCore</label>
+                            <div class="ac-row-desc" data-i18n="syncEmailCoreDesc">ترندات كل 15د · باقي الفروع كل 6س</div>
                         </div>
                         <input type="checkbox" id="toggle-emailcore-search-tools-sync" checked>
                     </div>
                     <div class="ac-row-toggle">
                         <div>
-                            <span data-i18n="admin.sync.cloudSync">المزامنة السحابية</span>
-                            <div class="ac-row-desc" data-i18n="admin.sync.cloudSyncDesc">GitHub backup</div>
+                            <label for="toggle-cloud-sync" data-i18n="syncCloud">المزامنة السحابية</label>
+                            <div class="ac-row-desc">GitHub backup</div>
                         </div>
                         <input type="checkbox" id="toggle-cloud-sync" checked>
                     </div>
                     <div class="ac-row-toggle">
                         <div>
-                            <span data-i18n="admin.sync.smartSync">المزامنة الذكية</span>
-                            <div class="ac-row-desc" data-i18n="admin.sync.smartSyncDesc">Local workspace</div>
+                            <label for="toggle-smart-sync" data-i18n="syncSmart">المزامنة الذكية</label>
+                            <div class="ac-row-desc">Local workspace</div>
                         </div>
                         <input type="checkbox" id="toggle-smart-sync" checked>
                     </div>
+                    <div class="ac-form-row" style="margin-top:12px">
+                        <label class="ac-row-desc" for="admin-github-token">GitHub Token (PAT)</label>
+                        <input type="password" id="admin-github-token" class="ac-input modern-input" autocomplete="off" placeholder="ghp_... (Admin → Sync)">
+                        <button type="button" class="ac-btn ac-btn-primary" id="btn-admin-save-github-token" style="margin-top:8px">
+                            <i class="fa-brands fa-github" aria-hidden="true"></i> حفظ توكن GitHub
+                        </button>
+                        <div class="ac-row-desc" style="margin-top:6px">يُخزَّن محلياً في chrome.storage — لا يُرفع إلى GitHub</div>
+                    </div>
                 </div>
             </div>
 
             <div class="ac-card">
                 <div class="ac-card-head">
-                    <h3 data-i18n="admin.sync.cloudTitle">السحابة والمكتبة</h3>
+                    <h3 data-i18n="cloudActionsTitle">إجراءات السحابة</h3>
                 </div>
                 <div class="ac-card-body">
-                    <div class="ac-grid-4 ac-toolbar">
-                        <button type="button" class="ac-btn" id="btn-github-export" data-i18n="admin.sync.githubExport">
-                            <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i> تصدير سحابي
+                    <div class="ac-grid-4">
+                        <button type="button" id="btn-github-export" class="ac-btn">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <span data-i18n="btnCloudExport">تصدير سحابي</span>
                         </button>
-                        <button type="button" class="ac-btn" id="btn-github-import" data-i18n="admin.sync.githubImport">
-                            <i class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></i> استيراد سحابي
+                        <button type="button" id="btn-github-import" class="ac-btn">
+                            <i class="fa-solid fa-cloud-arrow-down"></i>
+                            <span data-i18n="btnCloudImport">استيراد سحابي</span>
                         </button>
-                        <button type="button" class="ac-btn ac-btn-primary" id="btn-upload-to-lib" data-i18n="admin.sync.uploadCloud">
-                            <i class="fa-solid fa-upload" aria-hidden="true"></i> رفع للسحابة
+                        <button type="button" id="btn-upload-to-lib" class="ac-btn ac-btn-primary">
+                            <i class="fa-solid fa-upload"></i>
+                            <span data-i18n="btnUploadCloud">رفع للسحابة</span>
                         </button>
-                        <button type="button" class="ac-btn" id="btn-add-to-local-lib" data-i18n="admin.sync.saveLocal">
-                            <i class="fa-solid fa-download" aria-hidden="true"></i> حفظ محلي
+                        <button type="button" id="btn-add-to-local-lib" class="ac-btn">
+                            <i class="fa-solid fa-download"></i>
+                            <span data-i18n="btnSaveLocal">حفظ محلي</span>
                         </button>
                     </div>
-                    <input type="file" id="lib-file-input" hidden multiple accept="image/*">
-
-                    <div class="ac-toolbar">
-                        <label class="ac-row-toggle">
-                            <input type="checkbox" id="lib-select-all">
-                            <span data-i18n="admin.sync.selectAll">تحديد الكل</span>
-                        </label>
-                        <button type="button" class="ac-btn ac-btn-primary ac-btn-sm" id="btn-lib-bulk-import" style="display:none" data-i18n="admin.sync.bulkImport">استيراد المحدد</button>
-                    </div>
-                    <div id="library-container"></div>
+                    <input type="file" id="lib-file-input" class="ac-hidden" multiple accept="image/*">
                 </div>
             </div>
 
             <div class="ac-card">
                 <div class="ac-card-head">
-                    <h3 data-i18n="admin.sync.workspaceTitle">مجلد العمل المحلي</h3>
-                    <span class="ac-status-dot gray" id="workspace-indicator" aria-hidden="true"></span>
+                    <h3 data-i18n="workspaceTitle">مجلد العمل المحلي</h3>
+                    <span class="ac-status-dot gray" id="workspace-indicator"></span>
                 </div>
                 <div class="ac-card-body">
-                    <div id="workspace-path" class="ac-row-desc dir-ltr">غير متصل</div>
-                    <div class="ac-grid-3 ac-toolbar">
-                        <button type="button" class="ac-btn ac-btn-primary" id="btn-select-workspace" data-i18n="admin.sync.selectWorkspace">تحديد المجلد</button>
-                        <button type="button" class="ac-btn" id="btn-local-export" data-i18n="admin.sync.localExport">حفظ محلي</button>
-                        <button type="button" class="ac-btn" id="btn-local-import" data-i18n="admin.sync.localImport">استعادة محلية</button>
+                    <div id="workspace-path" class="ac-row-desc dir-ltr" style="margin-bottom:0.5rem;font-family:monospace;">غير متصل</div>
+                    <div class="ac-grid-3">
+                        <button type="button" id="btn-select-workspace" class="ac-btn ac-btn-primary" data-i18n="btnSelectFolder">تحديد المجلد</button>
+                        <button type="button" id="btn-local-export" class="ac-btn" data-i18n="btnLocalExport">حفظ محلي</button>
+                        <button type="button" id="btn-local-import" class="ac-btn" data-i18n="btnLocalImport">استعادة محلية</button>
                     </div>
+                    <details class="ac-details">
+                        <summary data-i18n="showDetails">عرض التفاصيل</summary>
+                        <div class="ac-details-body">
+                            <div class="ac-toolbar" style="margin-bottom:0.375rem;">
+                                <label class="ac-row-toggle" style="border:none;padding:0;">
+                                    <input type="checkbox" id="lib-select-all">
+                                    <span data-i18n="selectAll">تحديد الكل</span>
+                                </label>
+                                <button type="button" id="btn-lib-bulk-import" class="ac-btn ac-btn-sm" style="display:none;" data-i18n="btnBulkImport">استيراد المحدد</button>
+                            </div>
+                            <div id="library-container" class="admin-lib-scroll"></div>
+                        </div>
+                    </details>
                 </div>
             </div>
 
             <div class="ac-card">
                 <div class="ac-card-head">
-                    <h3 data-i18n="admin.sync.profileTitle">استيراد / تصدير التخصيص</h3>
-                    <span class="ac-badge" data-i18n="admin.sync.profileBadge">Private profile</span>
+                    <h3 data-i18n="profileImportExport">استيراد / تصدير التخصيص</h3>
                 </div>
                 <div class="ac-card-body">
                     <div class="ac-grid-2">
-                        <button type="button" class="ac-btn" id="btn-private-profile-export" data-i18n="admin.sync.profileExport">
-                            <i class="fa-solid fa-file-export" aria-hidden="true"></i> تصدير الإعدادات
+                        <button type="button" id="btn-private-profile-export" class="ac-btn">
+                            <i class="fa-solid fa-file-export"></i>
+                            <span data-i18n="btnExportSettings">تصدير الإعدادات</span>
                         </button>
-                        <button type="button" class="ac-btn" id="btn-private-profile-import" data-i18n="admin.sync.profileImport">
-                            <i class="fa-solid fa-file-import" aria-hidden="true"></i> استيراد الإعدادات
+                        <button type="button" id="btn-private-profile-import" class="ac-btn">
+                            <i class="fa-solid fa-file-import"></i>
+                            <span data-i18n="btnImportSettings">استيراد الإعدادات</span>
                         </button>
                     </div>
-                    <input type="file" id="private-profile-import-input" hidden accept="application/json,.json">
+                    <input type="file" id="private-profile-import-input" class="ac-hidden" accept="application/json,.json">
                 </div>
             </div>
         </section>
 
         <!-- Tab 4: Preferences -->
-        <section class="ac-tab-panel" id="admin-tab-panel-preferences" role="tabpanel" aria-labelledby="admin-tab-btn-preferences">
+        <section class="ac-tab-panel" id="admin-tab-panel-preferences" data-admin-panel="preferences" role="tabpanel">
             <div class="ac-card">
                 <div class="ac-card-head">
-                    <h3 data-i18n="admin.prefs.performanceTitle">الأداء</h3>
+                    <h3 data-i18n="perfTitle">الأداء</h3>
                 </div>
                 <div class="ac-card-body">
                     <div class="ac-row-toggle">
                         <div>
-                            <span data-i18n="admin.prefs.autoLiteAssist">Auto Lite Assist</span>
-                            <div class="ac-row-desc" data-i18n="admin.prefs.autoLiteAssistDesc">تفعيل Lite تلقائياً عند الضغط العالي</div>
+                            <label for="toggle-auto-lite-assist" data-i18n="autoLite">Auto Lite Assist</label>
+                            <div class="ac-row-desc" data-i18n="autoLiteDesc">تفعيل Lite تلقائياً عند الضغط العالي</div>
                         </div>
                         <input type="checkbox" id="toggle-auto-lite-assist" checked>
                     </div>
                     <div class="ac-row-toggle">
                         <div>
-                            <span data-i18n="admin.prefs.i3Ram2gb">I3 RAM 2GB</span>
-                            <div class="ac-row-desc" data-i18n="admin.prefs.i3Ram2gbDesc">وضع قسري للأجهزة الضعيفة</div>
+                            <label for="toggle-i3-ram-2gb-mode" data-i18n="i3Mode">I3 RAM 2GB</label>
+                            <div class="ac-row-desc" data-i18n="i3ModeDesc">وضع قسري للأجهزة الضعيفة</div>
                         </div>
                         <input type="checkbox" id="toggle-i3-ram-2gb-mode">
                     </div>
@@ -295,19 +323,19 @@
 
             <div class="ac-card">
                 <div class="ac-card-head">
-                    <h3 data-i18n="admin.prefs.launchTitle">وضع العرض</h3>
+                    <h3 data-i18n="launchUiTitle">واجهة الإطلاق</h3>
                 </div>
                 <div class="ac-card-body">
                     <label class="ac-row-toggle">
-                        <span data-i18n="admin.prefs.launchPopup">نافذة عادية</span>
+                        <span data-i18n="launchPopup">نافذة عادية</span>
                         <input type="radio" name="ui-launch-mode" value="popup">
                     </label>
                     <label class="ac-row-toggle">
-                        <span data-i18n="admin.prefs.launchWindow">نافذة تطبيق</span>
+                        <span data-i18n="launchWindow">نافذة تطبيق</span>
                         <input type="radio" name="ui-launch-mode" value="window">
                     </label>
                     <label class="ac-row-toggle">
-                        <span data-i18n="admin.prefs.launchTab">تبويب كامل</span>
+                        <span data-i18n="launchTab">تبويب كامل</span>
                         <input type="radio" name="ui-launch-mode" value="tab">
                     </label>
                 </div>
@@ -315,19 +343,19 @@
 
             <div class="ac-card">
                 <div class="ac-card-head">
-                    <h3 data-i18n="admin.prefs.pipelineTitle">مراحل Pipeline</h3>
+                    <h3 data-i18n="pipelineTitle">مراحل Pipeline</h3>
                 </div>
                 <div class="ac-card-body">
                     <label class="ac-row-toggle">
-                        <span data-i18n="admin.prefs.pipelineTmhunt">فحص TMHunt</span>
+                        <span data-i18n="pipeTmhunt">فحص TMHunt</span>
                         <input type="checkbox" id="pipeline-enable-tmhunt" checked>
                     </label>
                     <label class="ac-row-toggle">
-                        <span data-i18n="admin.prefs.pipelineUspto">فحص USPTO</span>
+                        <span data-i18n="pipeUspto">فحص USPTO</span>
                         <input type="checkbox" id="pipeline-enable-uspto" checked>
                     </label>
                     <label class="ac-row-toggle">
-                        <span data-i18n="admin.prefs.pipelineAnalysis">تحليل المنافسة TeePublic</span>
+                        <span data-i18n="pipeAnalysis">تحليل المنافسة TeePublic</span>
                         <input type="checkbox" id="pipeline-enable-analysis" checked>
                     </label>
                 </div>
@@ -335,118 +363,80 @@
 
             <div class="ac-card">
                 <div class="ac-card-head">
-                    <h3 data-i18n="admin.prefs.themeTitle">مظهر الإضافة</h3>
+                    <h3 data-i18n="themeTitle">المظهر</h3>
                 </div>
                 <div class="ac-card-body">
-                    <button type="button" class="ac-btn ac-btn-primary" id="btn-toggle-neon-gamer-theme" data-i18n="admin.prefs.neonTheme">واجهة نيون (لاعب)</button>
-                    <p class="ac-row-desc" data-i18n="admin.prefs.neonThemeDesc">تفعيل واجهة داكنة بلمسات نيون. اضغط مجدداً للعودة للوضع الافتراضي.</p>
+                    <button type="button" id="btn-toggle-neon-gamer-theme" class="ac-btn" style="width:100%;" data-i18n="neonTheme">واجهة نيون (لاعب)</button>
+                    <p class="ac-row-desc" style="margin-top:0.375rem;" data-i18n="neonThemeDesc">تفعيل واجهة داكنة بلمسات نيون على كل نوافذ الإضافة.</p>
                 </div>
             </div>
         </section>
 
         <!-- Tab 5: Services -->
-        <section class="ac-tab-panel" id="admin-tab-panel-services" role="tabpanel" aria-labelledby="admin-tab-btn-services">
-            <div class="ac-native-banner" id="nhp-native-host-banner" style="display:none">
-                <div class="ac-toolbar">
-                    <div class="min-w-0">
-                        <div id="nhp-native-host-banner-title" class="ac-kpi-value" data-i18n="admin.services.nativeHostTitle">Native Messaging غير مسجّل</div>
-                        <div id="nhp-native-host-banner-body" class="ac-row-desc"></div>
+        <section class="ac-tab-panel" id="admin-tab-panel-services" data-admin-panel="services" role="tabpanel">
+            <div id="nhp-native-host-banner" class="ac-native-banner" style="display:none;">
+                <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:0.5rem;">
+                    <div style="min-width:0;">
+                        <div id="nhp-native-host-banner-title" style="font-weight:700;color:#991b1b;">Native Messaging غير مسجّل</div>
+                        <div id="nhp-native-host-banner-body" style="margin-top:0.25rem;white-space:pre-wrap;word-break:break-all;color:#64748b;"></div>
                     </div>
-                    <span class="ac-toolbar">
-                        <button type="button" class="ac-btn ac-btn-sm ac-menu-btn" id="btn-nhp-copy-register-cmd" title="نسخ أمر التسجيل"><i class="fa-regular fa-copy" aria-hidden="true"></i></button>
-                        <button type="button" class="ac-btn ac-btn-sm ac-menu-btn" id="btn-nhp-verify-native-host" title="إعادة فحص Native Messaging"><i class="fa-solid fa-rotate" aria-hidden="true"></i></button>
+                    <span style="display:flex;gap:0.25rem;">
+                        <button type="button" id="btn-nhp-copy-register-cmd" class="ac-btn ac-btn-sm" title="نسخ"><i class="fa-regular fa-copy"></i></button>
+                        <button type="button" id="btn-nhp-verify-native-host" class="ac-btn ac-btn-sm" title="تحقق"><i class="fa-solid fa-rotate"></i></button>
                     </span>
                 </div>
             </div>
 
-            <div class="ac-card">
-                <div class="ac-card-head">
-                    <h3 data-i18n="admin.services.localServersTitle">سيرفرات NHP المحلية</h3>
-                    <span class="ac-toolbar">
-                        <button type="button" class="ac-btn ac-btn-sm ac-menu-btn" id="btn-nhp-servers-start-all" title="تشغيل الكل"><i class="fa-solid fa-play" aria-hidden="true"></i></button>
-                        <button type="button" class="ac-btn ac-btn-sm ac-menu-btn" id="btn-nhp-servers-restart-all" title="إعادة تشغيل الكل"><i class="fa-solid fa-rotate" aria-hidden="true"></i></button>
-                        <button type="button" class="ac-btn ac-btn-sm ac-menu-btn" id="btn-nhp-servers-stop-all" title="إيقاف الكل"><i class="fa-solid fa-stop" aria-hidden="true"></i></button>
-                    </span>
-                </div>
-                <div class="ac-card-body">
-                    <input type="search" class="ac-input" id="admin-services-search" data-i18n-placeholder="admin.services.searchPlaceholder" placeholder="بحث في الخدمات…">
-                    <div class="ac-table-wrap" id="nhp-local-servers-panel">
-                        <table class="ac-table">
-                            <thead>
-                                <tr>
-                                    <th data-i18n="colService">الخدمة</th>
-                                    <th data-i18n="colPort">المنفذ</th>
-                                    <th data-i18n="colStatus">الحالة</th>
-                                    <th data-i18n="colDetails">التفاصيل</th>
-                                    <th data-i18n="colActions">الإجراءات</th>
-                                </tr>
-                            </thead>
-                            <tbody id="nhp-local-servers-list"></tbody>
-                        </table>
-                    </div>
-                    <div id="nhp-local-servers-status" class="ac-row-desc"></div>
-                </div>
+            <div class="ac-toolbar">
+                <input type="search" id="admin-services-search" class="ac-input" style="max-width:14rem;" data-i18n-placeholder="searchServices" placeholder="بحث في الخدمات…">
+                <button type="button" id="btn-nhp-servers-start-all" class="ac-btn ac-btn-sm" title="تشغيل الكل"><i class="fa-solid fa-play"></i></button>
+                <button type="button" id="btn-nhp-servers-restart-all" class="ac-btn ac-btn-sm" title="إعادة التشغيل"><i class="fa-solid fa-rotate"></i></button>
+                <button type="button" id="btn-nhp-servers-stop-all" class="ac-btn ac-btn-sm" title="إيقاف الكل"><i class="fa-solid fa-stop"></i></button>
+                <button type="button" id="btn-start-nonautopilot-servers" class="ac-btn ac-btn-sm" data-i18n="startAiServers">تشغيل AI</button>
+                <button type="button" id="btn-stop-nonautopilot-servers" class="ac-btn ac-btn-sm ac-btn-danger" data-i18n="stopAiServers">إيقاف AI</button>
+                <button type="button" id="btn-start-ai-image-sender" class="ac-btn ac-btn-sm ac-btn-primary" data-i18n="startImageSender">إرسال الصور</button>
             </div>
 
-            <div class="ac-card">
-                <div class="ac-card-head">
-                    <h3 data-i18n="admin.services.aiServersTitle">سيرفرات AI</h3>
+            <div class="ac-card" id="nhp-local-servers-panel">
+                <div class="ac-table-wrap">
+                    <table class="ac-table" id="admin-services-table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="colService">الخدمة</th>
+                                <th data-i18n="colPort">المنفذ</th>
+                                <th data-i18n="colStatus">الحالة</th>
+                                <th data-i18n="colActions">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="nhp-local-servers-list"></tbody>
+                    </table>
                 </div>
-                <div class="ac-card-body">
-                    <div class="ac-grid-2 ac-toolbar">
-                        <button type="button" class="ac-btn ac-btn-primary" id="btn-start-nonautopilot-servers" data-i18n="admin.services.startAi">
-                            <i class="fa-solid fa-play" aria-hidden="true"></i> تشغيل سيرفرات AI
-                        </button>
-                        <button type="button" class="ac-btn ac-btn-danger" id="btn-stop-nonautopilot-servers" data-i18n="admin.services.stopAi">
-                            <i class="fa-solid fa-stop" aria-hidden="true"></i> إيقاف سيرفرات AI
-                        </button>
-                        <button type="button" class="ac-btn" id="btn-start-ai-image-sender" data-i18n="admin.services.startImageSender">
-                            <i class="fa-solid fa-paper-plane" aria-hidden="true"></i> تشغيل سيرفر إرسال الصور
-                        </button>
-                        <button type="button" class="ac-btn" id="btn-register-native-messaging" data-i18n="admin.services.registerNative">
-                            <i class="fa-solid fa-plug" aria-hidden="true"></i> Register Native Messaging
-                        </button>
-                    </div>
-                    <div id="nonautopilot-servers-status" class="ac-row-desc" data-i18n="admin.services.nonAutopilotHint">سيرفرات AI منفصلة عن Autopilot/TeePublic</div>
-                    <div class="ac-grid-2 ac-toolbar">
-                        <button type="button" class="ac-btn" id="btn-download-startup-bat" data-i18n="admin.services.downloadBat">
-                            <i class="fa-solid fa-download" aria-hidden="true"></i> تحميل سكربت التشغيل (.bat)
-                        </button>
-                        <button type="button" class="ac-btn" id="btn-download-startup-sh" data-i18n="admin.services.downloadSh">
-                            <i class="fa-brands fa-linux" aria-hidden="true"></i> تنزيل .sh (اختياري)
-                        </button>
-                    </div>
-                </div>
+                <div id="nhp-local-servers-status" class="ac-row-desc" style="padding:0.5rem 0.875rem;text-align:center;"></div>
             </div>
 
-            <div class="ac-card">
-                <div class="ac-card-head">
-                    <h3 data-i18n="admin.services.toolsTitle">أدوات إضافية</h3>
-                </div>
-                <div class="ac-card-body">
-                    <div class="ac-grid-2">
-                        <button type="button" class="ac-btn hidden" id="btn-launch-screen-toolkit" hidden data-i18n="admin.services.screenToolkit">Local Screen Toolkit</button>
-                        <button type="button" class="ac-btn hidden" id="btn-launch-screen-annotator" hidden data-i18n="admin.services.screenAnnotator">Local Drawing Studio</button>
-                        <button type="button" class="ac-btn" id="btn-launch-merchghost" data-i18n="admin.services.merchghost">
-                            <i class="fa-solid fa-ghost" aria-hidden="true"></i> لوحة MerchGhost
+            <details class="ac-details">
+                <summary data-i18n="showDetails">عرض التفاصيل</summary>
+                <div class="ac-details-body">
+                    <div id="nonautopilot-servers-status" class="ac-row-desc"></div>
+                    <div class="ac-grid-2" style="margin-top:0.5rem;">
+                        <button id="btn-download-startup-bat" type="button" class="ac-btn ac-btn-sm">
+                            <i class="fa-solid fa-download"></i> NHP_Start_All_Servers.bat
                         </button>
-                        <button type="button" class="ac-btn" id="btn-open-tp-ai-tags" data-i18n="admin.services.tpTags">
-                            <i class="fa-solid fa-tags" aria-hidden="true"></i> مولد التاجز الذكي
+                        <button id="btn-download-startup-sh" type="button" class="ac-btn ac-btn-sm">
+                            <i class="fa-brands fa-linux"></i> .sh
                         </button>
-                        <button type="button" class="ac-btn" id="btn-admin-open-tmhunt" data-i18n="admin.services.openTmhunt">
-                            <i class="fa-solid fa-magnifying-glass-plus" aria-hidden="true"></i> فتح TMHunt المعزول
-                        </button>
-                        <button type="button" class="ac-btn" id="btn-open-cliproxy-manager" data-i18n="admin.services.cliproxy">
-                            <i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i> CLIProxyAPI Manager
-                        </button>
+                        <button id="btn-launch-merchghost" class="ac-btn ac-btn-sm" data-i18n="merchGhost">MerchGhost</button>
+                        <button id="btn-open-tp-ai-tags" class="ac-btn ac-btn-sm" data-i18n="tpTags">مولد التاجز</button>
+                        <button id="btn-admin-open-tmhunt" class="ac-btn ac-btn-sm" data-i18n="tmhunt">TMHunt</button>
+                        <button id="btn-open-cliproxy-manager" class="ac-btn ac-btn-sm">CLIProxy</button>
                     </div>
                 </div>
-            </div>
+            </details>
 
-            <div class="ac-card" id="admin-tmhunt-shell" style="display:none">
+            <div id="admin-tmhunt-shell" class="ac-card" style="display:none;margin-top:0.625rem;">
                 <div class="ac-card-head">
-                    <h3 data-i18n="admin.services.tmhuntTitle">TMHunt (معزول)</h3>
-                    <button type="button" class="ac-btn ac-btn-sm" id="btn-admin-close-tmhunt" data-i18n="admin.services.tmhuntClose">إغلاق</button>
+                    <h3>TMHunt</h3>
+                    <button id="btn-admin-close-tmhunt" class="ac-btn ac-btn-sm" data-i18n="close">إغلاق</button>
                 </div>
                 <div class="ac-card-body">
                     <div id="admin-tmhunt-host"></div>
@@ -455,52 +445,30 @@
         </section>
 
         <!-- Tab 6: Integrations -->
-        <section class="ac-tab-panel" id="admin-tab-panel-integrations" role="tabpanel" aria-labelledby="admin-tab-btn-integrations">
+        <section class="ac-tab-panel" id="admin-tab-panel-integrations" data-admin-panel="integrations" role="tabpanel">
             <div class="ac-card">
                 <div class="ac-card-head">
-                    <h3>EmailCore — ربط الإضافة بالموقع</h3>
-                </div>
-                <div class="ac-card-body">
-                    <p class="ac-row-desc">سجّل الدخول بنفس اسم المستخدم وكلمة المرور المستخدمين في nocochat.com / emailcore.app. يُخزَّن رمز جلسة فقط — لا يُحفظ كلمة المرور.</p>
-                    <input type="url" id="admin-emailcore-api" class="ac-input modern-input" dir="ltr" placeholder="https://emailcore.app" value="https://emailcore.app">
-                    <input type="text" id="admin-emailcore-username" class="ac-input modern-input" dir="ltr" autocomplete="username" placeholder="Username">
-                    <input type="password" id="admin-emailcore-password" class="ac-input modern-input" dir="ltr" autocomplete="current-password" placeholder="Password">
-                    <div id="admin-emailcore-session-status" class="ac-row-desc">غير متصل</div>
-                    <div class="ac-toolbar">
-                        <button type="button" class="ac-btn ac-btn-primary" id="btn-admin-emailcore-login">
-                            <i class="fa-solid fa-plug" aria-hidden="true"></i> تسجيل الدخول واختبار الاتصال
-                        </button>
-                        <button type="button" class="ac-btn" id="btn-admin-emailcore-logout" hidden>
-                            <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i> تسجيل الخروج
-                        </button>
-                        <button type="button" class="ac-btn" id="btn-admin-emailcore-refresh-lib" hidden>
-                            <i class="fa-solid fa-rotate" aria-hidden="true"></i> تحديث المكتبة
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="ac-card">
-                <div class="ac-card-head">
-                    <h3 data-i18n="admin.integrations.aiKeysTitle">مفاتيح AI</h3>
-                    <label class="ac-row-toggle">
-                        <span data-i18n="admin.integrations.showKeys">إظهار المفاتيح</span>
+                    <h3 data-i18n="aiKeysTitle">مفاتيح AI</h3>
+                    <label style="display:flex;align-items:center;gap:0.375rem;font-size:0.6875rem;color:#64748b;cursor:pointer;">
                         <input type="checkbox" id="toggle-ai-keys-visibility">
+                        <span data-i18n="showKeys">إظهار المفاتيح</span>
                     </label>
                 </div>
                 <div class="ac-card-body">
-                    <input type="text" id="admin-ai-base-url" class="ac-input modern-input" data-i18n-placeholder="admin.integrations.baseUrlPlaceholder" placeholder="http://127.0.0.1:8317/v1 أو Render">
-                    <div id="admin-ai-key-gpt-warning" class="ac-alert" hidden data-i18n="admin.integrations.gptKeyWarning">مفتاح NHP API غير مُعدّ.</div>
-                    <div id="admin-cliproxy-codex-status" class="ac-row-desc" hidden></div>
-                    <input type="password" id="admin-ai-key-gpt" class="ac-input modern-input" data-i18n-placeholder="admin.integrations.gptKeyPlaceholder" placeholder="NHP API Key">
-                    <input type="password" id="admin-ai-key-gemini" class="ac-input modern-input" style="display:none" data-i18n-placeholder="admin.integrations.geminiKeyPlaceholder" placeholder="Gemini API Key">
-                    <input type="password" id="admin-ai-key-cursor" class="ac-input modern-input" style="display:none" data-i18n-placeholder="admin.integrations.cursorKeyPlaceholder" placeholder="Cursor API Key">
-                    <div class="ac-toolbar">
-                        <button type="button" class="ac-btn" id="btn-admin-probe-cliproxy-codex" data-i18n="admin.integrations.probeCodex">
-                            <i class="fa-solid fa-stethoscope" aria-hidden="true"></i> فحص Codex / CLIProxy
+                    <input type="text" id="admin-ai-base-url" class="modern-input ac-input" placeholder="http://127.0.0.1:8317/v1">
+                    <div id="admin-ai-key-gpt-warning" hidden class="ac-alert" style="margin-top:0.375rem;"></div>
+                    <div id="admin-cliproxy-codex-status" hidden class="ac-row-desc" style="margin-top:0.375rem;padding:0.5rem;border:1px solid #e2e8f0;border-radius:8px;"></div>
+                    <input type="password" id="admin-ai-key-gpt" class="modern-input ac-input" style="margin-top:0.375rem;" placeholder="NHP API Key">
+                    <input type="password" id="admin-ai-key-gemini" class="modern-input ac-input" style="margin-top:0.375rem;display:none;" placeholder="Gemini API Key">
+                    <input type="password" id="admin-ai-key-cursor" class="modern-input ac-input" style="margin-top:0.375rem;display:none;" placeholder="Cursor API Key">
+                    <div class="ac-grid-2" style="margin-top:0.5rem;">
+                        <button type="button" id="btn-admin-probe-cliproxy-codex" class="ac-btn">
+                            <i class="fa-solid fa-stethoscope"></i>
+                            <span data-i18n="probeCodex">فحص Codex / CLIProxy</span>
                         </button>
-                        <button type="button" class="ac-btn ac-btn-primary" id="btn-admin-save-ai-keys" data-i18n="admin.integrations.saveKeys">
-                            <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> حفظ مفاتيح AI
+                        <button type="button" id="btn-admin-save-ai-keys" class="ac-btn ac-btn-primary">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            <span data-i18n="saveAiKeys">حفظ مفاتيح AI</span>
                         </button>
                     </div>
                 </div>
@@ -508,43 +476,39 @@
 
             <div class="ac-card">
                 <div class="ac-card-head">
-                    <h3 data-i18n="admin.integrations.chromeAiTitle">Chrome AI</h3>
+                    <h3 data-i18n="chromeAiTitle">Chrome AI</h3>
                 </div>
                 <div class="ac-card-body">
-                    <div class="ac-grid-2">
-                        <button type="button" class="ac-btn" id="btn-start-ai-chrome-session" data-i18n="admin.integrations.startChrome">
-                            <i class="fa-brands fa-chrome" aria-hidden="true"></i> فتح Chrome الرئيسي AI
-                        </button>
-                        <button type="button" class="ac-btn" id="btn-restart-ai-chrome-session" data-i18n="admin.integrations.restartChrome">
-                            <i class="fa-solid fa-rotate" aria-hidden="true"></i> إعادة تشغيل Chrome الرئيسي
-                        </button>
-                        <button type="button" class="ac-btn" id="btn-repair-local-services" data-i18n="admin.integrations.repairLocal">
-                            <i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> Repair Local Services (3031/9331)
-                        </button>
+                    <div class="ac-grid-3">
+                        <button id="btn-start-ai-chrome-session" class="ac-btn" data-i18n="startChromeAi">فتح Chrome AI</button>
+                        <button id="btn-restart-ai-chrome-session" class="ac-btn" data-i18n="restartChromeAi">إعادة تشغيل Chrome</button>
+                        <button id="btn-repair-local-services" class="ac-btn ac-btn-primary" data-i18n="repairLocal">Repair 3031/9331</button>
                     </div>
-                    <div id="ai-chrome-session-status" class="ac-row-desc" data-i18n="admin.integrations.chromeStatusHint">يستخدم حساب Chrome الرئيسي على البورت 9331 عند التفعيل</div>
+                    <div id="ai-chrome-session-status" class="ac-row-desc" style="margin-top:0.5rem;text-align:center;"></div>
                 </div>
             </div>
         </section>
 
         <!-- Tab 7: Diagnostics -->
-        <section class="ac-tab-panel" id="admin-tab-panel-diagnostics" role="tabpanel" aria-labelledby="admin-tab-btn-diagnostics">
+        <section class="ac-tab-panel" id="admin-tab-panel-diagnostics" data-admin-panel="diagnostics" role="tabpanel">
             <div class="ac-card">
                 <div class="ac-card-head">
-                    <h3 data-i18n="admin.diagnostics.fullScanTitle">الفحص الشامل</h3>
-                    <span id="admin-full-scan-percent">0%</span>
+                    <h3 data-i18n="fullScanTitle">الفحص الشامل</h3>
+                    <span id="admin-full-scan-percent" class="ac-badge info">0%</span>
                 </div>
                 <div class="ac-card-body">
-                    <div class="ac-progress" aria-hidden="true">
-                        <div id="admin-full-scan-progress" style="width:0%"></div>
+                    <div class="ac-progress">
+                        <div id="admin-full-scan-progress" style="width:0%;"></div>
                     </div>
-                    <div id="admin-full-scan-status" class="ac-row-desc" data-i18n="admin.diagnostics.scanReady">جاهز للفحص</div>
-                    <div class="ac-grid-2 ac-toolbar">
-                        <button type="button" class="ac-btn ac-btn-primary" id="btn-admin-full-scan" data-i18n="admin.diagnostics.startScan">
-                            <i class="fa-solid fa-play" aria-hidden="true"></i> بدء الفحص
+                    <div id="admin-full-scan-status" class="ac-row-desc" data-i18n="scanReady">جاهز للفحص</div>
+                    <div class="ac-grid-2" style="margin-top:0.5rem;">
+                        <button id="btn-admin-full-scan" class="ac-btn ac-btn-primary">
+                            <i class="fa-solid fa-play"></i>
+                            <span data-i18n="startScan">بدء الفحص</span>
                         </button>
-                        <button type="button" class="ac-btn" id="btn-admin-download-console-report" disabled data-i18n="admin.diagnostics.downloadReport">
-                            <i class="fa-solid fa-file-lines" aria-hidden="true"></i> تنزيل console.txt
+                        <button id="btn-admin-download-console-report" class="ac-btn" disabled>
+                            <i class="fa-solid fa-file-lines"></i>
+                            <span data-i18n="downloadConsole">تنزيل console.txt</span>
                         </button>
                     </div>
                 </div>
@@ -552,24 +516,20 @@
 
             <div class="ac-card">
                 <div class="ac-card-head">
-                    <h3 data-i18n="admin.diagnostics.scanResultsTitle">نتائج الفحص</h3>
+                    <h3 data-i18n="scanResultsTitle">نتائج الفحص</h3>
                 </div>
                 <div class="ac-card-body">
                     <div class="ac-table-wrap">
                         <table class="ac-table">
                             <thead>
                                 <tr>
-                                    <th data-i18n="admin.diagnostics.col.level">المستوى</th>
-                                    <th data-i18n="admin.diagnostics.col.check">الفحص</th>
-                                    <th data-i18n="admin.diagnostics.col.detail">التفاصيل</th>
+                                    <th data-i18n="colLevel">المستوى</th>
+                                    <th data-i18n="colItem">البند</th>
+                                    <th data-i18n="colDetails">التفاصيل</th>
                                 </tr>
                             </thead>
                             <tbody id="admin-scan-results-body">
-                                <tr>
-                                    <td data-label="المستوى">—</td>
-                                    <td data-label="الفحص" data-i18n="admin.diagnostics.noResults">لا توجد نتائج بعد</td>
-                                    <td data-label="التفاصيل">—</td>
-                                </tr>
+                                <tr><td colspan="3" data-i18n="scanNoResults">لم يُجرَ فحص بعد.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -578,24 +538,20 @@
 
             <div class="ac-card">
                 <div class="ac-card-head">
-                    <h3 data-i18n="admin.diagnostics.logsTitle">سجل التشخيص</h3>
+                    <h3 data-i18n="logsTitle">السجلات</h3>
                 </div>
                 <div class="ac-card-body">
                     <div class="ac-table-wrap">
                         <table class="ac-table">
                             <thead>
                                 <tr>
-                                    <th data-i18n="admin.diagnostics.col.time">الوقت</th>
-                                    <th data-i18n="admin.diagnostics.col.level">المستوى</th>
-                                    <th data-i18n="admin.diagnostics.col.message">الرسالة</th>
+                                    <th data-i18n="colTime">الوقت</th>
+                                    <th data-i18n="colLevel">المستوى</th>
+                                    <th data-i18n="colMessage">الرسالة</th>
                                 </tr>
                             </thead>
                             <tbody id="admin-logs-table-body">
-                                <tr>
-                                    <td data-label="الوقت">—</td>
-                                    <td data-label="المستوى">—</td>
-                                    <td data-label="الرسالة" data-i18n="admin.diagnostics.noLogs">لا توجد سجلات بعد</td>
-                                </tr>
+                                <tr><td colspan="3" data-i18n="logsEmpty">لا توجد سجلات.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -603,32 +559,26 @@
             </div>
         </section>
 
-    </div>
+    </div><!-- /admin-view-main -->
 
     <div class="admin-view-setup" id="admin-view-setup" hidden aria-hidden="true">
         <div id="admin-setup-host"></div>
     </div>
-
 </div>
 
-<div id="tp-ai-modal" role="dialog" aria-modal="true" aria-labelledby="tp-ai-modal-title" style="display:none">
-    <div class="ac-card">
-        <button type="button" class="ac-btn ac-btn-sm ac-menu-btn" id="tp-ai-close" aria-label="Close">
-            <i class="fa-solid fa-times" aria-hidden="true"></i>
+<div id="tp-ai-modal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4 backdrop-blur-sm" style="display: none;">
+    <div class="bg-slate-900 border border-indigo-500/50 rounded-2xl w-full max-w-sm p-5 shadow-2xl relative">
+        <button type="button" id="tp-ai-close" class="absolute top-3 right-3 text-slate-400 hover:text-white">
+            <i class="fa-solid fa-times"></i>
         </button>
-        <div class="ac-card-head">
-            <h3 id="tp-ai-modal-title" data-i18n="admin.tpAi.title">
-                <i class="fa-solid fa-tags" aria-hidden="true"></i> مولد التاجز الذكي
-            </h3>
-        </div>
-        <div class="ac-card-body">
-            <p class="ac-row-desc" data-i18n="admin.tpAi.desc">يعتمد على Gemini لاستخراج أفضل 25 كلمة مفتاحية لـ TeePublic.</p>
-            <input type="text" id="tp-ai-niche" class="ac-input modern-input" data-i18n-placeholder="admin.tpAi.nichePlaceholder" placeholder="أدخل اسم النيتش">
-            <button type="button" class="ac-btn ac-btn-primary" id="tp-ai-generate-btn" data-i18n="admin.tpAi.generate">توليد التاجز</button>
-            <textarea id="tp-ai-result" class="ac-input modern-input" readonly rows="4" data-i18n-placeholder="admin.tpAi.resultPlaceholder" placeholder="ستظهر النتائج هنا…"></textarea>
-            <button type="button" class="ac-btn ac-btn-primary" id="tp-ai-copy-btn" style="display:none" data-i18n="admin.tpAi.copy">
-                <i class="fa-regular fa-copy" aria-hidden="true"></i> نسخ التاجز
-            </button>
-        </div>
+        <h3 class="text-lg font-black text-indigo-300 mb-2 flex items-center gap-2">
+            <i class="fa-solid fa-tags"></i>
+            <span data-i18n="tpModalTitle">مولد التاجز الذكي</span>
+        </h3>
+        <p class="text-xs text-slate-400 mb-4" data-i18n="tpModalDesc">يعتمد على Gemini لاستخراج أفضل 25 كلمة مفتاحية لـ TeePublic.</p>
+        <input type="text" id="tp-ai-niche" class="modern-input w-full mb-3 text-sm" placeholder="أدخل اسم النيش">
+        <button type="button" id="tp-ai-generate-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl font-black mb-3 transition" data-i18n="tpGenerate">توليد التاجز</button>
+        <textarea id="tp-ai-result" class="modern-input w-full h-24 mb-3 text-xs font-mono" readonly placeholder="…"></textarea>
+        <button type="button" id="tp-ai-copy-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-black hidden transition" data-i18n="tpCopy">نسخ التاجز</button>
     </div>
 </div>

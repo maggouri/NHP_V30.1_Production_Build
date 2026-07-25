@@ -2,14 +2,75 @@ export const GitHubSync = {
     // جعل الكائن متاحاً عالمياً
     init: function () {
         window.GitHubSync = this;
+        this.loadTokenFromStorage();
     },
 
-    // إعدادات GitHub
+    // User must set GitHub PAT in Admin → Sync → GitHub Token (stored in chrome.storage.local.githubToken).
+    // Never commit tokens to the repo.
     config: {
-        token: '', // Set via extension settings / chrome.storage — never commit tokens
+        token: '',
         owner: 'maggouri',
         repo: 'niche-hunter-assets',
         branch: 'main'
+    },
+
+    _tokenStorageKey: 'githubToken',
+    _tokenLoadPromise: null,
+    _loggedNoToken: false,
+
+    _isPlaceholderToken(token) {
+        const t = String(token || '').trim();
+        return !t || t === 'YOUR_GITHUB_TOKEN';
+    },
+
+    hasValidToken() {
+        return !this._isPlaceholderToken(this.config.token);
+    },
+
+    loadTokenFromStorage() {
+        if (this._tokenLoadPromise) return this._tokenLoadPromise;
+        this._tokenLoadPromise = new Promise((resolve) => {
+            try {
+                chrome.storage.local.get([this._tokenStorageKey, 'githubSyncToken'], (res) => {
+                    const token = String(res[this._tokenStorageKey] || res.githubSyncToken || '').trim();
+                    if (token && !this._isPlaceholderToken(token)) {
+                        this.config.token = token;
+                    } else {
+                        this.config.token = '';
+                    }
+                    resolve(this.config.token);
+                });
+            } catch (_) {
+                this.config.token = '';
+                resolve('');
+            }
+        });
+        return this._tokenLoadPromise;
+    },
+
+    async ensureToken() {
+        await this.loadTokenFromStorage();
+        if (!this.hasValidToken()) {
+            if (!this._loggedNoToken) {
+                console.info('[NHP] GitHub cloud sync skipped — set PAT in Admin → Sync → GitHub Token');
+                this._loggedNoToken = true;
+            }
+            return false;
+        }
+        return true;
+    },
+
+    setToken(token) {
+        const t = String(token || '').trim();
+        this.config.token = this._isPlaceholderToken(t) ? '' : t;
+        this._loggedNoToken = false;
+        try {
+            if (this.config.token) {
+                chrome.storage.local.set({ [this._tokenStorageKey]: this.config.token });
+            } else {
+                chrome.storage.local.remove([this._tokenStorageKey]);
+            }
+        } catch (_) { /* ignore */ }
     },
 
     /**
@@ -42,6 +103,9 @@ export const GitHubSync = {
      * رفع صورة إلى GitHub (في مجلد المستخدم الخاص)
      */
     uploadImage: async function (base64Data, fileName) {
+        if (!(await this.ensureToken())) {
+            return { success: false, error: 'GitHub token not configured' };
+        }
         const userId = await this.getUserId();
         const path = `assets/designs/${userId}/${Date.now()}_${fileName}`;
         const url = `https://api.github.com/repos/${this.config.owner}/${this.config.repo}/contents/${path}`;
@@ -82,6 +146,7 @@ export const GitHubSync = {
      * حفظ ملف بيانات JSON (بصيغة اسم مرتبطة بالمستخدم)
      */
     syncData: async function (jsonData) {
+        if (!(await this.ensureToken())) return null;
         const userId = await this.getUserId();
         const path = `sync/data_${userId}.json`;
         const url = `https://api.github.com/repos/${this.config.owner}/${this.config.repo}/contents/${path}`;
@@ -130,6 +195,7 @@ export const GitHubSync = {
      * استيراد البيانات من GitHub (الخاصة بالمستخدم)
      */
     getData: async function (specificUserId = null) {
+        if (!(await this.ensureToken())) return null;
         const userId = specificUserId || await this.getUserId();
         const path = `sync/data_${userId}.json`;
         const url = `https://api.github.com/repos/${this.config.owner}/${this.config.repo}/contents/${path}`;
@@ -153,6 +219,7 @@ export const GitHubSync = {
      * جلب قائمة الصور من مكتبة المستخدم
      */
     fetchLibrary: async function () {
+        if (!(await this.ensureToken())) return [];
         const userId = await this.getUserId();
         const path = `assets/designs/${userId}`;
         const url = `https://api.github.com/repos/${this.config.owner}/${this.config.repo}/contents/${path}`;
@@ -169,6 +236,9 @@ export const GitHubSync = {
      * يدعم الآن البحث الذكي عن العضو في السجل المركزي ومعالجة الأحجام الضخمة
      */
     shareQueueToUser: async function (targetEmailOrUid, queueData) {
+        if (!(await this.ensureToken())) {
+            throw new Error('GitHub token not configured — Admin → Sync → GitHub Token');
+        }
         let targetUid = targetEmailOrUid;
 
         // 1. تطهير البيانات لتقليل الحجم ومنع أخطاء JSON
@@ -257,6 +327,9 @@ export const GitHubSync = {
      * حذف ملف من GitHub
      */
     deleteFile: async function (path, sha) {
+        if (!(await this.ensureToken())) {
+            return { success: false, error: 'GitHub token not configured' };
+        }
         const url = `https://api.github.com/repos/${this.config.owner}/${this.config.repo}/contents/${path}`;
         const body = {
             message: `Delete file: ${path}`,
@@ -287,6 +360,7 @@ export const GitHubSync = {
      * جلب جميع الأعضاء المسجلين من السجل المركزي (للمدير فقط)
      */
     getAllRegisteredUsers: async function () {
+        if (!(await this.ensureToken())) return [];
         const path = `admin/members.json`;
         const url = `https://api.github.com/repos/${this.config.owner}/${this.config.repo}/contents/${path}`;
 
@@ -309,6 +383,7 @@ export const GitHubSync = {
      */
     registerUserGlobal: async function (email, uid, nickname = null, password = null, forceUpdate = false) {
         if (!email) return;
+        if (!(await this.ensureToken())) return;
         const path = `admin/members.json`;
         const url = `https://api.github.com/repos/${this.config.owner}/${this.config.repo}/contents/${path}?ref=${this.config.branch}&t=${Date.now()}`;
 
@@ -376,6 +451,9 @@ export const GitHubSync = {
      * هجرة الأعضاء القدامى من ملفات sync إلى السجل المركزي (للمدير فقط)
      */
     migrateLegacyUsers: async function () {
+        if (!(await this.ensureToken())) {
+            return { success: false, error: 'GitHub token not configured' };
+        }
         try {
             // 1. جلب محتويات مجلد sync
             const syncPath = `sync`;
@@ -462,6 +540,7 @@ export const GitHubSync = {
      * جلب جميع الأعضاء الذين لديهم مجلدات مزامنة (طريقة بديلة)
      */
     fetchAllUsers: async function () {
+        if (!(await this.ensureToken())) return [];
         const path = `sync`;
         const url = `https://api.github.com/repos/${this.config.owner}/${this.config.repo}/contents/${path}`;
 
@@ -509,11 +588,17 @@ export const GitHubSync = {
      * Helper for downloading from GitHub directly (bypasses 64MB limit)
      */
     _download: async function (url) {
+        if (!(await this.ensureToken())) {
+            return { success: false, skipped: true, error: 'no_token' };
+        }
         try {
             const response = await fetch(url, {
                 headers: { 'Authorization': `token ${this.config.token}` }
             });
             const data = await response.json();
+            if (!response.ok && (response.status === 401 || data?.message === 'Bad credentials')) {
+                return { success: false, error: 'Bad credentials', data };
+            }
             return { success: response.ok, data };
         } catch (err) {
             return { success: false, error: err.message };

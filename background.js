@@ -1,8 +1,8 @@
-/**
- * background.js — Niche Hunter Pro v9.0
- * يدير محرّك الفحص: USPTO(قانوني) + TeePublic(منافسة) + الذكاء الاصطناعي + أتمتة الرفع
+﻿/**
+ * background.js ÔÇö Niche Hunter Pro v9.0
+ * ┘èÏ»┘èÏ▒ ┘àÏ¡Ï▒┘æ┘â Ïº┘ä┘üÏ¡ÏÁ: USPTO(┘éÏº┘å┘ê┘å┘è) + TeePublic(┘à┘åÏº┘üÏ│Ï®) + Ïº┘äÏ░┘âÏºÏí Ïº┘äÏºÏÁÏÀ┘åÏºÏ╣┘è + ÏúÏ¬┘àÏ¬Ï® Ïº┘äÏ▒┘üÏ╣
  *
- * TODO(launch): review nativeMessaging — required for local server bridge; document host install steps.
+ * TODO(launch): review nativeMessaging ÔÇö required for local server bridge; document host install steps.
  */
 try {
     importScripts('peel_banana_engine.js');
@@ -97,7 +97,7 @@ try {
 try {
     importScripts('modules/autopilot/ap-upload-monitor.js');
 } catch (e) {
-    console.error('Failed to import modules/autopilot/ap-upload-monitor.js', e);
+    console.warn('[NHP] Optional ap-upload-monitor.js not loaded ÔÇö upload monitor disabled:', e?.message || e);
 }
 try {
     importScripts('background/creaty-proxy-auth.js');
@@ -203,7 +203,7 @@ try {
 try {
     importScripts('background/canva-handlers.js');
 } catch (e) {
-    console.error('Failed to import background/canva-handlers.js', e);
+    console.warn('[NHP] Canva handlers not loaded:', e?.message || e);
 }
 if (typeof self.__canvaHandleMessage === 'function') {
     chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
@@ -219,7 +219,7 @@ if (typeof self.__canvaHandleMessage === 'function') {
         }
     });
 } else {
-    console.error('[CANVA] canva-handlers.js did not register __canvaHandleMessage');
+    console.warn('[CANVA] canva-handlers.js did not register __canvaHandleMessage ÔÇö Canva popup/OAuth disabled');
 }
 
 (function seedCliProxyManagementKey() {
@@ -334,7 +334,7 @@ async function isLocalManagerBridgeOnline(forceRefresh = false) {
         nhpLogOnce(
             'local_bridge_offline',
             'info',
-            '[NHP] Local bridge (127.0.0.1:3009) offline — optional fallback; register Native Messaging for server control.'
+            '[NHP] Local bridge (127.0.0.1:3009) offline ÔÇö optional fallback; register Native Messaging for server control.'
         );
     }
     return ok;
@@ -370,7 +370,7 @@ function buildNativeHostLauncherError(projectDir, nativeError) {
         source: 'native_host_missing',
         nativeHostRequired: true,
         nativeHostOk: false,
-        error: nativeError || hint?.messageAr || 'Native Messaging غير مسجّل.',
+        error: nativeError || hint?.messageAr || 'Native Messaging Ï║┘èÏ▒ ┘àÏ│Ï¼┘æ┘ä.',
         registerScript: hint?.registerScript || '',
         registerCommand: hint?.registerCommand || '',
         extensionId: hint?.extensionId || (typeof chrome !== 'undefined' ? chrome.runtime?.id : '')
@@ -527,7 +527,7 @@ async function executeNhpLauncherScript(scriptPath, {
         port,
         scriptPath: fullPath,
         source: 'unavailable',
-        error: `تعذر تشغيل السكربت تلقائياً — شغّله يدوياً:\n${fullPath}`,
+        error: `Ï¬Ï╣Ï░Ï▒ Ï¬Ï┤Ï║┘è┘ä Ïº┘äÏ│┘âÏ▒Ï¿Ï¬ Ï¬┘ä┘éÏºÏª┘èÏº┘ï ÔÇö Ï┤Ï║┘æ┘ä┘ç ┘èÏ»┘ê┘èÏº┘ï:\n${fullPath}`,
         manualScript: fullPath,
         registerScript: manualHint
     };
@@ -611,7 +611,7 @@ function shouldAttemptLocalGhostBootstrap() {
     }
 })();
 
-// ─── STATE FLAGS ───
+// ÔöÇÔöÇÔöÇ STATE FLAGS ÔöÇÔöÇÔöÇ
 let uStopped = false;
 let tpStopped = false;
 let apStopped = false;
@@ -622,7 +622,7 @@ const AP_UPLOAD_MONITOR_LOG_KEY = (typeof NhpApUploadMonitor !== 'undefined' && 
     : 'ap_upload_monitor_log';
 let apQueueStateCache = null;
 let apUploadMonitorRun = null;
-/** Serializes autopilot runs — prevents overlapping startAPProcess / parallel Ghost /upload calls. */
+/** Serializes autopilot runs ÔÇö prevents overlapping startAPProcess / parallel Ghost /upload calls. */
 let apProcessChain = Promise.resolve();
 let apProcessRunning = false;
 
@@ -641,8 +641,8 @@ function enqueueStartAPProcess(config) {
             const earlyAccounts = resolved.accounts;
             console.log('[Autopilot][Upload] enqueue scoped emails:', earlyAccounts.map((acc) => acc?.email).filter(Boolean));
             if (!earlyAccounts.length) {
-                logApProcessAbort('لا توجد حسابات محددة للرفع', { path: 'enqueue_no_accounts', allowedIds });
-                throw new Error('لا توجد حسابات محددة للرفع');
+                logApProcessAbort('┘äÏº Ï¬┘êÏ¼Ï» Ï¡Ï│ÏºÏ¿ÏºÏ¬ ┘àÏ¡Ï»Ï»Ï® ┘ä┘äÏ▒┘üÏ╣', { path: 'enqueue_no_accounts', allowedIds });
+                throw new Error('┘äÏº Ï¬┘êÏ¼Ï» Ï¡Ï│ÏºÏ¿ÏºÏ¬ ┘àÏ¡Ï»Ï»Ï® ┘ä┘äÏ▒┘üÏ╣');
             }
             const earlyFirst = earlyAccounts[0];
             if (earlyFirst) {
@@ -681,8 +681,8 @@ function enqueueStartAPProcess(config) {
             console.error('[AP] startAPProcess failed:', err);
             const reason = String(err?.message || '');
             const toast = reason.includes('SEQ_UPLOAD_GUARD')
-                ? '🔒 فشل بدء الرفع — حماية الرفع المتسلسل غير مفعّلة'
-                : `⚠️ فشل بدء الرفع: ${reason || 'خطأ غير معروف'}`;
+                ? '­ƒöÆ ┘üÏ┤┘ä Ï¿Ï»Ïí Ïº┘äÏ▒┘üÏ╣ ÔÇö Ï¡┘àÏº┘èÏ® Ïº┘äÏ▒┘üÏ╣ Ïº┘ä┘àÏ¬Ï│┘äÏ│┘ä Ï║┘èÏ▒ ┘à┘üÏ╣┘æ┘äÏ®'
+                : `ÔÜá´©Å ┘üÏ┤┘ä Ï¿Ï»Ïí Ïº┘äÏ▒┘üÏ╣: ${reason || 'Ï«ÏÀÏú Ï║┘èÏ▒ ┘àÏ╣Ï▒┘ê┘ü'}`;
             if (typeof abortApUploadEarly === 'function') {
                 await abortApUploadEarly(toast, { abortDetail: { path: 'enqueue_catch', message: reason } });
             } else {
@@ -856,7 +856,7 @@ async function publishApQueueState(nextState, options = {}) {
     return apQueueStateCache;
 }
 
-/** Service worker restart kills in-flight uploads — clear stale isRunning queue snapshots. */
+/** Service worker restart kills in-flight uploads ÔÇö clear stale isRunning queue snapshots. */
 void (async function resetStaleApUploadQueueOnServiceWorkerBoot() {
     try {
         const res = await new Promise((resolve) => chrome.storage.local.get([AP_UPLOAD_QUEUE_STATE_KEY], resolve));
@@ -1005,11 +1005,11 @@ async function apMonitorMaybeAiNote(run) {
         const adminKeys = stored.nhpAdminAiKeys || {};
         const apiKey = String(adminKeys.apiKey || stored.nhpGptApiKey || '').trim();
         if (!apiKey) {
-            NhpApUploadMonitor.appendNote(run, 'AI غير متاح — تم الاعتماد على الملخص القواعدي فقط.', 'monitor');
+            NhpApUploadMonitor.appendNote(run, 'AI Ï║┘èÏ▒ ┘àÏ¬ÏºÏ¡ ÔÇö Ï¬┘à Ïº┘äÏºÏ╣Ï¬┘àÏºÏ» Ï╣┘ä┘ë Ïº┘ä┘à┘äÏ«ÏÁ Ïº┘ä┘é┘êÏºÏ╣Ï»┘è ┘ü┘éÏÀ.', 'monitor');
             return;
         }
         const baseUrl = normalizeCliProxyBaseUrl(adminKeys.baseUrl || stored.nhpProxyBaseUrl || CLI_PROXY_API_BASE_URL);
-        const prompt = `لخص بإيجاز بالعربية أسباب فشل رفع تصاميم TeePublic واقترح تصحيحاً للألوان إن وجد. البيانات:\n${JSON.stringify(failed.slice(0, 12).map((f) => ({ title: f.title, reason: f.reason || f.error, colors: f.colorsStatus })))}`;
+        const prompt = `┘äÏ«ÏÁ Ï¿ÏÑ┘èÏ¼ÏºÏ▓ Ï¿Ïº┘äÏ╣Ï▒Ï¿┘èÏ® ÏúÏ│Ï¿ÏºÏ¿ ┘üÏ┤┘ä Ï▒┘üÏ╣ Ï¬ÏÁÏº┘à┘è┘à TeePublic ┘êÏº┘éÏ¬Ï▒Ï¡ Ï¬ÏÁÏ¡┘èÏ¡Ïº┘ï ┘ä┘äÏú┘ä┘êÏº┘å ÏÑ┘å ┘êÏ¼Ï». Ïº┘äÏ¿┘èÏº┘åÏºÏ¬:\n${JSON.stringify(failed.slice(0, 12).map((f) => ({ title: f.title, reason: f.reason || f.error, colors: f.colorsStatus })))}`;
         const ai = await callOpenAiCompatibleSeoDirect(prompt, null, null, apiKey, {
             baseUrl,
             model: adminKeys.model || CLI_PROXY_API_DEFAULT_MODEL,
@@ -1019,9 +1019,9 @@ async function apMonitorMaybeAiNote(run) {
         });
         const text = String(ai?.title || ai?.description || ai?.text || ai?.content || '').trim();
         if (text) NhpApUploadMonitor.appendNote(run, `AI: ${text.slice(0, 400)}`, 'ai');
-        else NhpApUploadMonitor.appendNote(run, 'AI لم يُرجع ملخصاً — الملخص القواعدي كافٍ.', 'monitor');
+        else NhpApUploadMonitor.appendNote(run, 'AI ┘ä┘à ┘è┘ÅÏ▒Ï¼Ï╣ ┘à┘äÏ«ÏÁÏº┘ï ÔÇö Ïº┘ä┘à┘äÏ«ÏÁ Ïº┘ä┘é┘êÏºÏ╣Ï»┘è ┘âÏº┘ü┘ì.', 'monitor');
     } catch (err) {
-        NhpApUploadMonitor.appendNote(run, `تعذر استدعاء AI (${err?.message || 'error'}) — متابعة بالملخص القواعدي.`, 'monitor');
+        NhpApUploadMonitor.appendNote(run, `Ï¬Ï╣Ï░Ï▒ ÏºÏ│Ï¬Ï»Ï╣ÏºÏí AI (${err?.message || 'error'}) ÔÇö ┘àÏ¬ÏºÏ¿Ï╣Ï® Ï¿Ïº┘ä┘à┘äÏ«ÏÁ Ïº┘ä┘é┘êÏºÏ╣Ï»┘è.`, 'monitor');
     }
 }
 const wakeServerInFlight = new Map();
@@ -1042,10 +1042,10 @@ const SCREEN_DEFAULT_SETTINGS = {
 };
 const CLI_PROXY_API_BASE_URL = 'https://oracle-api.emailcore.app/cliproxy/v1';
 const CLI_PROXY_API_DEFAULT_MODEL = 'auto';
-/** NHP Generate — match Ghost .env CLIPROXY_IMAGE_MODEL (Codex gpt-image-2 in CLIProxy UI). */
+/** NHP Generate ÔÇö match Ghost .env CLIPROXY_IMAGE_MODEL (Codex gpt-image-2 in CLIProxy UI). */
 const CLI_PROXY_API_DEFAULT_IMAGE_MODEL = 'gpt-image-2';
 const CLI_PROXY_API_DEFAULT_VISION_MODEL = 'auto';
-/** Admin-only: set via لوحة التحكم → مفاتيح AI (chrome.storage.local nhpGptApiKey). */
+/** Admin-only: set via ┘ä┘êÏ¡Ï® Ïº┘äÏ¬Ï¡┘â┘à ÔåÆ ┘à┘üÏºÏ¬┘èÏ¡ AI (chrome.storage.local nhpGptApiKey). */
 const NHP_DEFAULT_API_KEY = '';
 
 function normalizeCliProxyBaseUrl(value) {
@@ -1416,7 +1416,7 @@ async function handleGeminiWebBatchGlobalTimeout(sessionId) {
         ? session.nextExpectedIndex
         : (session.pendingIndex ?? session.currentIndex ?? 0);
     if (pending < session.items.length) {
-        console.warn(`[NHP][SEO Batch] Global watchdog — advancing design ${pending + 1}/${session.items.length}.`);
+        console.warn(`[NHP][SEO Batch] Global watchdog ÔÇö advancing design ${pending + 1}/${session.items.length}.`);
         await advanceGeminiWebBatchAfterItem({
             requestId: `${sessionId}_${pending}`,
             sessionId,
@@ -1613,7 +1613,7 @@ const RADAR_UNOFFICIAL_DEFERRED_PIPELINE_KEY = 'radarUnofficialDeferredPipelineI
 const NHP_INTERNAL_GEMINI_KEY_STORAGE_KEY = 'nhpInternalGeminiKey';
 const SEO_INTERNAL_GEMINI_KEY_STORAGE_KEY = 'seoInternalGeminiKey';
 const LEGACY_CUSTOM_GEMINI_KEY_STORAGE_KEY = 'customGeminiKey';
-/** Gemini key from admin storage only — no hardcoded fallback. */
+/** Gemini key from admin storage only ÔÇö no hardcoded fallback. */
 const RADAR_UNOFFICIAL_DEFAULT_GEMINI_API_KEY = '';
 const RADAR_UNOFFICIAL_LETTERS = 'abcdefghijklmnopqrstuvwxyz'.split('');
 const RADAR_UNOFFICIAL_MIN_DELAY_MS = 1500;
@@ -1642,7 +1642,7 @@ async function getInternalGeminiApiKey() {
         }
     });
 }
-/** فحص TeePublic (تبويب كلاسيكي): صفحات لكل sort عبر lab_perform_scan ثم مقارنة New×Popular. */
+/** ┘üÏ¡ÏÁ TeePublic (Ï¬Ï¿┘ê┘èÏ¿ ┘â┘äÏºÏ│┘è┘â┘è): ÏÁ┘üÏ¡ÏºÏ¬ ┘ä┘â┘ä sort Ï╣Ï¿Ï▒ lab_perform_scan Ï½┘à ┘à┘éÏºÏ▒┘åÏ® New├ùPopular. */
 const RADAR_LAB_SCAN_PAGE_COUNT = 3;
 const RADAR_IMAGE_FETCH_MAX_PER_SOURCE = 40;
 /** Google Images grid: inline base64 thumbs + CDN URLs from results pages. */
@@ -1651,7 +1651,7 @@ const RADAR_GOOGLE_IMAGES_FETCH_LIMIT = 40;
 const RADAR_PINTEREST_FETCH_LIMIT = 28;
 const RADAR_PINTEREST_MIN_HYDRATED_THUMB_CHARS = 1800;
 const PINIMG_URL_RE = /https?:\/\/i\.pinimg\.com\/[^"'<>\s\\]+\.(?:jpg|jpeg|png|webp)(?:\?[^"'<>\s\\]*)?/i;
-/** صيد الصور: معاينات من t-shirts?query= (صفحات متعددة) — لا sort ولا lab_perform_scan. */
+/** ÏÁ┘èÏ» Ïº┘äÏÁ┘êÏ▒: ┘àÏ╣Ïº┘è┘åÏºÏ¬ ┘à┘å t-shirts?query= (ÏÁ┘üÏ¡ÏºÏ¬ ┘àÏ¬Ï╣Ï»Ï»Ï®) ÔÇö ┘äÏº sort ┘ê┘äÏº lab_perform_scan. */
 const RADAR_TEEPUBLIC_IMAGE_TARGET = 80;
 const RADAR_TEEPUBLIC_MAX_LISTING_PAGES = 8;
 /** Marketplace HTML pagination (Amazon / Redbubble / Etsy). */
@@ -1674,7 +1674,7 @@ function getTeepublicExtractApi() {
 const RADAR_TEEPUBLIC_FETCH_TIMEOUT_MS = 18000;
 const RADAR_IMAGE_FETCH_TIMEOUT_MS = 14000;
 const NC_GOOGLE_AI_DESIGNS_TEMPLATE_STORAGE_KEY = 'ncGoogleAiDesignsTemplate';
-const NC_GOOGLE_AI_DESIGNS_DEFAULT_TEMPLATE_BG = 'احدث تصاميم القمصان متعلقة ب - {niche} -';
+const NC_GOOGLE_AI_DESIGNS_DEFAULT_TEMPLATE_BG = 'ÏºÏ¡Ï»Ï½ Ï¬ÏÁÏº┘à┘è┘à Ïº┘ä┘é┘àÏÁÏº┘å ┘àÏ¬Ï╣┘ä┘éÏ® Ï¿ - {niche} -';
 const RADAR_FETCH_HTML_HEADERS = {
     Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     'Cache-Control': 'no-cache',
@@ -1690,7 +1690,7 @@ function buildRadarGoogleAiDesignsQuery(nicheText, template) {
 
 /**
  * Build hunt fetch URL; pageOpts drives pagination (Pinterest &page=, Google &start=).
- * Google HTML may return CAPTCHA/blocked HTML after page 1 — hunt stops on empty/blocked.
+ * Google HTML may return CAPTCHA/blocked HTML after page 1 ÔÇö hunt stops on empty/blocked.
  */
 function buildRadarSearchUrlForSource(sourceKey, niche, aiTemplate, pageOpts = {}) {
     const q = normalizeRadarNicheQuery(niche);
@@ -2514,7 +2514,7 @@ function googleAiUrlFromSizeBlock(block) {
     return '';
 }
 
-/** data-im: [0,"id",[thumb,w,h],[full,w,h],{...}] — pair [1]=thumb, [2]=full; else largest area wins. */
+/** data-im: [0,"id",[thumb,w,h],[full,w,h],{...}] ÔÇö pair [1]=thumb, [2]=full; else largest area wins. */
 function pickGoogleAiThumbFullFromImArray(arr) {
     if (!Array.isArray(arr)) return null;
     if (arr.length >= 4 && typeof arr[1] === 'string' && !/^https?:\/\//i.test(arr[1])) {
@@ -2928,13 +2928,13 @@ function clearRadarImageHuntAbort(requestId) {
 }
 
 /**
- * Fetch one batch of hunt images (deduped against seenUrls); cursor paginates per source (pages 1/2/3…).
+ * Fetch one batch of hunt images (deduped against seenUrls); cursor paginates per source (pages 1/2/3ÔÇª).
  * Sources run in parallel (e.g. Google Images local + TeePublic local/Oracle) then merge into one result set.
  */
 async function radarFetchSourceImagesBatch(niche, mode = 'aggregator', options = {}) {
     const requestId = options.requestId;
     const query = normalizeRadarNicheQuery(niche);
-    if (!query) throw new Error('أدخل نيشاً للبحث عن الصور.');
+    if (!query) throw new Error('ÏúÏ»Ï«┘ä ┘å┘èÏ┤Ïº┘ï ┘ä┘äÏ¿Ï¡Ï½ Ï╣┘å Ïº┘äÏÁ┘êÏ▒.');
     const batchLimit = Math.min(Math.max(1, Number(options.batchLimit) || 10), 80);
     const urlOnly = options.urlOnly === true || options.hydrateThumbs === false;
     const seenIncoming = new Set(
@@ -3194,7 +3194,7 @@ async function radarFetchSourceImages(niche, mode = 'aggregator', options = null
         return radarFetchSourceImagesBatch(niche, mode, options || {});
     }
     const query = normalizeRadarNicheQuery(niche);
-    if (!query) throw new Error('أدخل نيشاً للبحث عن الصور.');
+    if (!query) throw new Error('ÏúÏ»Ï«┘ä ┘å┘èÏ┤Ïº┘ï ┘ä┘äÏ¿Ï¡Ï½ Ï╣┘å Ïº┘äÏÁ┘êÏ▒.');
     let teepublicSearchUrl = buildRadarTeepublicSearchUrl(query, 1);
     const storage = await getStorage([NC_GOOGLE_AI_DESIGNS_TEMPLATE_STORAGE_KEY]);
     const aiTemplate = storage[NC_GOOGLE_AI_DESIGNS_TEMPLATE_STORAGE_KEY] || NC_GOOGLE_AI_DESIGNS_DEFAULT_TEMPLATE_BG;
@@ -3263,7 +3263,7 @@ function buildRadarNicheMergeApparelPrompt(nicheText = '') {
     const niche = String(nicheText || '').trim();
     const prefix = niche ? `[Niche: ${niche}]\n` : '';
     const refHint = niche ? ` (niche: ${niche})` : '';
-    const base = `Generate exactly 4 distinct print-ready apparel graphics based only on the printable designs visible in the TWO attached reference images${refHint}. You are merging/combining ideas from BOTH references: blend graphic elements, symbols, typography, characters, and color mood from reference A and reference B into four fresh cohesive apparel designs. Each of the 4 outputs must explore a different creative fusion — do not copy either reference literally. If either reference is a shirt mockup, flat garment photo, product photo, or model wearing apparel, extract only the printed logo/text/symbols/color mood from the garment and do not redraw the shirt, model, mannequin, fabric folds, product photo, watermark, or original background. Place each redesigned graphic only on a solid black background (#000000). Analyze both design subjects and moods, then choose the best 4 matching styles from this list: Vintage Distressed, 70s Retro Groovy, Meme Graphic / Sarcastic, Line Art Minimalism, Bold Varsity / Collegiate, Cottagecore Aesthetic, 90s Grunge / Y2K, Cute Kawaii Chibi, 80s Neon Synthwave, Dark Academia, Watercolor Splatter, Ukiyo-e Japanese, Sumi-e Zen, Gothic / Witchy, Cartoon Tattoo Style, Comic / Pop Art, Psychedelic Trippy, Pixel Art, Glitch Art, Cyberpunk / Futuristic. Use one selected style per design variation. If the extracted printable graphics contain a person or character, create 4 different pose/action variations for that character only, one per design. If the printable graphics have no person or character, do not invent a body pose. Preserve the core theme, keep high contrast, strong readable silhouette, and centered apparel composition. Output final designs only.`;
+    const base = `Generate exactly 4 distinct print-ready apparel graphics based only on the printable designs visible in the TWO attached reference images${refHint}. You are merging/combining ideas from BOTH references: blend graphic elements, symbols, typography, characters, and color mood from reference A and reference B into four fresh cohesive apparel designs. Each of the 4 outputs must explore a different creative fusion ÔÇö do not copy either reference literally. If either reference is a shirt mockup, flat garment photo, product photo, or model wearing apparel, extract only the printed logo/text/symbols/color mood from the garment and do not redraw the shirt, model, mannequin, fabric folds, product photo, watermark, or original background. Place each redesigned graphic only on a solid black background (#000000). Analyze both design subjects and moods, then choose the best 4 matching styles from this list: Vintage Distressed, 70s Retro Groovy, Meme Graphic / Sarcastic, Line Art Minimalism, Bold Varsity / Collegiate, Cottagecore Aesthetic, 90s Grunge / Y2K, Cute Kawaii Chibi, 80s Neon Synthwave, Dark Academia, Watercolor Splatter, Ukiyo-e Japanese, Sumi-e Zen, Gothic / Witchy, Cartoon Tattoo Style, Comic / Pop Art, Psychedelic Trippy, Pixel Art, Glitch Art, Cyberpunk / Futuristic. Use one selected style per design variation. If the extracted printable graphics contain a person or character, create 4 different pose/action variations for that character only, one per design. If the printable graphics have no person or character, do not invent a body pose. Preserve the core theme, keep high contrast, strong readable silhouette, and centered apparel composition. Output final designs only.`;
     return prefix + (typeof appendNhpTextPreservationRule === 'function' ? appendNhpTextPreservationRule(base) : base);
 }
 
@@ -3332,7 +3332,7 @@ function buildRadarCrossNicheMergeApparelPrompt({
     const secondaryHint = secondaryVision
         ? ` SECONDARY niche "${secondary}" (complementary fusion layer): ${secondaryVision}.`
         : ` SECONDARY niche "${secondary}" must contribute visible symbols, colors, typography, motifs, and thematic accents.`;
-    const base = `MANDATORY CROSS-NICHE FUSION — Generate exactly 4 distinct print-ready apparel graphics. Every design MUST visibly blend printable elements from BOTH niches "${labelA}" AND "${labelB}". Do NOT output a design that looks like only one niche.
+    const base = `MANDATORY CROSS-NICHE FUSION ÔÇö Generate exactly 4 distinct print-ready apparel graphics. Every design MUST visibly blend printable elements from BOTH niches "${labelA}" AND "${labelB}". Do NOT output a design that looks like only one niche.
 
 REFERENCE IMAGE LAYOUT (side-by-side composite):
 - LEFT half = niche A: "${labelA}"
@@ -3342,12 +3342,12 @@ Read BOTH halves. Extract printable logos, symbols, typography, characters, masc
 FUSION RULES:
 - PRIMARY "${primary}" keeps style foundation, silhouette quality, and composition strength.
 - SECONDARY "${secondary}" adds complementary symbols, colors, typography, motifs, and thematic accents that are CLEARLY visible in every output.
-- Each output must show blended elements from BOTH "${labelA}" and "${labelB}" — a true crossover fusion, not a copy of either reference.
+- Each output must show blended elements from BOTH "${labelA}" and "${labelB}" ÔÇö a true crossover fusion, not a copy of either reference.
 - If either reference is a shirt mockup, flat garment, product photo, or model wearing apparel, extract printable elements only; do not redraw the shirt, model, fabric folds, watermark, or original background.
 
 Each of the 4 outputs MUST use a DIFFERENT fusion concept (one per design):
 1) Primary style silhouette with secondary niche symbols/typography woven in
-2) Split or dual-emblem fusion — both niche identities equally prominent
+2) Split or dual-emblem fusion ÔÇö both niche identities equally prominent
 3) Secondary motifs layered onto primary composition with shared color palette
 4) Bold hybrid crest/badge merging iconic elements from both niches
 
@@ -3381,7 +3381,7 @@ function resolvePromptBagCharacterCrossoverFallback(niche = '', analysisSummary 
         return 'goku';
     }
 
-    // Superhero / comic — match the franchise character, not a generic fighter
+    // Superhero / comic ÔÇö match the franchise character, not a generic fighter
     if (/\bbatman\b|gotham|dark\s*knight/i.test(haystack)) return 'batman';
     if (/\brobin\b|boy\s*wonder/i.test(haystack)) return 'robin';
     if (/\bjoker\b/i.test(haystack)) return 'joker';
@@ -3389,22 +3389,22 @@ function resolvePromptBagCharacterCrossoverFallback(niche = '', analysisSummary 
     if (/iron\s*man|tony\s*stark/i.test(haystack)) return 'iron man';
     if (/superman|wonder\s*woman|flash|aquaman|dc\s*comics|marvel|superhero|avengers/i.test(haystack)) return 'batman';
 
-    // Nordic / Viking / Norway — regional folklore hero, not generic sports anime
+    // Nordic / Viking / Norway ÔÇö regional folklore hero, not generic sports anime
     if (/viking|nordic|norway|norsk|odin|asgard|scandinav|\bthor\b/i.test(haystack)) return 'thor';
 
-    // Morocco national football — soccer anime crossover, not power-level fighter
+    // Morocco national football ÔÇö soccer anime crossover, not power-level fighter
     if (/morocco|maroc|atlas\s*lions|maghreb/i.test(haystack)) {
         if (/football|soccer|fifa|world\s*cup|national\s*team|stadium/i.test(haystack)) return 'captain tsubasa';
         return /cute|kawaii|pokemon/i.test(haystack) ? 'pikachu' : 'captain tsubasa';
     }
 
-    // Rock / metal / band — music or villain-rock aesthetic, not martial arts
+    // Rock / metal / band ÔÇö music or villain-rock aesthetic, not martial arts
     if (/shinedown|metallica|ac\s*dc|guns\s*n\s*roses|slash|rock\s*band|metal\s*band|punk\s*band/i.test(haystack)) return 'joker';
     if (/rock|metal|punk|heavy|band|concert|guitar|singer|album|song|dj|musician/i.test(haystack)) {
         return /anime|manga|japan|idol|vocaloid/i.test(haystack) ? 'hatsune miku' : 'joker';
     }
 
-    // Football / soccer (general) — soccer anime, NOT goku
+    // Football / soccer (general) ÔÇö soccer anime, NOT goku
     if (/football|soccer|fifa|world\s*cup|stadium|penalty|goalkeeper|midfielder/i.test(haystack)) {
         return 'captain tsubasa';
     }
@@ -3414,7 +3414,7 @@ function resolvePromptBagCharacterCrossoverFallback(niche = '', analysisSummary 
     if (/game|pixel|arcade|retro|nintendo/i.test(haystack)) return 'mario';
     if (/space|sci-?fi|robot|cyber/i.test(haystack)) return 'iron man';
 
-    // Residual sports / action — prefer soccer anime over goku
+    // Residual sports / action ÔÇö prefer soccer anime over goku
     if (/sport|sports|gym|athlete|action|fight|power/i.test(haystack)) return 'captain tsubasa';
 
     return 'mickey';
@@ -3432,18 +3432,18 @@ function buildRadarCharacterCrossoverApparelPrompt({ niche = '', character = '',
     const char = normalizePromptBagCharacterName(character)
         || resolvePromptBagCharacterCrossoverFallback(nicheText, visionHint);
     const vision = String(visionHint || '').trim();
-    const prefix = `[Character Crossover: ${char} × ${nicheText}]
-IGNORE REFERENCE LAYOUT — do NOT copy, trace, or recreate the reference image composition, poses, athlete/player subject, or sports graphic layout. The reference is ONLY for niche motifs (flags, logos, typography, crest, national colors). CREATE NEW apparel graphics where "${char}" is the visible co-star fusion subject — not absent, not implied by aura alone.
+    const prefix = `[Character Crossover: ${char} ├ù ${nicheText}]
+IGNORE REFERENCE LAYOUT ÔÇö do NOT copy, trace, or recreate the reference image composition, poses, athlete/player subject, or sports graphic layout. The reference is ONLY for niche motifs (flags, logos, typography, crest, national colors). CREATE NEW apparel graphics where "${char}" is the visible co-star fusion subject ÔÇö not absent, not implied by aura alone.
 `;
     const visionLine = vision
         ? ` Niche visual cues from reference (logos, symbols, typography, colors): ${vision}.`
         : '';
     const charLikenessHint = char === 'goku'
-        ? ` For "goku" specifically: draw spiky black hair, orange gi or blue shirt, muscular anime face/body, Saiyan features — MUST be visibly drawn; orange aura or Kamehameha energy alone is NOT acceptable.`
+        ? ` For "goku" specifically: draw spiky black hair, orange gi or blue shirt, muscular anime face/body, Saiyan features ÔÇö MUST be visibly drawn; orange aura or Kamehameha energy alone is NOT acceptable.`
         : '';
-    const base = `MANDATORY CHARACTER CROSSOVER — Generate exactly 4 distinct print-ready apparel graphics.
+    const base = `MANDATORY CHARACTER CROSSOVER ÔÇö Generate exactly 4 distinct print-ready apparel graphics.
 
-CRITICAL LIKENESS RULE: Every design MUST show "${char}" with RECOGNIZABLE VISUAL LIKENESS — visible face and/or head, iconic hair silhouette, signature outfit or colors, and unmistakable body silhouette. "${char}" must occupy at least 40% of the graphic area and be clearly identifiable at a glance. If a viewer cannot name "${char}" from the design, the output FAILED.${charLikenessHint}
+CRITICAL LIKENESS RULE: Every design MUST show "${char}" with RECOGNIZABLE VISUAL LIKENESS ÔÇö visible face and/or head, iconic hair silhouette, signature outfit or colors, and unmistakable body silhouette. "${char}" must occupy at least 40% of the graphic area and be clearly identifiable at a glance. If a viewer cannot name "${char}" from the design, the output FAILED.${charLikenessHint}
 
 FORBIDDEN (automatic rejection):
 - Aura-only, energy-only, glow-only, or color-theme-only treatments without "${char}"'s visible body/face
@@ -3454,7 +3454,7 @@ FORBIDDEN (automatic rejection):
 - Do NOT output niche-only sports graphics without the character visible
 
 Niche theme: "${nicheText}". Character: "${char}".${visionLine}
-Use the attached reference image ONLY to borrow niche printable elements (logos, symbols, typography, mascot, national/theme colors). You MUST ADD and DRAW "${char}" and fuse "${char}"'s iconic likeness WITH those niche elements — recognizable crossover fusion, not a plain copy of the reference. If the reference is a shirt mockup, flat garment, product photo, sports graphic, or model wearing apparel, extract printable niche elements only, then create fresh crossover graphics starring "${char}"; do not redraw the shirt, model, fabric folds, watermark, athlete-only composition, or original background.
+Use the attached reference image ONLY to borrow niche printable elements (logos, symbols, typography, mascot, national/theme colors). You MUST ADD and DRAW "${char}" and fuse "${char}"'s iconic likeness WITH those niche elements ÔÇö recognizable crossover fusion, not a plain copy of the reference. If the reference is a shirt mockup, flat garment, product photo, sports graphic, or model wearing apparel, extract printable niche elements only, then create fresh crossover graphics starring "${char}"; do not redraw the shirt, model, fabric folds, watermark, athlete-only composition, or original background.
 
 Each of the 4 outputs MUST use a DIFFERENT crossover concept (one per design) showing "${char}" IN "${nicheText}" context:
 1) "${char}" wearing or merged with the "${nicheText}" jersey/uniform/crest (e.g. "${char} in team kit with niche colors")
@@ -3506,20 +3506,20 @@ Reference image analysis: ${visionContext || niche}.
 Return JSON only: {"character":"single lowercase english name","reason":"one short phrase"}
 
 RULES:
-1. Pick the CLOSEST thematic match — character culture, era, vibe, and niche subject must align.
+1. Pick the CLOSEST thematic match ÔÇö character culture, era, vibe, and niche subject must align.
 2. Do NOT default to "goku" unless the niche is explicitly Dragon Ball, Saiyan, Kamehameha, martial-arts anime, or super-powered fighting anime.
-3. The character must be visually recognizable (face, hair, outfit, silhouette) — not aura-only or color-theme-only.
+3. The character must be visually recognizable (face, hair, outfit, silhouette) ÔÇö not aura-only or color-theme-only.
 
 NICHE-SPECIFIC EXAMPLES (pick closest match; do not copy blindly):
-- Morocco / national football / soccer team → captain tsubasa, pikachu in team kit, or culturally fitting soccer anime character — NOT goku
-- Norway / Viking / Nordic soccer → thor, nordic warrior, or regional folklore hero — NOT goku
-- Rock / metal / band (e.g. shinedown) → joker, rock idol, or music-anime character (e.g. hatsune miku) — NOT goku
-- Batman / DC animated → batman, robin, or joker — NOT goku
-- Dragon Ball / martial arts / anime fight → goku
-- Cute / kawaii → pikachu, hello kitty
-- Horror / gothic → jack skellington
-- Retro gaming → mario, sonic
-- Sci-fi / tech → iron man, mega man
+- Morocco / national football / soccer team ÔåÆ captain tsubasa, pikachu in team kit, or culturally fitting soccer anime character ÔÇö NOT goku
+- Norway / Viking / Nordic soccer ÔåÆ thor, nordic warrior, or regional folklore hero ÔÇö NOT goku
+- Rock / metal / band (e.g. shinedown) ÔåÆ joker, rock idol, or music-anime character (e.g. hatsune miku) ÔÇö NOT goku
+- Batman / DC animated ÔåÆ batman, robin, or joker ÔÇö NOT goku
+- Dragon Ball / martial arts / anime fight ÔåÆ goku
+- Cute / kawaii ÔåÆ pikachu, hello kitty
+- Horror / gothic ÔåÆ jack skellington
+- Retro gaming ÔåÆ mario, sonic
+- Sci-fi / tech ÔåÆ iron man, mega man
 
 JSON only. Character name: one or two lowercase English words.`;
     try {
@@ -3976,7 +3976,7 @@ async function shouldBootstrapGhostServer(context = 'core') {
         const state = (await chrome.storage.local.get(GHOST_SERVER_BOOTSTRAP_KEY))?.[GHOST_SERVER_BOOTSTRAP_KEY] || null;
         const sameContext = state?.context === context;
         if (sameContext && state?.startedAt && (Date.now() - state.startedAt) < GHOST_SERVER_BOOTSTRAP_COOLDOWN_MS) {
-            console.log('[GhostServer] bootstrap skipped بسبب cooldown نشط', { context, state });
+            console.log('[GhostServer] bootstrap skipped Ï¿Ï│Ï¿Ï¿ cooldown ┘åÏ┤ÏÀ', { context, state });
             return false;
         }
     } catch (_) { }
@@ -3994,7 +3994,7 @@ function buildGhostServerLauncherVbs(platform = 'teepublic') {
         ? NhpRuntimeConfig.joinPath(projectDir, setupScriptName)
         : `${projectDir}\\${setupScriptName}`;
 
-    // استخدام PowerShell بدلاً من VBS لتجنب مشاكل التحميل
+    // ÏºÏ│Ï¬Ï«Ï»Ïº┘à PowerShell Ï¿Ï»┘äÏº┘ï ┘à┘å VBS ┘äÏ¬Ï¼┘åÏ¿ ┘àÏ┤Ïº┘â┘ä Ïº┘äÏ¬Ï¡┘à┘è┘ä
     const psCode = [
         `$ErrorActionPreference = 'Stop'`,
         `$projectDir = '${projectDir}'`,
@@ -4079,7 +4079,7 @@ function mapGhostServerLaunchError(err, { action = 'start', platform = 'teepubli
             ok: false,
             success: false,
             error: 'EADDRINUSE',
-            message: `المنفذ ${port} مشغول — أغلق العملية التي تستخدمه ثم أعد المحاولة`,
+            message: `Ïº┘ä┘à┘å┘üÏ░ ${port} ┘àÏ┤Ï║┘ê┘ä ÔÇö ÏúÏ║┘ä┘é Ïº┘äÏ╣┘à┘ä┘èÏ® Ïº┘äÏ¬┘è Ï¬Ï│Ï¬Ï«Ï»┘à┘ç Ï½┘à ÏúÏ╣Ï» Ïº┘ä┘àÏ¡Ïº┘ê┘äÏ®`,
             source: 'spawn',
             action,
             platform,
@@ -4091,7 +4091,7 @@ function mapGhostServerLaunchError(err, { action = 'start', platform = 'teepubli
             ok: false,
             success: false,
             error: 'ENOENT',
-            message: 'ملف تشغيل Ghost Server غير موجود — تحقق من مسار المشروع',
+            message: '┘à┘ä┘ü Ï¬Ï┤Ï║┘è┘ä Ghost Server Ï║┘èÏ▒ ┘à┘êÏ¼┘êÏ» ÔÇö Ï¬Ï¡┘é┘é ┘à┘å ┘àÏ│ÏºÏ▒ Ïº┘ä┘àÏ┤Ï▒┘êÏ╣',
             source: 'spawn',
             action,
             platform,
@@ -4103,7 +4103,7 @@ function mapGhostServerLaunchError(err, { action = 'start', platform = 'teepubli
             ok: false,
             success: false,
             error: 'SPAWN_FAILED',
-            message: msg || 'تعذر تشغيل عملية Ghost Server',
+            message: msg || 'Ï¬Ï╣Ï░Ï▒ Ï¬Ï┤Ï║┘è┘ä Ï╣┘à┘ä┘èÏ® Ghost Server',
             source: 'spawn',
             action,
             platform,
@@ -4114,7 +4114,7 @@ function mapGhostServerLaunchError(err, { action = 'start', platform = 'teepubli
         ok: false,
         success: false,
         error: code || 'LAUNCH_FAILED',
-        message: msg || 'تعذر تشغيل Ghost Server',
+        message: msg || 'Ï¬Ï╣Ï░Ï▒ Ï¬Ï┤Ï║┘è┘ä Ghost Server',
         source: 'unavailable',
         action,
         platform,
@@ -4246,8 +4246,8 @@ async function controlGhostServerProcess(action = 'start', platform = 'teepublic
         port: ghostPort,
         error: 'UNAVAILABLE',
         message: nativeHostHint?.messageAr || (action === 'start'
-            ? 'لا يوجد مشغّل خارجي لتشغيل Ghost Server'
-            : 'لا يوجد مشغّل خارجي لإيقاف Ghost Server'),
+            ? '┘äÏº ┘è┘êÏ¼Ï» ┘àÏ┤Ï║┘æ┘ä Ï«ÏºÏ▒Ï¼┘è ┘äÏ¬Ï┤Ï║┘è┘ä Ghost Server'
+            : '┘äÏº ┘è┘êÏ¼Ï» ┘àÏ┤Ï║┘æ┘ä Ï«ÏºÏ▒Ï¼┘è ┘äÏÑ┘è┘éÏº┘ü Ghost Server'),
         registerScript: nativeHostHint?.registerScript || '',
         registerCommand: nativeHostHint?.registerCommand || ''
     };
@@ -4722,7 +4722,7 @@ async function bootstrapGhostServerForMemory(context = 'core', platform = 'teepu
     const protocolUrl = platform === 'pinterest' ? 'nhp-pro-pinterest://start' : 'nhp-pro-ghost://start';
     const serverFile = platform === 'pinterest' ? 'pinterest-server.js' : 'ghost-server.js';
 
-    // المحاولة 1: Native Messaging إذا كان متاحاً
+    // Ïº┘ä┘àÏ¡Ïº┘ê┘äÏ® 1: Native Messaging ÏÑÏ░Ïº ┘âÏº┘å ┘àÏ¬ÏºÏ¡Ïº┘ï
     try {
         const psCommand = `Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', 'Start_Server_Direct.cmd ${serverFile}' -NoNewWindow -Wait:$false`;
 
@@ -4743,7 +4743,7 @@ async function bootstrapGhostServerForMemory(context = 'core', platform = 'teepu
         }]);
     }
 
-    // المحاولة 2: Local Bridge (إذا كان هناك سيرفر آخر يعمل)
+    // Ïº┘ä┘àÏ¡Ïº┘ê┘äÏ® 2: Local Bridge (ÏÑÏ░Ïº ┘âÏº┘å ┘ç┘åÏº┘â Ï│┘èÏ▒┘üÏ▒ ÏóÏ«Ï▒ ┘èÏ╣┘à┘ä)
     try {
         await fetch(nhpUrl(3009, '/api/execute'), {
             method: 'POST',
@@ -4755,7 +4755,7 @@ async function bootstrapGhostServerForMemory(context = 'core', platform = 'teepu
         return true;
     } catch (e) { }
 
-    // المحاولة 3: البروتوكول المخصص كحل أخير فقط
+    // Ïº┘ä┘àÏ¡Ïº┘ê┘äÏ® 3: Ïº┘äÏ¿Ï▒┘êÏ¬┘ê┘â┘ê┘ä Ïº┘ä┘àÏ«ÏÁÏÁ ┘âÏ¡┘ä ÏúÏ«┘èÏ▒ ┘ü┘éÏÀ
     try {
         chrome.tabs.create({ url: protocolUrl, active: false }, (tab) => {
             setTimeout(() => {
@@ -4787,7 +4787,7 @@ async function ensureGhostServerReady(options = {}) {
     }
 
     if (!forceBootstrap && !shouldAttemptLocalGhostBootstrap()) {
-        console.warn('[Autopilot][Upload] Ghost bootstrap skipped — remote CLI proxy mode; server must already be running on', port);
+        console.warn('[Autopilot][Upload] Ghost bootstrap skipped ÔÇö remote CLI proxy mode; server must already be running on', port);
         return false;
     }
 
@@ -5461,7 +5461,7 @@ async function ensureTrendCaptureAlarm() {
 
     // CREATY Search Tools sync replaces the old TeePublic/Oracle periodic scrape.
     if (await isCreatySearchToolsSyncReplacingOldTrends()) {
-        console.log('[Niche Archive] old trend-capture alarm cleared — EmailCore CREATY sync is active');
+        console.log('[Niche Archive] old trend-capture alarm cleared ÔÇö EmailCore CREATY sync is active');
         return settings;
     }
     if (!settings.enabled) return settings;
@@ -5475,7 +5475,7 @@ async function ensureTrendCaptureAlarm() {
 
 async function captureTrendSnapshotInBackground(source = 'alarm') {
     if (await isCreatySearchToolsSyncReplacingOldTrends()) {
-        console.log('[Niche Archive] skipping old alarm trend fetch — EmailCore CREATY sync is active');
+        console.log('[Niche Archive] skipping old alarm trend fetch ÔÇö EmailCore CREATY sync is active');
         return null;
     }
     let titles = [];
@@ -5823,7 +5823,7 @@ function isAcceptableFetchedImageBlob(blob, sniffMime = '') {
 }
 
 /**
- * TeePublic CDN variants: webp↔jpg/png, i_p↔i_m/i_l, and larger s_ preview when present.
+ * TeePublic CDN variants: webpÔåöjpg/png, i_pÔåöi_m/i_l, and larger s_ preview when present.
  */
 function expandTeepublicImageUrlCandidates(rawUrl) {
     const seed = String(rawUrl || '').trim();
@@ -6086,7 +6086,7 @@ async function fetchImageAsDataUrlFromCandidates(urls = [], pageUrl) {
             } catch (error) {
                 lastError = error;
                 failCount += 1;
-                // Avoid console storms during TeePublic hunt — one debug sample only.
+                // Avoid console storms during TeePublic hunt ÔÇö one debug sample only.
                 if (failCount === 1) {
                     console.debug('[Background] Image candidate failed (further failures silenced):', candidate, error?.message || error);
                 }
@@ -6206,8 +6206,8 @@ Task:
 
 Additional instructions:
 - DO NOT start generating before analyzing the attached image.
-- اجعل أول تصميم بنفس ستايل الصورة المرفقة ولكن باحترافية أعلى.
-- قم بتطبيق الرؤى الذكية (AI Insights) التي استنتجتها لابتكار أفكار تسد الثغرات التسويقية وتتفوق على المنافسين في هذا النيش.`;
+- ÏºÏ¼Ï╣┘ä Ïú┘ê┘ä Ï¬ÏÁ┘à┘è┘à Ï¿┘å┘üÏ│ Ï│Ï¬Ïº┘è┘ä Ïº┘äÏÁ┘êÏ▒Ï® Ïº┘ä┘àÏ▒┘ü┘éÏ® ┘ê┘ä┘â┘å Ï¿ÏºÏ¡Ï¬Ï▒Ïº┘ü┘èÏ® ÏúÏ╣┘ä┘ë.
+- ┘é┘à Ï¿Ï¬ÏÀÏ¿┘è┘é Ïº┘äÏ▒Ïñ┘ë Ïº┘äÏ░┘â┘èÏ® (AI Insights) Ïº┘äÏ¬┘è ÏºÏ│Ï¬┘åÏ¬Ï¼Ï¬┘çÏº ┘äÏºÏ¿Ï¬┘âÏºÏ▒ Ïú┘ü┘âÏºÏ▒ Ï¬Ï│Ï» Ïº┘äÏ½Ï║Ï▒ÏºÏ¬ Ïº┘äÏ¬Ï│┘ê┘è┘é┘èÏ® ┘êÏ¬Ï¬┘ü┘ê┘é Ï╣┘ä┘ë Ïº┘ä┘à┘åÏº┘üÏ│┘è┘å ┘ü┘è ┘çÏ░Ïº Ïº┘ä┘å┘èÏ┤.`;
 }
 
 async function resolveNicheNameForImageSend(nicheName, options = {}) {
@@ -6260,21 +6260,21 @@ function ensureContextMenus() {
 
     chrome.contextMenus.create({
         id: NHP_SEND_IMAGE_MENU_ROOT_ID,
-        title: 'إرسال الصورة إلى AI',
+        title: 'ÏÑÏ▒Ï│Ïº┘ä Ïº┘äÏÁ┘êÏ▒Ï® ÏÑ┘ä┘ë AI',
         contexts: ['image']
     }, () => chrome.runtime.lastError);
 
     chrome.contextMenus.create({
         id: NHP_SEND_IMAGE_FULL_GEMINI_ID,
         parentId: NHP_SEND_IMAGE_MENU_ROOT_ID,
-        title: 'إرسال الصورة كاملة إلى Gemini',
+        title: 'ÏÑÏ▒Ï│Ïº┘ä Ïº┘äÏÁ┘êÏ▒Ï® ┘âÏº┘à┘äÏ® ÏÑ┘ä┘ë Gemini',
         contexts: ['image']
     }, () => chrome.runtime.lastError);
 
     chrome.contextMenus.create({
         id: NHP_SEND_IMAGE_FULL_GPT_ID,
         parentId: NHP_SEND_IMAGE_MENU_ROOT_ID,
-        title: 'إرسال الصورة كاملة إلى GPT',
+        title: 'ÏÑÏ▒Ï│Ïº┘ä Ïº┘äÏÁ┘êÏ▒Ï® ┘âÏº┘à┘äÏ® ÏÑ┘ä┘ë GPT',
         contexts: ['image']
     }, () => chrome.runtime.lastError);
 
@@ -6294,14 +6294,14 @@ function ensureContextMenus() {
     chrome.contextMenus.create({
         id: NHP_PROMPT_BAG_SAVE_SELECTION_ID,
         parentId: NHP_PROMPT_BAG_PROMPTS_ROOT_ID,
-        title: 'حفظ النص المحدد كبرومبت',
+        title: 'Ï¡┘üÏ© Ïº┘ä┘åÏÁ Ïº┘ä┘àÏ¡Ï»Ï» ┘âÏ¿Ï▒┘ê┘àÏ¿Ï¬',
         contexts: ['selection']
     }, () => chrome.runtime.lastError);
 
     chrome.contextMenus.create({
         id: NHP_PROMPT_BAG_PASTE_LAST_PROMPT_ID,
         parentId: NHP_PROMPT_BAG_PROMPTS_ROOT_ID,
-        title: 'لصق آخر برومبت',
+        title: '┘äÏÁ┘é ÏóÏ«Ï▒ Ï¿Ï▒┘ê┘àÏ¿Ï¬',
         contexts: ['page', 'frame', 'selection', 'editable']
     }, () => chrome.runtime.lastError);
 
@@ -6315,28 +6315,28 @@ function ensureContextMenus() {
     chrome.contextMenus.create({
         id: NHP_PROMPT_BAG_SAVE_IMAGE_ID,
         parentId: NHP_PROMPT_BAG_IMAGES_ROOT_ID,
-        title: 'حفظ الصورة في الحقيبة',
+        title: 'Ï¡┘üÏ© Ïº┘äÏÁ┘êÏ▒Ï® ┘ü┘è Ïº┘äÏ¡┘é┘èÏ¿Ï®',
         contexts: ['image']
     }, () => chrome.runtime.lastError);
 
     chrome.contextMenus.create({
         id: NHP_PROMPT_BAG_SEND_LAST_GEMINI_ID,
         parentId: NHP_PROMPT_BAG_IMAGES_ROOT_ID,
-        title: 'إرسال آخر صورة إلى Gemini',
+        title: 'ÏÑÏ▒Ï│Ïº┘ä ÏóÏ«Ï▒ ÏÁ┘êÏ▒Ï® ÏÑ┘ä┘ë Gemini',
         contexts: ['page', 'frame', 'image']
     }, () => chrome.runtime.lastError);
 
     chrome.contextMenus.create({
         id: NHP_PROMPT_BAG_SEND_LAST_GPT_ID,
         parentId: NHP_PROMPT_BAG_IMAGES_ROOT_ID,
-        title: 'إرسال آخر صورة إلى ChatGPT',
+        title: 'ÏÑÏ▒Ï│Ïº┘ä ÏóÏ«Ï▒ ÏÁ┘êÏ▒Ï® ÏÑ┘ä┘ë ChatGPT',
         contexts: ['page', 'frame', 'image']
     }, () => chrome.runtime.lastError);
 
     chrome.contextMenus.create({
         id: NHP_PROMPT_BAG_MANAGE_ID,
         parentId: NHP_PROMPT_BAG_MENU_ROOT_ID,
-        title: 'إدارة الحقيبة',
+        title: 'ÏÑÏ»ÏºÏ▒Ï® Ïº┘äÏ¡┘é┘èÏ¿Ï®',
         contexts: ['page', 'frame', 'selection', 'editable', 'link', 'image']
     }, () => chrome.runtime.lastError);
 
@@ -6344,7 +6344,7 @@ function ensureContextMenus() {
         chrome.runtime.lastError;
         chrome.contextMenus.create({
             id: NHP_LAUNCH_SCREEN_RECORDER_MENU_ID,
-            title: 'بدء تسجيل الشاشة',
+            title: 'Ï¿Ï»Ïí Ï¬Ï│Ï¼┘è┘ä Ïº┘äÏ┤ÏºÏ┤Ï®',
             contexts: ['page', 'frame', 'selection', 'editable', 'link', 'image', 'video', 'audio']
         }, () => chrome.runtime.lastError);
     });
@@ -6359,7 +6359,7 @@ async function launchAdminScreenRecorderWindow() {
         focused: false
     });
 
-    return { ok: true, message: 'تم فتح مسجل الشاشة.' };
+    return { ok: true, message: 'Ï¬┘à ┘üÏ¬Ï¡ ┘àÏ│Ï¼┘ä Ïº┘äÏ┤ÏºÏ┤Ï®.' };
 }
 
 async function sendLastPromptBagImage(targetUrl) {
@@ -6375,7 +6375,7 @@ async function sendLastPromptBagImage(targetUrl) {
         targetUrl,
         promptText: typeof resolvePromptBagImagePrompt === 'function'
             ? resolvePromptBagImagePrompt(targetUrl, '')
-            : 'حلّل هذه الصورة واقترح تحسينات تصميم وكلمات مفتاحية مناسبة للطباعة عند الطلب.'
+            : 'Ï¡┘ä┘æ┘ä ┘çÏ░┘ç Ïº┘äÏÁ┘êÏ▒Ï® ┘êÏº┘éÏ¬Ï▒Ï¡ Ï¬Ï¡Ï│┘è┘åÏºÏ¬ Ï¬ÏÁ┘à┘è┘à ┘ê┘â┘ä┘àÏºÏ¬ ┘à┘üÏ¬ÏºÏ¡┘èÏ® ┘à┘åÏºÏ│Ï¿Ï® ┘ä┘äÏÀÏ¿ÏºÏ╣Ï® Ï╣┘åÏ» Ïº┘äÏÀ┘äÏ¿.'
     });
 }
 
@@ -6779,7 +6779,7 @@ async function launchAiImagePopupWithPayload({ dataUrl, nicheName, targetUrl, pr
         console.warn('[NHP][AI Image Send] Queue persistence failed; using legacy direct payload fallback.');
     }
 
-    // Do not broadcast gemini_auto_trigger to every open AI tab — only nudge the bound popup tab/window.
+    // Do not broadcast gemini_auto_trigger to every open AI tab ÔÇö only nudge the bound popup tab/window.
     if (targetTabId || targetWindowId) {
         const nudgeDelays = forceFreshChat ? [0, 450, 1000, 2200, 4200, 7200, 11000, 16000] : [0, 500, 1400, 3000, 6000];
         const nudgeBoundTabOnly = async (delayMs = 0) => {
@@ -6915,7 +6915,7 @@ async function getOrCreateAiImageTargetWindowUnlocked(finalUrl, provider = getAi
             } catch (_) {
             }
         } else {
-            // All pooled windows are busy — open a fresh popup instead of reloading a busy one.
+            // All pooled windows are busy ÔÇö open a fresh popup instead of reloading a busy one.
             const slot = pool.windowIds.length;
             const created = await chrome.windows.create({
                 url: finalUrl,
@@ -7115,7 +7115,7 @@ async function savePendingAiImageTasks() {
     return { sessionSaved: true, localSaved: true };
 }
 
-/** Align chatgpt.com ↔ www.chatgpt.com (and similar) for task claiming. */
+/** Align chatgpt.com Ôåö www.chatgpt.com (and similar) for task claiming. */
 function normalizeAiBridgeHostname(hostname) {
     const h = String(hostname || '').toLowerCase().trim();
     if (!h) return '';
@@ -7145,7 +7145,7 @@ function isPendingAiImageTaskBoundToSender(task, senderTabId, senderWindowId, se
     }
     if (!aiBridgeHostsMatch(senderHost, targetHost)) return false;
 
-    // Each popup is tied to a specific window — never let another window steal the task.
+    // Each popup is tied to a specific window ÔÇö never let another window steal the task.
     if (Number.isFinite(task.targetWindowId)) {
         return Number.isFinite(senderWindowId) && task.targetWindowId === senderWindowId;
     }
@@ -7431,7 +7431,7 @@ async function retargetAiImageTask(taskId) {
         return pendingAiImageTasks[index];
     };
 
-    // Prefer the existing AI popup window — never open a normal browser tab here (duplicate UX vs floating popup).
+    // Prefer the existing AI popup window ÔÇö never open a normal browser tab here (duplicate UX vs floating popup).
     if (task.targetWindowId) {
         try {
             const win = await chrome.windows.get(task.targetWindowId, { populate: true });
@@ -7449,7 +7449,7 @@ async function retargetAiImageTask(taskId) {
                 return finishRetarget();
             }
         } catch (_) {
-            // Popup was closed — fall through and create a replacement popup window.
+            // Popup was closed ÔÇö fall through and create a replacement popup window.
         }
     }
 
@@ -7691,7 +7691,7 @@ async function runGeminiWebTask({ prompt, base64 = null, mimeType = 'image/png',
 
 /**
  * If gemini_web_task exists in storage but the service worker was restarted, the in-memory
- * geminiWebTaskResolvers map is empty while the task remains — the content script would
+ * geminiWebTaskResolvers map is empty while the task remains ÔÇö the content script would
  * re-inject the same image on every Gemini visit. Remove only when no bridge is active.
  */
 const GEMINI_WEB_TASK_STORAGE_TTL_MS = 210000;
@@ -8054,7 +8054,7 @@ async function advanceGeminiWebBatchAfterItem(req) {
 
         const expected = session.nextExpectedIndex;
         if (index < expected) {
-            console.warn(`[NHP][SEO Batch] Late capture for design ${index + 1} (queue at ${expected + 1}) — saving to NHP.`);
+            console.warn(`[NHP][SEO Batch] Late capture for design ${index + 1} (queue at ${expected + 1}) ÔÇö saving to NHP.`);
             await recordGeminiWebBatchItemResult(session, sessionId, index, req);
             return true;
         }
@@ -8065,7 +8065,7 @@ async function advanceGeminiWebBatchAfterItem(req) {
             await recordGeminiWebBatchItemResult(session, sessionId, gapIndex, {
                 success: false,
                 text: '',
-                error: 'Skipped — previous design did not return a result in time.'
+                error: 'Skipped ÔÇö previous design did not return a result in time.'
             });
             session.nextExpectedIndex = gapIndex + 1;
         }
@@ -8099,7 +8099,7 @@ async function advanceGeminiWebBatchAfterItem(req) {
         }
 
         if (!itemResult.success) {
-            console.warn('[NHP] Batch item failed — continuing with next design:', itemResult.error || 'unknown');
+            console.warn('[NHP] Batch item failed ÔÇö continuing with next design:', itemResult.error || 'unknown');
         }
 
         const gapMs = timingProfile.itemGapMs
@@ -8213,7 +8213,7 @@ async function startFullAutomationPipeline(providedNiches = []) {
 
         // 1. Fetch Trends (Only if not provided)
         if (!niches || niches.length === 0) {
-            updatePipelineUI("fetching_trends", "جاري جلب أحدث الترندات من صفحة TeePublic الرسمية...");
+            updatePipelineUI("fetching_trends", "Ï¼ÏºÏ▒┘è Ï¼┘äÏ¿ ÏúÏ¡Ï»Ï½ Ïº┘äÏ¬Ï▒┘åÏ»ÏºÏ¬ ┘à┘å ÏÁ┘üÏ¡Ï® TeePublic Ïº┘äÏ▒Ï│┘à┘èÏ®...");
             notifyTab('trend');
             let titles = [];
             try {
@@ -8222,21 +8222,21 @@ async function startFullAutomationPipeline(providedNiches = []) {
                 console.warn('[Pipeline] official trend fetch failed:', error.message);
             }
             if (!titles.length) {
-                updatePipelineUI("error", "فشل جلب الترندات أو القائمة فارغة.");
+                updatePipelineUI("error", "┘üÏ┤┘ä Ï¼┘äÏ¿ Ïº┘äÏ¬Ï▒┘åÏ»ÏºÏ¬ Ïú┘ê Ïº┘ä┘éÏºÏª┘àÏ® ┘üÏºÏ▒Ï║Ï®.");
                 return;
             }
             niches = titles;
             await recordTrendSnapshot(niches, 'full_pipeline');
         } else {
             console.log(`[Pipeline] Using ${niches.length} niches provided by UI.`);
-            updatePipelineUI("trend_ready", `تم استقبال ${niches.length} نيش من الواجهة...`);
+            updatePipelineUI("trend_ready", `Ï¬┘à ÏºÏ│Ï¬┘éÏ¿Ïº┘ä ${niches.length} ┘å┘èÏ┤ ┘à┘å Ïº┘ä┘êÏºÏ¼┘çÏ®...`);
         }
 
         let survivors = [...niches];
 
         // 2. TMHunt Analysis
         if (enableTMH) {
-            updatePipelineUI("tmh_running", `جاري فحص ${survivors.length} نيش عبر TMHunt...`);
+            updatePipelineUI("tmh_running", `Ï¼ÏºÏ▒┘è ┘üÏ¡ÏÁ ${survivors.length} ┘å┘èÏ┤ Ï╣Ï¿Ï▒ TMHunt...`);
             notifyTab('tmh');
             await setStorage({ tmh_searchStatus: 'RUNNING', tmh_safeNiches: [], tmh_restrictedNiches: [], tmh_processedCount: 0 });
             await startTMHSearchProcess(survivors);
@@ -8245,7 +8245,7 @@ async function startFullAutomationPipeline(providedNiches = []) {
             survivors = tmhData.tmh_safeNiches || [];
 
             if (survivors.length === 0) {
-                updatePipelineUI("done", "اكتمل البحث: لا توجد نيشات آمنة في TMHunt.");
+                updatePipelineUI("done", "Ïº┘âÏ¬┘à┘ä Ïº┘äÏ¿Ï¡Ï½: ┘äÏº Ï¬┘êÏ¼Ï» ┘å┘èÏ┤ÏºÏ¬ Ïó┘à┘åÏ® ┘ü┘è TMHunt.");
                 return;
             }
         } else {
@@ -8288,7 +8288,7 @@ async function startFullAutomationPipeline(providedNiches = []) {
             );
 
             if (survivors.length === 0) {
-                updatePipelineUI("done", "اكتمل البحث: لا توجد نيشات آمنة في USPTO.");
+                updatePipelineUI("done", "Ïº┘âÏ¬┘à┘ä Ïº┘äÏ¿Ï¡Ï½: ┘äÏº Ï¬┘êÏ¼Ï» ┘å┘èÏ┤ÏºÏ¬ Ïó┘à┘åÏ® ┘ü┘è USPTO.");
                 return;
             }
         } else {
@@ -8327,23 +8327,23 @@ async function startFullAutomationPipeline(providedNiches = []) {
             const med = finalData.tpMed || [];
 
             // Transfer to Note Module
-            updatePipelineUI("finalizing", "جاري نقل النتائج الممتازة إلى الملاحظات...");
+            updatePipelineUI("finalizing", "Ï¼ÏºÏ▒┘è ┘å┘é┘ä Ïº┘ä┘åÏ¬ÏºÏªÏ¼ Ïº┘ä┘à┘àÏ¬ÏºÏ▓Ï® ÏÑ┘ä┘ë Ïº┘ä┘à┘äÏºÏ¡Ï©ÏºÏ¬...");
             notifyTab('note');
             await transferResultsToNote(excel, med);
         } else {
             console.log("[Pipeline] Skipping TeePublic Stage (Disabled in Admin)");
-            updatePipelineUI("finalizing", "جاري نقل جميع النيشات الآمنة إلى الملاحظات...");
+            updatePipelineUI("finalizing", "Ï¼ÏºÏ▒┘è ┘å┘é┘ä Ï¼┘à┘èÏ╣ Ïº┘ä┘å┘èÏ┤ÏºÏ¬ Ïº┘äÏó┘à┘åÏ® ÏÑ┘ä┘ë Ïº┘ä┘à┘äÏºÏ¡Ï©ÏºÏ¬...");
             notifyTab('note');
             // If competition is skipped, assume all current survivors are targets
             await transferResultsToNote(survivors, []);
         }
 
-        updatePipelineUI("done", "اكتملت الأتمتة الشاملة بنجاح! راجع الملاحظات.");
+        updatePipelineUI("done", "Ïº┘âÏ¬┘à┘äÏ¬ Ïº┘äÏúÏ¬┘àÏ¬Ï® Ïº┘äÏ┤Ïº┘à┘äÏ® Ï¿┘åÏ¼ÏºÏ¡! Ï▒ÏºÏ¼Ï╣ Ïº┘ä┘à┘äÏºÏ¡Ï©ÏºÏ¬.");
         chrome.runtime.sendMessage({ action: 'PIPELINE_COMPLETED_NOTIFY' }).catch(() => { });
 
     } catch (err) {
         console.error("[Pipeline] Error:", err);
-        updatePipelineUI("error", "حدث خطأ في الأتمتة: " + err.message);
+        updatePipelineUI("error", "Ï¡Ï»Ï½ Ï«ÏÀÏú ┘ü┘è Ïº┘äÏúÏ¬┘àÏ¬Ï®: " + err.message);
     } finally {
         try {
             await flushDeferredRadarUnofficialPipelineItems();
@@ -9304,7 +9304,7 @@ let _heartbeatPort = null;
 async function startHeartbeat() {
     if (_heartbeatTimer) return;
     console.log('[Heartbeat] Started; service worker will stay alive.');
-    // Ã˜Â¶Ã™â€¦Ã˜Â§Ã™â€  Ã™ÂÃ˜ÂªÃ˜Â­ Ã˜Â§Ã™â€žÃ™â€ Ã˜Â§Ã™ÂÃ˜Â°Ã˜Â© Ã˜Â§Ã™â€žÃ™â€¦Ã˜Â®Ã™ÂÃ™Å Ã˜Â© Ã™â€žÃ˜ÂªÃ˜Â¹Ã™â€¦Ã™â€ž Ã™Æ’Ã˜Â¯Ã˜Â±Ã˜Â¹ Ã™Ë†Ã˜Â§Ã™â€šÃ™Å  Ã™â€¦Ã™â€  Ã˜Â§Ã™â€žÃ˜Â¥Ã˜ÂºÃ™â€žÃ˜Â§Ã™â€š
+    // ├â╦£├é┬Â├âÔäó├óÔé¼┬ª├â╦£├é┬º├âÔäó├óÔé¼┬á ├âÔäó├é┬ü├â╦£├é┬¬├â╦£├é┬¡ ├â╦£├é┬º├âÔäó├óÔé¼┼¥├âÔäó├óÔé¼┬á├â╦£├é┬º├âÔäó├é┬ü├â╦£├é┬░├â╦£├é┬® ├â╦£├é┬º├âÔäó├óÔé¼┼¥├âÔäó├óÔé¼┬ª├â╦£├é┬«├âÔäó├é┬ü├âÔäó├à┬á├â╦£├é┬® ├âÔäó├óÔé¼┼¥├â╦£├é┬¬├â╦£├é┬╣├âÔäó├óÔé¼┬ª├âÔäó├óÔé¼┼¥ ├âÔäó├åÔÇÖ├â╦£├é┬»├â╦£├é┬▒├â╦£├é┬╣ ├âÔäó├ïÔÇá├â╦£├é┬º├âÔäó├óÔé¼┼í├âÔäó├à┬á ├âÔäó├óÔé¼┬ª├âÔäó├óÔé¼┬á ├â╦£├é┬º├âÔäó├óÔé¼┼¥├â╦£├é┬Ñ├â╦£├é┬║├âÔäó├óÔé¼┼¥├â╦£├é┬º├âÔäó├óÔé¼┼í
     await setupOffscreenDocument('offscreen.html').catch(() => {});
     
     _heartbeatTimer = setInterval(() => {
@@ -9535,7 +9535,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
         sendResponse({
             success: false,
             host: '127.0.0.1',
-            hint: 'تم تعطيل اكتشاف WSL. الوضع المعتمد هو Windows المحلي (127.0.0.1).'
+            hint: 'Ï¬┘à Ï¬Ï╣ÏÀ┘è┘ä Ïº┘âÏ¬Ï┤Ïº┘ü WSL. Ïº┘ä┘êÏÂÏ╣ Ïº┘ä┘àÏ╣Ï¬┘àÏ» ┘ç┘ê Windows Ïº┘ä┘àÏ¡┘ä┘è (127.0.0.1).'
         });
         return false;
     }
@@ -9950,7 +9950,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
             } catch (error) {
                 sendResponse({
                     success: false,
-                    error: error?.message || 'تعذر قراءة الحقيبة من التخزين المحلي.'
+                    error: error?.message || 'Ï¬Ï╣Ï░Ï▒ ┘éÏ▒ÏºÏíÏ® Ïº┘äÏ¡┘é┘èÏ¿Ï® ┘à┘å Ïº┘äÏ¬Ï«Ï▓┘è┘å Ïº┘ä┘àÏ¡┘ä┘è.'
                 });
             }
         })();
@@ -9974,6 +9974,41 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                 sendResponse({ success: true, images: await setPromptBagImages(req.images || []) });
             } catch (error) {
                 sendResponse({ success: false, error: error.message || 'Unable to save images.' });
+            }
+        })();
+        return true;
+    }
+
+    if (req.action === 'ORACLE_DESIGN_GENERATE') {
+        (async () => {
+            try {
+                sendResponse(await startOracleDesignGeneration(req));
+            } catch (error) {
+                sendResponse({
+                    ok: false,
+                    accepted: false,
+                    success: false,
+                    requestId: String(req.requestId || '').trim() || null,
+                    status: 'failed',
+                    errorCode: 'DESIGN_EXECUTOR_UNAVAILABLE',
+                    error: error.message || 'Oracle design generate failed',
+                });
+            }
+        })();
+        return true;
+    }
+
+    if (req.action === 'ORACLE_DESIGN_STATUS') {
+        (async () => {
+            try {
+                sendResponse(await pollOracleDesignJobStatus(req));
+            } catch (error) {
+                sendResponse({
+                    success: false,
+                    status: 'failed',
+                    errorCode: 'DESIGN_EXECUTOR_UNAVAILABLE',
+                    error: error.message || 'Oracle design status failed',
+                });
             }
         })();
         return true;
@@ -10132,7 +10167,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                 const apiKey = String(req.apiKey || adminKeys.gpt || stored.nhpGptApiKey || '').trim();
                 const baseUrl = normalizeCliProxyBaseUrl(req.baseUrl || adminKeys.baseUrl || stored.nhpProxyBaseUrl || CLI_PROXY_API_BASE_URL);
                 if (!apiKey) {
-                    throw new Error('مفتاح NHP API غير مُعدّ. افتح لوحة التحكم → مفاتيح AI وأدخل المفتاح (CLI Proxy).');
+                    throw new Error('┘à┘üÏ¬ÏºÏ¡ NHP API Ï║┘èÏ▒ ┘à┘ÅÏ╣Ï»┘æ. Ïº┘üÏ¬Ï¡ ┘ä┘êÏ¡Ï® Ïº┘äÏ¬Ï¡┘â┘à ÔåÆ ┘à┘üÏºÏ¬┘èÏ¡ AI ┘êÏúÏ»Ï«┘ä Ïº┘ä┘à┘üÏ¬ÏºÏ¡ (CLI Proxy).');
                 }
 
                 let dataUrl = String(req.dataUrl || '').trim();
@@ -10393,9 +10428,9 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
         }).catch(() => { });
         chrome.runtime.sendMessage({
             action: 'ap_update',
-            log: '🛑 تم طلب إيقاف الرفع — جاري إيقاف العملية...',
+            log: '­ƒøæ Ï¬┘à ÏÀ┘äÏ¿ ÏÑ┘è┘éÏº┘ü Ïº┘äÏ▒┘üÏ╣ ÔÇö Ï¼ÏºÏ▒┘è ÏÑ┘è┘éÏº┘ü Ïº┘äÏ╣┘à┘ä┘èÏ®...',
             type: 'warning',
-            toast: '🛑 تم إيقاف الرفع'
+            toast: '­ƒøæ Ï¬┘à ÏÑ┘è┘éÏº┘ü Ïº┘äÏ▒┘üÏ╣'
         });
         return false;
     }
@@ -10706,7 +10741,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                 const result = await downloadNhpStartupScript(format);
                 sendResponse(result);
             } catch (error) {
-                sendResponse({ success: false, error: error?.message || 'تعذر تنزيل السكربت' });
+                sendResponse({ success: false, error: error?.message || 'Ï¬Ï╣Ï░Ï▒ Ï¬┘åÏ▓┘è┘ä Ïº┘äÏ│┘âÏ▒Ï¿Ï¬' });
             }
         })();
         return true;
@@ -10916,7 +10951,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                             platform,
                             port: targetPort,
                             error: launchResult.error || 'UNAVAILABLE',
-                            message: launchResult.message || launchResult.error || 'تعذر تشغيل Ghost Server',
+                            message: launchResult.message || launchResult.error || 'Ï¬Ï╣Ï░Ï▒ Ï¬Ï┤Ï║┘è┘ä Ghost Server',
                             permissionRequired: !!launchResult.permissionRequired,
                         });
                         return;
@@ -10958,7 +10993,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                         platform,
                         port: targetPort,
                         error: 'BOOTSTRAP_TIMEOUT',
-                        message: 'انتهت مهلة انتظار Ghost Server — تحقق من المنفذ 3019',
+                        message: 'Ïº┘åÏ¬┘çÏ¬ ┘à┘ç┘äÏ® Ïº┘åÏ¬Ï©ÏºÏ▒ Ghost Server ÔÇö Ï¬Ï¡┘é┘é ┘à┘å Ïº┘ä┘à┘å┘üÏ░ 3019',
                         permissionRequired: !!launchResult.permissionRequired
                     });
                 }
@@ -11153,7 +11188,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                     console.warn('[NHP][Trends] fetch_trends failed:', error?.message || error);
                     sendResponse({
                         success: false,
-                        error: error?.message || 'فشل جلب الترندات من الخلفية'
+                        error: error?.message || '┘üÏ┤┘ä Ï¼┘äÏ¿ Ïº┘äÏ¬Ï▒┘åÏ»ÏºÏ¬ ┘à┘å Ïº┘äÏ«┘ä┘ü┘èÏ®'
                     });
                 }
             })();
@@ -11478,14 +11513,14 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                 if (apProcessRunning) {
                     const staleQueue = apQueueStateCache?.isRunning || res?.[AP_UPLOAD_QUEUE_STATE_KEY]?.isRunning;
                     if (!staleQueue) {
-                        console.warn('[AP] Resetting stale apProcessRunning — no active queue');
+                        console.warn('[AP] Resetting stale apProcessRunning ÔÇö no active queue');
                         apProcessRunning = false;
                     } else {
                         logApProcessAbort('ap_start_duplicate_while_running', { path: 'ap_start_guard' });
                         chrome.runtime.sendMessage({
                             action: 'ap_update',
-                            log: '⏳ الرفع قيد التنفيذ بالفعل — تم تجاهل طلب بدء مكرر لمنع فتح نوافذ حسابات متعددة',
-                            toast: '⏳ الرفع قيد التنفيذ بالفعل — انتظر اكتمال العملية الحالية أو أوقفها',
+                            log: 'ÔÅ│ Ïº┘äÏ▒┘üÏ╣ ┘é┘èÏ» Ïº┘äÏ¬┘å┘ü┘èÏ░ Ï¿Ïº┘ä┘üÏ╣┘ä ÔÇö Ï¬┘à Ï¬Ï¼Ïº┘ç┘ä ÏÀ┘äÏ¿ Ï¿Ï»Ïí ┘à┘âÏ▒Ï▒ ┘ä┘à┘åÏ╣ ┘üÏ¬Ï¡ ┘å┘êÏº┘üÏ░ Ï¡Ï│ÏºÏ¿ÏºÏ¬ ┘àÏ¬Ï╣Ï»Ï»Ï®',
+                            toast: 'ÔÅ│ Ïº┘äÏ▒┘üÏ╣ ┘é┘èÏ» Ïº┘äÏ¬┘å┘ü┘èÏ░ Ï¿Ïº┘ä┘üÏ╣┘ä ÔÇö Ïº┘åÏ¬Ï©Ï▒ Ïº┘âÏ¬┘àÏº┘ä Ïº┘äÏ╣┘à┘ä┘èÏ® Ïº┘äÏ¡Ïº┘ä┘èÏ® Ïú┘ê Ïú┘ê┘é┘ü┘çÏº',
                             done: true,
                             success: false,
                             type: 'warning'
@@ -11510,8 +11545,8 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                     }, { replace: true });
                     chrome.runtime.sendMessage({
                         action: 'ap_update',
-                        log: '♻️ تم مسح حالة رفع عالقة من جلسة سابقة',
-                        toast: '♻️ تمت إعادة تعيين حالة رفع عالقة — جاري البدء',
+                        log: 'ÔÖ╗´©Å Ï¬┘à ┘àÏ│Ï¡ Ï¡Ïº┘äÏ® Ï▒┘üÏ╣ Ï╣Ïº┘ä┘éÏ® ┘à┘å Ï¼┘äÏ│Ï® Ï│ÏºÏ¿┘éÏ®',
+                        toast: 'ÔÖ╗´©Å Ï¬┘àÏ¬ ÏÑÏ╣ÏºÏ»Ï® Ï¬Ï╣┘è┘è┘å Ï¡Ïº┘äÏ® Ï▒┘üÏ╣ Ï╣Ïº┘ä┘éÏ® ÔÇö Ï¼ÏºÏ▒┘è Ïº┘äÏ¿Ï»Ïí',
                         type: 'warning'
                     });
                 }
@@ -11525,8 +11560,8 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                         logApProcessAbort('seq_upload_guard_blocked', { path: 'ap_start_seq_guard' });
                         chrome.runtime.sendMessage({
                             action: 'ap_update',
-                            log: '🔒 حماية الرفع المتسلسل: تعديل غير مصرّح — أدخل المفتاح 693400 عبر seq_upload_guard_unlock',
-                            toast: '🔒 فشل بدء الرفع — حماية الرفع المتسلسل غير مفعّلة',
+                            log: '­ƒöÆ Ï¡┘àÏº┘èÏ® Ïº┘äÏ▒┘üÏ╣ Ïº┘ä┘àÏ¬Ï│┘äÏ│┘ä: Ï¬Ï╣Ï»┘è┘ä Ï║┘èÏ▒ ┘àÏÁÏ▒┘æÏ¡ ÔÇö ÏúÏ»Ï«┘ä Ïº┘ä┘à┘üÏ¬ÏºÏ¡ 693400 Ï╣Ï¿Ï▒ seq_upload_guard_unlock',
+                            toast: '­ƒöÆ ┘üÏ┤┘ä Ï¿Ï»Ïí Ïº┘äÏ▒┘üÏ╣ ÔÇö Ï¡┘àÏº┘èÏ® Ïº┘äÏ▒┘üÏ╣ Ïº┘ä┘àÏ¬Ï│┘äÏ│┘ä Ï║┘èÏ▒ ┘à┘üÏ╣┘æ┘äÏ®',
                             done: true,
                             success: false,
                             type: 'error'
@@ -11539,12 +11574,12 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                 const mergedConfig = await buildApStartConfigFromRequest(req.data || {}, persisted, res);
                 if (!mergedConfig) {
                     apProcessRunning = false;
-                    console.warn('[Autopilot][Upload] ap_start aborted — no resolved accounts', {
+                    console.warn('[Autopilot][Upload] ap_start aborted ÔÇö no resolved accounts', {
                         payloadIds: req.data?.selectedAccountIds,
                         payloadEmails: (req.data?.accounts || []).map((a) => a?.email).filter(Boolean),
                         userSaved: res?.[AP_ADMIN_USER_SELECTION_SAVED_KEY] === true
                     });
-                    await abortApUploadEarly('⚠️ يرجى اختيار حساب واحد على الأقل — تأكد من حفظ الاختيار ثم أعد المحاولة');
+                    await abortApUploadEarly('ÔÜá´©Å ┘èÏ▒Ï¼┘ë ÏºÏ«Ï¬┘èÏºÏ▒ Ï¡Ï│ÏºÏ¿ ┘êÏºÏ¡Ï» Ï╣┘ä┘ë Ïº┘äÏú┘é┘ä ÔÇö Ï¬Ïú┘âÏ» ┘à┘å Ï¡┘üÏ© Ïº┘äÏºÏ«Ï¬┘èÏºÏ▒ Ï½┘à ÏúÏ╣Ï» Ïº┘ä┘àÏ¡Ïº┘ê┘äÏ®');
                     return;
                 }
                 const selectedIds = Array.isArray(mergedConfig.selectedAccountIds)
@@ -11558,7 +11593,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                 });
                 if (selectedIds.length === 0 || accountCount === 0) {
                     apProcessRunning = false;
-                    await abortApUploadEarly('⚠️ يرجى اختيار حساب واحد على الأقل');
+                    await abortApUploadEarly('ÔÜá´©Å ┘èÏ▒Ï¼┘ë ÏºÏ«Ï¬┘èÏºÏ▒ Ï¡Ï│ÏºÏ¿ ┘êÏºÏ¡Ï» Ï╣┘ä┘ë Ïº┘äÏú┘é┘ä');
                     return;
                 }
                 const queueRes = await new Promise((resolve) => chrome.storage.local.get(['savedDesignQueue'], resolve));
@@ -11567,12 +11602,12 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                 console.log('[AP] ap_start queue:', { total: rawQueue.length, seoReady: seoReadyCount });
                 if (rawQueue.length === 0) {
                     apProcessRunning = false;
-                    await abortApUploadEarly('⚠️ القائمة فارغة! أضف تصاميم أولاً');
+                    await abortApUploadEarly('ÔÜá´©Å Ïº┘ä┘éÏºÏª┘àÏ® ┘üÏºÏ▒Ï║Ï®! ÏúÏÂ┘ü Ï¬ÏÁÏº┘à┘è┘à Ïú┘ê┘äÏº┘ï');
                     return;
                 }
                 if (seoReadyCount === 0) {
                     apProcessRunning = false;
-                    await abortApUploadEarly('⚠️ لا توجد تصاميم جاهزة — نفّذ التحليل الذكي (SEO) أولاً');
+                    await abortApUploadEarly('ÔÜá´©Å ┘äÏº Ï¬┘êÏ¼Ï» Ï¬ÏÁÏº┘à┘è┘à Ï¼Ïº┘çÏ▓Ï® ÔÇö ┘å┘ü┘æÏ░ Ïº┘äÏ¬Ï¡┘ä┘è┘ä Ïº┘äÏ░┘â┘è (SEO) Ïú┘ê┘äÏº┘ï');
                     return;
                 }
                 const { perAccount: _dropPerAccount, perDesign: _dropPerDesign, ...cleanStartConfig } = mergedConfig;
@@ -11581,8 +11616,8 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                 });
                 chrome.runtime.sendMessage({
                     action: 'ap_update',
-                    log: `🧾 بدء الطيار الآلي | rawCountPer=${req.data?.countPer ?? 'null'} | countPer=${mergedConfig.countPer} | selected=${selectedIds.length} | accounts=${accountCount} | emails=${selectedEmails.join(', ')} | queueReady=${seoReadyCount}`,
-                    toast: `🚀 بدء الرفع — ${selectedEmails.join(', ')} | ${seoReadyCount} تصميم`,
+                    log: `­ƒº¥ Ï¿Ï»Ïí Ïº┘äÏÀ┘èÏºÏ▒ Ïº┘äÏó┘ä┘è | rawCountPer=${req.data?.countPer ?? 'null'} | countPer=${mergedConfig.countPer} | selected=${selectedIds.length} | accounts=${accountCount} | emails=${selectedEmails.join(', ')} | queueReady=${seoReadyCount}`,
+                    toast: `­ƒÜÇ Ï¿Ï»Ïí Ïº┘äÏ▒┘üÏ╣ ÔÇö ${selectedEmails.join(', ')} | ${seoReadyCount} Ï¬ÏÁ┘à┘è┘à`,
                     type: 'info'
                 });
                 await enqueueStartAPProcess(mergedConfig);
@@ -11591,7 +11626,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                 logApProcessAbort(err?.message || 'ap_start_exception', { path: 'ap_start_catch' });
                 apProcessRunning = false;
                 stopHeartbeat();
-                await abortApUploadEarly(`⚠️ فشل بدء الرفع: ${err?.message || 'خطأ غير معروف'}`);
+                await abortApUploadEarly(`ÔÜá´©Å ┘üÏ┤┘ä Ï¿Ï»Ïí Ïº┘äÏ▒┘üÏ╣: ${err?.message || 'Ï«ÏÀÏú Ï║┘èÏ▒ ┘àÏ╣Ï▒┘ê┘ü'}`);
             }
         })();
         return true;
@@ -11604,7 +11639,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
             const state = res?.[AP_UPLOAD_QUEUE_STATE_KEY] || apQueueStateCache || {};
             const retryConfig = buildApFailedRetryConfig(res?.ap_last_start_config || {}, state);
             if (!retryConfig) {
-                sendResponse({ success: false, error: 'لا توجد عناصر فاشلة للاستدراك.' });
+                sendResponse({ success: false, error: '┘äÏº Ï¬┘êÏ¼Ï» Ï╣┘åÏºÏÁÏ▒ ┘üÏºÏ┤┘äÏ® ┘ä┘äÏºÏ│Ï¬Ï»Ï▒Ïº┘â.' });
                 stopHeartbeat();
                 return;
             }
@@ -11612,8 +11647,8 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
             chrome.storage.local.set({ ap_last_start_config: { ...retryConfig, startedAt: new Date().toISOString() } }, () => {
                 chrome.runtime.sendMessage({
                     action: 'ap_update',
-                    log: `🔁 استدراك الرفع الفاشل | حسابات=${retryConfig.accounts.length} | تصاميم=${designCount}`,
-                    toast: `🔁 إعادة رفع ${designCount} تصميم فاشل فقط`,
+                    log: `­ƒöü ÏºÏ│Ï¬Ï»Ï▒Ïº┘â Ïº┘äÏ▒┘üÏ╣ Ïº┘ä┘üÏºÏ┤┘ä | Ï¡Ï│ÏºÏ¿ÏºÏ¬=${retryConfig.accounts.length} | Ï¬ÏÁÏº┘à┘è┘à=${designCount}`,
+                    toast: `­ƒöü ÏÑÏ╣ÏºÏ»Ï® Ï▒┘üÏ╣ ${designCount} Ï¬ÏÁ┘à┘è┘à ┘üÏºÏ┤┘ä ┘ü┘éÏÀ`,
                     type: 'info'
                 });
                 enqueueStartAPProcess(retryConfig).catch(console.error);
@@ -11783,7 +11818,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
         (async () => {
             try {
                 const items = Array.isArray(req.items) ? req.items : [];
-                if (!items.length) throw new Error('لا توجد صور محددة.');
+                if (!items.length) throw new Error('┘äÏº Ï¬┘êÏ¼Ï» ÏÁ┘êÏ▒ ┘àÏ¡Ï»Ï»Ï®.');
                 const bagNiche = String(req.niche || req.query || '').trim();
                 const sourceTabId = Number.isFinite(sender?.tab?.id) ? sender.tab.id : null;
                 let added = 0;
@@ -11811,12 +11846,12 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                 }
                 if (!added) {
                     throw new Error(skipped > 0 || duplicates > 0
-                        ? 'تعذّر إضافة الصور المحددة — قد تكون محجوبة أو غير جاهزة بعد.'
-                        : 'تعذّر تحويل الصور المحددة إلى Prompt Bag.');
+                        ? 'Ï¬Ï╣Ï░┘æÏ▒ ÏÑÏÂÏº┘üÏ® Ïº┘äÏÁ┘êÏ▒ Ïº┘ä┘àÏ¡Ï»Ï»Ï® ÔÇö ┘éÏ» Ï¬┘â┘ê┘å ┘àÏ¡Ï¼┘êÏ¿Ï® Ïú┘ê Ï║┘èÏ▒ Ï¼Ïº┘çÏ▓Ï® Ï¿Ï╣Ï».'
+                        : 'Ï¬Ï╣Ï░┘æÏ▒ Ï¬Ï¡┘ê┘è┘ä Ïº┘äÏÁ┘êÏ▒ Ïº┘ä┘àÏ¡Ï»Ï»Ï® ÏÑ┘ä┘ë Prompt Bag.');
                 }
                 sendResponse({ success: true, added, skipped, duplicates });
             } catch (error) {
-                sendResponse({ success: false, error: error?.message || 'فشل إرسال Prompt Bag.' });
+                sendResponse({ success: false, error: error?.message || '┘üÏ┤┘ä ÏÑÏ▒Ï│Ïº┘ä Prompt Bag.' });
             }
         })();
         return true;
@@ -12132,8 +12167,8 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                 const allMeta = [...(scanMeta.newest || []), ...(scanMeta.popular || [])];
                 const blockedCount = allMeta.filter((item) => item.blocked || item.status === 403).length;
                 const reason = blockedCount > 0
-                    ? 'TeePublic حجب الفحص المباشر حالياً. لا توجد بيانات دقيقة يمكن اعتمادها.'
-                    : 'لم يتم العثور على تصاميم قابلة للاستخراج من TeePublic.';
+                    ? 'TeePublic Ï¡Ï¼Ï¿ Ïº┘ä┘üÏ¡ÏÁ Ïº┘ä┘àÏ¿ÏºÏ┤Ï▒ Ï¡Ïº┘ä┘èÏº┘ï. ┘äÏº Ï¬┘êÏ¼Ï» Ï¿┘èÏº┘åÏºÏ¬ Ï»┘é┘è┘éÏ® ┘è┘à┘â┘å ÏºÏ╣Ï¬┘àÏºÏ»┘çÏº.'
+                    : '┘ä┘à ┘èÏ¬┘à Ïº┘äÏ╣Ï½┘êÏ▒ Ï╣┘ä┘ë Ï¬ÏÁÏº┘à┘è┘à ┘éÏºÏ¿┘äÏ® ┘ä┘äÏºÏ│Ï¬Ï«Ï▒ÏºÏ¼ ┘à┘å TeePublic.';
                 sendResponse({ success: false, error: reason, scanMeta: finalScanMeta });
                 return;
             }
@@ -12209,7 +12244,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
             try {
                 const { pageId, token, message, base64Image } = req.data;
 
-                // Ã˜ÂªÃ˜Â­Ã™Ë†Ã™Å Ã™â€ž Base64 Ã˜Â¥Ã™â€žÃ™â€° Blob Ã™â€žÃ˜Â±Ã™ÂÃ˜Â¹Ã™â€¡ Ã™Æ’Ã™â€¦Ã™â€žÃ™Â Ã™Å Ã˜Â¯Ã™Ë†Ã™Å Ã˜Â§Ã™â€¹ (Ã™â€žÃ˜Â£Ã™â€  fetch Ã™â€žÃ˜Â§ Ã˜ÂªÃ˜Â¯Ã˜Â¹Ã™â€¦ data URI Ã™ÂÃ™Å  MV3)
+                // ├â╦£├é┬¬├â╦£├é┬¡├âÔäó├ïÔÇá├âÔäó├à┬á├âÔäó├óÔé¼┼¥ Base64 ├â╦£├é┬Ñ├âÔäó├óÔé¼┼¥├âÔäó├óÔé¼┬░ Blob ├âÔäó├óÔé¼┼¥├â╦£├é┬▒├âÔäó├é┬ü├â╦£├é┬╣├âÔäó├óÔé¼┬í ├âÔäó├åÔÇÖ├âÔäó├óÔé¼┬ª├âÔäó├óÔé¼┼¥├âÔäó├é┬ü ├âÔäó├à┬á├â╦£├é┬»├âÔäó├ïÔÇá├âÔäó├à┬á├â╦£├é┬º├âÔäó├óÔé¼┬╣ (├âÔäó├óÔé¼┼¥├â╦£├é┬ú├âÔäó├óÔé¼┬á fetch ├âÔäó├óÔé¼┼¥├â╦£├é┬º ├â╦£├é┬¬├â╦£├é┬»├â╦£├é┬╣├âÔäó├óÔé¼┬ª data URI ├âÔäó├é┬ü├âÔäó├à┬á MV3)
                 const cleanBase64 = base64Image.includes(',') ? base64Image.split(',')[1] : base64Image;
                 const mimeType = base64Image.includes('data:') ? base64Image.match(/data:(.*?);/)[1] : 'image/png';
 
@@ -12221,7 +12256,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                 const blob = new Blob([byteArray], { type: mimeType });
 
                 let finalToken = token;
-                // Ã™â€¦Ã˜Â­Ã˜Â§Ã™Ë†Ã™â€žÃ˜Â© Ã˜Â§Ã˜Â³Ã˜ÂªÃ˜Â®Ã˜Â±Ã˜Â§Ã˜Â¬ Page Access Token Ã˜Â¥Ã˜Â°Ã˜Â§ Ã™Æ’Ã˜Â§Ã™â€  Ã˜Â§Ã™â€žÃ˜ÂªÃ™Ë†Ã™Æ’Ã™â€  Ã˜Â§Ã™â€žÃ™â€¦Ã˜Â¯Ã˜Â®Ã™â€ž Ã™â€¡Ã™Ë† User Token Ã™â€žÃ˜ÂªÃ˜Â¬Ã™â€ Ã˜Â¨ Ã˜Â®Ã˜Â·Ã˜Â£ publish_actions
+                // ├âÔäó├óÔé¼┬ª├â╦£├é┬¡├â╦£├é┬º├âÔäó├ïÔÇá├âÔäó├óÔé¼┼¥├â╦£├é┬® ├â╦£├é┬º├â╦£├é┬│├â╦£├é┬¬├â╦£├é┬«├â╦£├é┬▒├â╦£├é┬º├â╦£├é┬¼ Page Access Token ├â╦£├é┬Ñ├â╦£├é┬░├â╦£├é┬º ├âÔäó├åÔÇÖ├â╦£├é┬º├âÔäó├óÔé¼┬á ├â╦£├é┬º├âÔäó├óÔé¼┼¥├â╦£├é┬¬├âÔäó├ïÔÇá├âÔäó├åÔÇÖ├âÔäó├óÔé¼┬á ├â╦£├é┬º├âÔäó├óÔé¼┼¥├âÔäó├óÔé¼┬ª├â╦£├é┬»├â╦£├é┬«├âÔäó├óÔé¼┼¥ ├âÔäó├óÔé¼┬í├âÔäó├ïÔÇá User Token ├âÔäó├óÔé¼┼¥├â╦£├é┬¬├â╦£├é┬¼├âÔäó├óÔé¼┬á├â╦£├é┬¿ ├â╦£├é┬«├â╦£├é┬À├â╦£├é┬ú publish_actions
                 try {
                     const tokenRes = await fetch(`https://graph.facebook.com/v19.0/${pageId}?fields=access_token&access_token=${token}`);
                     const tokenData = await tokenRes.json();
@@ -12244,7 +12279,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                 if (fbData.error) {
                     let errMsg = fbData.error.message;
                     if (errMsg.includes('publish_actions') || errMsg.includes('deprecated')) {
-                        errMsg = 'خطأ الصلاحيات: لا يمكن النشر على حساب شخصي. تأكد أن Page ID يعود لصفحة عامة (Page) وأن التوكن يمتلك صلاحيات النشر.';
+                        errMsg = 'Ï«ÏÀÏú Ïº┘äÏÁ┘äÏºÏ¡┘èÏºÏ¬: ┘äÏº ┘è┘à┘â┘å Ïº┘ä┘åÏ┤Ï▒ Ï╣┘ä┘ë Ï¡Ï│ÏºÏ¿ Ï┤Ï«ÏÁ┘è. Ï¬Ïú┘âÏ» Ïú┘å Page ID ┘èÏ╣┘êÏ» ┘äÏÁ┘üÏ¡Ï® Ï╣Ïº┘àÏ® (Page) ┘êÏú┘å Ïº┘äÏ¬┘ê┘â┘å ┘è┘àÏ¬┘ä┘â ÏÁ┘äÏºÏ¡┘èÏºÏ¬ Ïº┘ä┘åÏ┤Ï▒.';
                     }
                     sendResponse({ success: false, error: errMsg });
                 }
@@ -12254,9 +12289,9 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
         return true;
     }
 
-    // ══════════════════════════════════════════════════════
+    // ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
     //  PINTEREST API PUBLISHER
-    // ══════════════════════════════════════════════════════
+    // ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
     if (req.action === 'publish_to_pinterest') {
         (async () => {
             try {
@@ -12308,7 +12343,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                 const routed = await routeGenerateLibraryToStudioPeel(req.data);
                 sendResponse({ success: routed.ok, buffered: routed.buffered, error: routed.error || null });
             } catch (error) {
-                sendResponse({ success: false, error: error.message || 'فشل توجيه الصورة إلى Studio' });
+                sendResponse({ success: false, error: error.message || '┘üÏ┤┘ä Ï¬┘êÏ¼┘è┘ç Ïº┘äÏÁ┘êÏ▒Ï® ÏÑ┘ä┘ë Studio' });
             }
         })();
         return true;
@@ -12320,7 +12355,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                 const routed = await routeGenerateLibraryToStudioTeeMaster(req.data);
                 sendResponse({ success: routed.ok, buffered: routed.buffered, error: routed.error || null });
             } catch (error) {
-                sendResponse({ success: false, error: error.message || 'فشل توجيه الصورة إلى TeeMaster' });
+                sendResponse({ success: false, error: error.message || '┘üÏ┤┘ä Ï¬┘êÏ¼┘è┘ç Ïº┘äÏÁ┘êÏ▒Ï® ÏÑ┘ä┘ë TeeMaster' });
             }
         })();
         return true;
@@ -12458,24 +12493,24 @@ function bufferStudioPeelBananaImage(imageData) {
             buffer.push(imageData);
             if (buffer.length > STUDIO_PEEL_BANANA_BUFFER_MAX) buffer.splice(0, buffer.length - STUDIO_PEEL_BANANA_BUFFER_MAX);
             chrome.storage.local.set({ [STUDIO_PEEL_BANANA_BUFFER_KEY]: buffer }, () => {
-                console.log('[Background] Generate→Peel buffered for next Studio open.');
+                console.log('[Background] GenerateÔåÆPeel buffered for next Studio open.');
                 resolve();
             });
         });
     });
 }
 
-/** Generate Library → Peel Banana → TeeMaster Pro 5K (popup may be on Generate tab). */
+/** Generate Library ÔåÆ Peel Banana ÔåÆ TeeMaster Pro 5K (popup may be on Generate tab). */
 async function routeGenerateLibraryToStudioPeel(imageData) {
     if (!imageData?.dataURL) {
-        return { ok: false, buffered: false, error: 'بيانات الصورة ناقصة (dataURL)' };
+        return { ok: false, buffered: false, error: 'Ï¿┘èÏº┘åÏºÏ¬ Ïº┘äÏÁ┘êÏ▒Ï® ┘åÏº┘éÏÁÏ® (dataURL)' };
     }
     try {
         await chrome.runtime.sendMessage({ action: STUDIO_PEEL_BANANA_UI_ACTION, data: imageData });
-        console.log('[Background] Generate→Peel sent to active Studio UI.');
+        console.log('[Background] GenerateÔåÆPeel sent to active Studio UI.');
         return { ok: true, buffered: false };
     } catch (err) {
-        console.log('[Background] Studio UI inactive; buffering Generate→Peel image.', err?.message || err);
+        console.log('[Background] Studio UI inactive; buffering GenerateÔåÆPeel image.', err?.message || err);
         await bufferStudioPeelBananaImage(imageData);
         return { ok: true, buffered: true };
     }
@@ -12488,24 +12523,24 @@ function bufferStudioTeeMasterImage(imageData) {
             buffer.push(imageData);
             if (buffer.length > STUDIO_TEEMASTER_BUFFER_MAX) buffer.splice(0, buffer.length - STUDIO_TEEMASTER_BUFFER_MAX);
             chrome.storage.local.set({ [STUDIO_TEEMASTER_BUFFER_KEY]: buffer }, () => {
-                console.log('[Background] Generate→TeeMaster buffered for next Studio open.');
+                console.log('[Background] GenerateÔåÆTeeMaster buffered for next Studio open.');
                 resolve();
             });
         });
     });
 }
 
-/** Generate Library → TeeMaster Pro 5K direct (no Peel Banana). */
+/** Generate Library ÔåÆ TeeMaster Pro 5K direct (no Peel Banana). */
 async function routeGenerateLibraryToStudioTeeMaster(imageData) {
     if (!imageData?.dataURL) {
-        return { ok: false, buffered: false, error: 'بيانات الصورة ناقصة (dataURL)' };
+        return { ok: false, buffered: false, error: 'Ï¿┘èÏº┘åÏºÏ¬ Ïº┘äÏÁ┘êÏ▒Ï® ┘åÏº┘éÏÁÏ® (dataURL)' };
     }
     try {
         await chrome.runtime.sendMessage({ action: STUDIO_TEEMASTER_UI_ACTION, data: imageData });
-        console.log('[Background] Generate→TeeMaster sent to active Studio UI.');
+        console.log('[Background] GenerateÔåÆTeeMaster sent to active Studio UI.');
         return { ok: true, buffered: false };
     } catch (err) {
-        console.log('[Background] Studio UI inactive; buffering Generate→TeeMaster image.', err?.message || err);
+        console.log('[Background] Studio UI inactive; buffering GenerateÔåÆTeeMaster image.', err?.message || err);
         await bufferStudioTeeMasterImage(imageData);
         return { ok: true, buffered: true };
     }
@@ -12526,7 +12561,7 @@ async function processGeminiImageForStudio(url, filename) {
             const response = await fetch(url);
             const blob = await response.blob();
 
-            // تحويل آمن عبر FileReader بدلاً من الحلقات اليدوية الثقيلة.
+            // Ï¬Ï¡┘ê┘è┘ä Ïó┘à┘å Ï╣Ï¿Ï▒ FileReader Ï¿Ï»┘äÏº┘ï ┘à┘å Ïº┘äÏ¡┘ä┘éÏºÏ¬ Ïº┘ä┘èÏ»┘ê┘èÏ® Ïº┘äÏ½┘é┘è┘äÏ®.
             dataURL = await new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onloadend = () => resolve(reader.result);
@@ -12549,7 +12584,7 @@ async function processGeminiImageForStudio(url, filename) {
             createdAt: imageData.timestamp
         });
 
-        // إرسال الصورة فوراً إلى الواجهة إن كانت مفتوحة، وإلا تخزينها مؤقتاً.
+        // ÏÑÏ▒Ï│Ïº┘ä Ïº┘äÏÁ┘êÏ▒Ï® ┘ü┘êÏ▒Ïº┘ï ÏÑ┘ä┘ë Ïº┘ä┘êÏºÏ¼┘çÏ® ÏÑ┘å ┘âÏº┘åÏ¬ ┘à┘üÏ¬┘êÏ¡Ï®Ïî ┘êÏÑ┘äÏº Ï¬Ï«Ï▓┘è┘å┘çÏº ┘àÏñ┘éÏ¬Ïº┘ï.
         chrome.runtime.sendMessage({ action: 'studio_add_image', data: imageData }).then(() => {
             console.log("[Background] Image sent to active Studio UI.");
         }).catch(() => {
@@ -12594,7 +12629,7 @@ async function screenHandleCaptureVisible(settingsOverride) {
             title: tab.title,
             source: 'visible'
         });
-        return { ok: true, message: 'تم فتح اللقطة داخل أداة الرسم.', closePopup: true };
+        return { ok: true, message: 'Ï¬┘à ┘üÏ¬Ï¡ Ïº┘ä┘ä┘éÏÀÏ® Ï»ÏºÏ«┘ä ÏúÏ»ÏºÏ® Ïº┘äÏ▒Ï│┘à.', closePopup: true };
     }
 
     const filename = screenBuildFilename('capture', tab.title, 'png');
@@ -12607,7 +12642,7 @@ async function screenHandleCaptureVisible(settingsOverride) {
         createdAt: Date.now()
     });
 
-    return { ok: true, message: 'تم حفظ لقطة الشاشة محلياً.' };
+    return { ok: true, message: 'Ï¬┘à Ï¡┘üÏ© ┘ä┘éÏÀÏ® Ïº┘äÏ┤ÏºÏ┤Ï® ┘àÏ¡┘ä┘èÏº┘ï.' };
 }
 
 async function screenHandleCaptureSelected(settingsOverride) {
@@ -12627,7 +12662,7 @@ async function screenHandleCaptureSelected(settingsOverride) {
     });
 
     if (!result || result.cancelled) {
-        return { ok: true, message: 'تم إلغاء التحديد.' };
+        return { ok: true, message: 'Ï¬┘à ÏÑ┘äÏ║ÏºÏí Ïº┘äÏ¬Ï¡Ï»┘èÏ».' };
     }
 
     const visibleDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
@@ -12639,7 +12674,7 @@ async function screenHandleCaptureSelected(settingsOverride) {
             title: tab.title,
             source: 'selected'
         });
-        return { ok: true, message: 'تم فتح الجزء المحدد داخل أداة الرسم.', closePopup: true };
+        return { ok: true, message: 'Ï¬┘à ┘üÏ¬Ï¡ Ïº┘äÏ¼Ï▓Ïí Ïº┘ä┘àÏ¡Ï»Ï» Ï»ÏºÏ«┘ä ÏúÏ»ÏºÏ® Ïº┘äÏ▒Ï│┘à.', closePopup: true };
     }
 
     const filename = screenBuildFilename('selection', tab.title, 'png');
@@ -12652,7 +12687,7 @@ async function screenHandleCaptureSelected(settingsOverride) {
         createdAt: Date.now()
     });
 
-    return { ok: true, message: 'تم حفظ الجزء المحدد محلياً.' };
+    return { ok: true, message: 'Ï¬┘à Ï¡┘üÏ© Ïº┘äÏ¼Ï▓Ïí Ïº┘ä┘àÏ¡Ï»Ï» ┘àÏ¡┘ä┘èÏº┘ï.' };
 }
 
 async function screenHandleCaptureFullPage(settingsOverride) {
@@ -12707,7 +12742,7 @@ async function screenHandleCaptureFullPage(settingsOverride) {
             title: metrics.title || tab.title,
             source: 'full-page'
         });
-        return { ok: true, message: 'تم فتح لقطة الصفحة الكاملة داخل أداة الرسم.', closePopup: true };
+        return { ok: true, message: 'Ï¬┘à ┘üÏ¬Ï¡ ┘ä┘éÏÀÏ® Ïº┘äÏÁ┘üÏ¡Ï® Ïº┘ä┘âÏº┘à┘äÏ® Ï»ÏºÏ«┘ä ÏúÏ»ÏºÏ® Ïº┘äÏ▒Ï│┘à.', closePopup: true };
     }
 
     const filename = screenBuildFilename('full-page', metrics.title || tab.title, 'png');
@@ -12720,7 +12755,7 @@ async function screenHandleCaptureFullPage(settingsOverride) {
         createdAt: Date.now()
     });
 
-    return { ok: true, message: 'تم حفظ لقطة الصفحة الكاملة محلياً.' };
+    return { ok: true, message: 'Ï¬┘à Ï¡┘üÏ© ┘ä┘éÏÀÏ® Ïº┘äÏÁ┘üÏ¡Ï® Ïº┘ä┘âÏº┘à┘äÏ® ┘àÏ¡┘ä┘èÏº┘ï.' };
 }
 
 async function screenOpenRecorderWindow(mode) {
@@ -12748,7 +12783,7 @@ async function screenOpenRecorderWindow(mode) {
         height: 700
     });
 
-    return { ok: true, message: 'تم فتح نافذة التسجيل.', closePopup: true };
+    return { ok: true, message: 'Ï¬┘à ┘üÏ¬Ï¡ ┘åÏº┘üÏ░Ï® Ïº┘äÏ¬Ï│Ï¼┘è┘ä.', closePopup: true };
 }
 
 async function screenOpenAnnotatorWindow(image) {
@@ -12760,7 +12795,7 @@ async function screenOpenAnnotatorWindow(image) {
         height: 940
     });
 
-    return { ok: true, message: 'تم فتح أداة الرسم.', closePopup: true };
+    return { ok: true, message: 'Ï¬┘à ┘üÏ¬Ï¡ ÏúÏ»ÏºÏ® Ïº┘äÏ▒Ï│┘à.', closePopup: true };
 }
 
 async function screenGetActiveTab() {
@@ -12787,14 +12822,14 @@ async function screenGetActiveTab() {
         return fallbackTab;
     }
 
-    throw new Error('افتح صفحة ويب عادية مرة واحدة ثم ارجع للإضافة.');
+    throw new Error('Ïº┘üÏ¬Ï¡ ÏÁ┘üÏ¡Ï® ┘ê┘èÏ¿ Ï╣ÏºÏ»┘èÏ® ┘àÏ▒Ï® ┘êÏºÏ¡Ï»Ï® Ï½┘à ÏºÏ▒Ï¼Ï╣ ┘ä┘äÏÑÏÂÏº┘üÏ®.');
 }
 
 function screenEnsureSupportedTab(tab) {
     const url = tab.url || '';
     const blockedSchemes = ['chrome://', 'edge://', 'about:', 'chrome-extension://'];
     if (blockedSchemes.some((scheme) => url.startsWith(scheme))) {
-        throw new Error('لا يمكن التقاط هذه الصفحة من داخل الإضافة.');
+        throw new Error('┘äÏº ┘è┘à┘â┘å Ïº┘äÏ¬┘éÏºÏÀ ┘çÏ░┘ç Ïº┘äÏÁ┘üÏ¡Ï® ┘à┘å Ï»ÏºÏ«┘ä Ïº┘äÏÑÏÂÏº┘üÏ®.');
     }
 }
 
@@ -12876,7 +12911,7 @@ async function screenStitchPageCaptures(captures, metrics) {
 
     const first = bitmaps[0]?.bitmap;
     if (!first) {
-        throw new Error('تعذر التقاط الصفحة بالكامل.');
+        throw new Error('Ï¬Ï╣Ï░Ï▒ Ïº┘äÏ¬┘éÏºÏÀ Ïº┘äÏÁ┘üÏ¡Ï® Ï¿Ïº┘ä┘âÏº┘à┘ä.');
     }
 
     const scale = first.width / metrics.viewportWidth;
@@ -13209,17 +13244,17 @@ async function getImageDimensionsFromBase64(base64Data, mimeType = 'image/png') 
 }
 
 function formatApMissingImageLabel(design) {
-    return design?.meta?.title || design?.file?.name || design?.id || 'تصميم';
+    return design?.meta?.title || design?.file?.name || design?.id || 'Ï¬ÏÁ┘à┘è┘à';
 }
 
 function buildApMissingImageLog(design, port = GHOST_SERVER_PORT) {
     const label = formatApMissingImageLabel(design);
     const hasLibraryRef = !!(design?.meta?.libraryId || design?.meta?.libraryImageUrl);
     if (!hasLibraryRef) {
-        return `⚠️ تم تخطي "${label}" — لا مرجع مكتبة (أعد الإرسال من TeeMaster المحرّر)`;
+        return `ÔÜá´©Å Ï¬┘à Ï¬Ï«ÏÀ┘è "${label}" ÔÇö ┘äÏº ┘àÏ▒Ï¼Ï╣ ┘à┘âÏ¬Ï¿Ï® (ÏúÏ╣Ï» Ïº┘äÏÑÏ▒Ï│Ïº┘ä ┘à┘å TeeMaster Ïº┘ä┘àÏ¡Ï▒┘æÏ▒)`;
     }
     const libUrl = resolveUploadLibraryImageUrl(design, port);
-    return `⚠️ تم تخطي "${label}" — فشل جلب الصورة من المكتبة${libUrl ? '' : ' (رابط غير صالح)'} — تحقق من Ghost Server`;
+    return `ÔÜá´©Å Ï¬┘à Ï¬Ï«ÏÀ┘è "${label}" ÔÇö ┘üÏ┤┘ä Ï¼┘äÏ¿ Ïº┘äÏÁ┘êÏ▒Ï® ┘à┘å Ïº┘ä┘à┘âÏ¬Ï¿Ï®${libUrl ? '' : ' (Ï▒ÏºÏ¿ÏÀ Ï║┘èÏ▒ ÏÁÏº┘äÏ¡)'} ÔÇö Ï¬Ï¡┘é┘é ┘à┘å Ghost Server`;
 }
 
 function toFiniteUploadLimit(value) {
@@ -13231,7 +13266,7 @@ function toFiniteUploadLimit(value) {
 function isApCountPerAuto(value) {
     if (value == null || value === '') return true;
     const normalized = String(value).trim().toLowerCase();
-    return normalized === 'auto' || normalized === 'تلقائي';
+    return normalized === 'auto' || normalized === 'Ï¬┘ä┘éÏºÏª┘è';
 }
 
 function parseApCountPerFromConfig(value) {
@@ -13275,13 +13310,20 @@ function computeAccountUploadLimit(acc, effectiveCountPer, todayDate) {
         ? 0
         : (dailyCap == null ? Infinity : Math.max(0, dailyCap - uploadedToday));
     const remainingBatch = batchCap == null ? Infinity : Math.max(0, batchCap - uploadedSession);
-    const caps = [remainingToday, remainingBatch];
-    if (effectiveCountPer != null && Number.isFinite(Number(effectiveCountPer)) && Number(effectiveCountPer) > 0) {
-        caps.push(Number(effectiveCountPer));
+    const countPerAuto = effectiveCountPer == null;
+    const caps = [remainingToday];
+    // ┬½Ï¬┘ä┘éÏºÏª┘è┬╗ = daily shield only ÔÇö per-account batch limits must not skew fair split.
+    if (!countPerAuto) {
+        caps.push(remainingBatch);
+        if (Number.isFinite(Number(effectiveCountPer)) && Number(effectiveCountPer) > 0) {
+            caps.push(Number(effectiveCountPer));
+        }
     }
     const finiteCaps = caps.filter((value) => Number.isFinite(value));
-    const limit = finiteCaps.length ? Math.min(...finiteCaps) : 0;
-    return Math.max(0, limit);
+    if (!finiteCaps.length) {
+        return countPerAuto ? Infinity : 0;
+    }
+    return Math.max(0, Math.min(...finiteCaps));
 }
 
 function mergeApConfigAccountsWithStorage(configAccounts, storageAccounts) {
@@ -13337,7 +13379,7 @@ function shouldForceApFairDistribution(accountCount, designCount, config = {}) {
     return true;
 }
 
-/** Resolve upload account IDs — never fall back to the full account list order. */
+/** Resolve upload account IDs ÔÇö never fall back to the full account list order. */
 function resolveApAllowedAccountIds(config, storageRes = {}, options = {}) {
     const fromConfig = Array.isArray(config?.selectedAccountIds)
         ? config.selectedAccountIds.map((id) => String(id || '').trim()).filter(Boolean)
@@ -13355,7 +13397,7 @@ function resolveApAllowedAccountIds(config, storageRes = {}, options = {}) {
             return intersected;
         }
         if (intersected.length > 0 && intersected.length < fromConfig.length) {
-            console.warn('[AP] resolveApAllowedAccountIds: partial intersection IGNORED — would drop accounts', {
+            console.warn('[AP] resolveApAllowedAccountIds: partial intersection IGNORED ÔÇö would drop accounts', {
                 fromConfig,
                 fromStorage,
                 intersected
@@ -13394,7 +13436,7 @@ function expandApAllowedIdSet(allowedIds) {
     return allowed;
 }
 
-/** Resolve upload accounts — fall back to UI payload when storage id/email keys diverge (creaty). */
+/** Resolve upload accounts ÔÇö fall back to UI payload when storage id/email keys diverge (creaty). */
 function resolveApConfiguredAccounts(config, storageAccounts, selectedIds) {
     const allowedIds = Array.isArray(selectedIds)
         ? selectedIds.map((id) => String(id || '').trim()).filter(Boolean)
@@ -13491,7 +13533,7 @@ function filterApConfigToSelectedAccounts(config, storageAccounts, allowedIdsOve
     return { ...config, accounts, selectedAccountIds: allowedIds };
 }
 
-/** Rebuild ap_start config from UI selection only — ignore stale cached accounts. */
+/** Rebuild ap_start config from UI selection only ÔÇö ignore stale cached accounts. */
 async function buildApStartConfigFromRequest(reqData = {}, persisted = {}, storageRes = {}) {
     const platform = reqData?.platform || persisted.platform || 'teepublic';
     const platformKey = `ap_accounts_${platform}`;
@@ -13549,7 +13591,7 @@ async function buildApStartConfigFromRequest(reqData = {}, persisted = {}, stora
         totalPlannedUploads: Math.max(0, Number(reqData?.totalPlannedUploads ?? persisted?.totalPlannedUploads) || 0)
     };
     if (selectionChanged) {
-        console.warn('[AP] ap_start selection changed — ignoring stale ap_last_start_config accounts', {
+        console.warn('[AP] ap_start selection changed ÔÇö ignoring stale ap_last_start_config accounts', {
             persisted: persistedIds,
             fresh: allowedIds
         });
@@ -13605,6 +13647,7 @@ async function buildApStartConfigFromRequest(reqData = {}, persisted = {}, stora
 function fairDistributeDesignCounts(totalDesigns, limits) {
     const safeLimits = (Array.isArray(limits) ? limits : []).map((limit) => {
         const n = Number(limit);
+        if (n === Infinity) return Infinity;
         return Number.isFinite(n) && n > 0 ? n : 0;
     });
     const assigned = safeLimits.map(() => 0);
@@ -13709,14 +13752,14 @@ async function startAPProcess(config) {
     console.log('[AP] startAPProcess begin:', { emails: preEmails, queueLength: preRawQueue.length, seoReady: preSeoReady });
 
     if (!config || typeof config !== 'object') {
-        await abortApUploadEarly('⚠️ يرجى اختيار حساب واحد على الأقل', { abortDetail: { path: 'invalid_config' } });
+        await abortApUploadEarly('ÔÜá´©Å ┘èÏ▒Ï¼┘ë ÏºÏ«Ï¬┘èÏºÏ▒ Ï¡Ï│ÏºÏ¿ ┘êÏºÏ¡Ï» Ï╣┘ä┘ë Ïº┘äÏú┘é┘ä', { abortDetail: { path: 'invalid_config' } });
         return;
     }
     if (preRawQueue.length === 0 || preSeoReady === 0) {
         await abortApUploadEarly(
             preRawQueue.length === 0
-                ? '⚠️ القائمة فارغة! أضف تصاميم أولاً'
-                : '⚠️ لا توجد تصاميم جاهزة — نفّذ التحليل الذكي (SEO) أولاً',
+                ? 'ÔÜá´©Å Ïº┘ä┘éÏºÏª┘àÏ® ┘üÏºÏ▒Ï║Ï®! ÏúÏÂ┘ü Ï¬ÏÁÏº┘à┘è┘à Ïú┘ê┘äÏº┘ï'
+                : 'ÔÜá´©Å ┘äÏº Ï¬┘êÏ¼Ï» Ï¬ÏÁÏº┘à┘è┘à Ï¼Ïº┘çÏ▓Ï® ÔÇö ┘å┘ü┘æÏ░ Ïº┘äÏ¬Ï¡┘ä┘è┘ä Ïº┘äÏ░┘â┘è (SEO) Ïú┘ê┘äÏº┘ï',
             { abortDetail: { path: 'queue_not_ready', queueLength: preRawQueue.length, seoReady: preSeoReady } }
         );
         return;
@@ -13725,18 +13768,18 @@ async function startAPProcess(config) {
     const ghostReady = await ensureGhostServerReady({ port: uploadPort, forUpload: true });
     if (!ghostReady) {
         await abortApUploadEarly(
-            '⚠️ Ghost Server غير متصل — اضغط «تشغيل السيرفر» أولاً ثم أعد الرفع',
+            'ÔÜá´©Å Ghost Server Ï║┘èÏ▒ ┘àÏ¬ÏÁ┘ä ÔÇö ÏºÏÂÏ║ÏÀ ┬½Ï¬Ï┤Ï║┘è┘ä Ïº┘äÏ│┘èÏ▒┘üÏ▒┬╗ Ïú┘ê┘äÏº┘ï Ï½┘à ÏúÏ╣Ï» Ïº┘äÏ▒┘üÏ╣',
             { abortDetail: { path: 'ghost_not_ready', port: uploadPort, forUpload: true } }
         );
         return;
     }
-    console.log('[Autopilot][Upload] Ghost Server ready — opening upload session for first account');
+    console.log('[Autopilot][Upload] Ghost Server ready ÔÇö opening upload session for first account');
     const platformKey = `ap_accounts_${config.platform || 'teepublic'}`;
     const storageRes = await new Promise(r => chrome.storage.local.get(['savedDesignQueue', platformKey, 'ap_accounts'], r));
     const rawQueue = Array.isArray(storageRes.savedDesignQueue) ? storageRes.savedDesignQueue : [];
     let allDesigns = rawQueue.filter(d => d?.meta);
     console.log('[AP] startAPProcess queue:', { total: rawQueue.length, seoReady: allDesigns.length });
-    // Ã˜Â§Ã™â€žÃ˜ÂªÃ™Ë†Ã˜Â§Ã™ÂÃ™â€š Ã™â€¦Ã˜Â¹ Ã˜Â§Ã™â€žÃ™â€¦Ã™ÂÃ˜ÂªÃ˜Â§Ã˜Â­ Ã˜Â§Ã™â€žÃ˜Â¬Ã˜Â¯Ã™Å Ã˜Â¯ Ã™â€žÃ™â€žÃ™â€¦Ã™â€ Ã˜ÂµÃ˜Â©
+    // ├â╦£├é┬º├âÔäó├óÔé¼┼¥├â╦£├é┬¬├âÔäó├ïÔÇá├â╦£├é┬º├âÔäó├é┬ü├âÔäó├óÔé¼┼í ├âÔäó├óÔé¼┬ª├â╦£├é┬╣ ├â╦£├é┬º├âÔäó├óÔé¼┼¥├âÔäó├óÔé¼┬ª├âÔäó├é┬ü├â╦£├é┬¬├â╦£├é┬º├â╦£├é┬¡ ├â╦£├é┬º├âÔäó├óÔé¼┼¥├â╦£├é┬¼├â╦£├é┬»├âÔäó├à┬á├â╦£├é┬» ├âÔäó├óÔé¼┼¥├âÔäó├óÔé¼┼¥├âÔäó├óÔé¼┬ª├âÔäó├óÔé¼┬á├â╦£├é┬Á├â╦£├é┬®
     let apAccounts = storageRes[platformKey] || storageRes.ap_accounts || [];
     const selectedIds = Array.isArray(config?.selectedAccountIds)
         ? config.selectedAccountIds.map((id) => String(id || '').trim()).filter(Boolean)
@@ -13745,7 +13788,7 @@ async function startAPProcess(config) {
     config = initialResolved.config;
     let configuredAccounts = initialResolved.accounts;
     if (configuredAccounts.length === 0) {
-        await abortApUploadEarly('⚠️ يرجى اختيار حساب واحد على الأقل', {
+        await abortApUploadEarly('ÔÜá´©Å ┘èÏ▒Ï¼┘ë ÏºÏ«Ï¬┘èÏºÏ▒ Ï¡Ï│ÏºÏ¿ ┘êÏºÏ¡Ï» Ï╣┘ä┘ë Ïº┘äÏú┘é┘ä', {
             abortDetail: { path: 'accounts_empty_after_filter', selectedIds, storageCount: apAccounts.length }
         });
         return;
@@ -13772,7 +13815,7 @@ async function startAPProcess(config) {
     );
     configuredAccounts = refiltered.accounts;
     if (configuredAccounts.length === 0) {
-        await abortApUploadEarly('⚠️ لا توجد حسابات للرفع — اختر حساباً واحداً على الأقل', {
+        await abortApUploadEarly('ÔÜá´©Å ┘äÏº Ï¬┘êÏ¼Ï» Ï¡Ï│ÏºÏ¿ÏºÏ¬ ┘ä┘äÏ▒┘üÏ╣ ÔÇö ÏºÏ«Ï¬Ï▒ Ï¡Ï│ÏºÏ¿Ïº┘ï ┘êÏºÏ¡Ï»Ïº┘ï Ï╣┘ä┘ë Ïº┘äÏú┘é┘ä', {
             abortDetail: { path: 'accounts_empty_after_merge', selectedIds, emails: preEmails }
         });
         return;
@@ -13780,7 +13823,7 @@ async function startAPProcess(config) {
 
     if (allDesigns.length === 0) {
         await abortApUploadEarly(
-            '⚠️ لا توجد تصاميم جاهزة للرفع — نفّذ التحليل الذكي (SEO) أولاً',
+            'ÔÜá´©Å ┘äÏº Ï¬┘êÏ¼Ï» Ï¬ÏÁÏº┘à┘è┘à Ï¼Ïº┘çÏ▓Ï® ┘ä┘äÏ▒┘üÏ╣ ÔÇö ┘å┘ü┘æÏ░ Ïº┘äÏ¬Ï¡┘ä┘è┘ä Ïº┘äÏ░┘â┘è (SEO) Ïú┘ê┘äÏº┘ï',
             {
                 abortDetail: { path: 'designs_empty_after_retry_filter', rawQueue: rawQueue.length },
                 platform: config.platform || 'teepublic',
@@ -13888,7 +13931,7 @@ async function startAPProcess(config) {
             isRetry: !!retryPlanByAccountId
         });
         apMonitorAppend(
-            `مراقبة دفعة AUT | حسابات=${accounts.length} | تصاميم=${allDesigns.length} | استمرار-عند-الفشل=نعم`,
+            `┘àÏ▒Ïº┘éÏ¿Ï® Ï»┘üÏ╣Ï® AUT | Ï¡Ï│ÏºÏ¿ÏºÏ¬=${accounts.length} | Ï¬ÏÁÏº┘à┘è┘à=${allDesigns.length} | ÏºÏ│Ï¬┘àÏ▒ÏºÏ▒-Ï╣┘åÏ»-Ïº┘ä┘üÏ┤┘ä=┘åÏ╣┘à`,
             'monitor'
         );
         await persistApUploadMonitorRun(apUploadMonitorRun);
@@ -13897,8 +13940,8 @@ async function startAPProcess(config) {
     }
     chrome.runtime.sendMessage({
         action: 'ap_update',
-        log: `📚 queueReady=${allDesigns.length} | countPer(raw)=${countPer ?? 'auto'} | countPer(effective)=${effectiveCountPer ?? 'auto'} | confirmed=${confirmedAssigned ? confirmedAssigned.join(',') : 'none'} | platform=${config.platform || 'teepublic'} | failSoft=on`,
-        toast: `📚 ${allDesigns.length} تصميم جاهز | الحساب: ${accounts[0]?.email || '—'}`,
+        log: `­ƒôÜ queueReady=${allDesigns.length} | countPer(raw)=${countPer ?? 'auto'} | countPer(effective)=${effectiveCountPer ?? 'auto'} | confirmed=${confirmedAssigned ? confirmedAssigned.join(',') : 'none'} | platform=${config.platform || 'teepublic'} | failSoft=on`,
+        toast: `­ƒôÜ ${allDesigns.length} Ï¬ÏÁ┘à┘è┘à Ï¼Ïº┘çÏ▓ | Ïº┘äÏ¡Ï│ÏºÏ¿: ${accounts[0]?.email || 'ÔÇö'}`,
         type: 'info'
     });
     if (isRandom) allDesigns = [...allDesigns].sort(() => Math.random() - 0.5);
@@ -13911,9 +13954,8 @@ async function startAPProcess(config) {
         const confirmedLimits = accounts.map((acc) =>
             computeAccountUploadLimit(acc, countPerForRuntimeCap, todayDateForFair)
         );
-        fairAssignmentCounts = confirmedAssigned.map((count, index) =>
-            Math.min(Math.max(0, Number(count) || 0), confirmedLimits[index] || 0)
-        );
+        // Respect exactly what the user approved in ┬½Ï¬Ïú┘â┘èÏ» Ï¿Ï»Ïí Ïº┘äÏ▒┘üÏ╣┬╗ ÔÇö no re-clamp.
+        fairAssignmentCounts = confirmedAssigned.map((count) => Math.max(0, Math.floor(Number(count) || 0)));
         let sliceOffset = 0;
         fairDesignSlices = accounts.map((acc, index) => {
             const planned = fairAssignmentCounts[index] || 0;
@@ -13943,17 +13985,17 @@ async function startAPProcess(config) {
         if (confirmedUnassigned > 0) {
             chrome.runtime.sendMessage({
                 action: 'ap_update',
-                toast: `⚠️ ${confirmedUnassigned} تصميم لن يُرفع — أقل من المؤكد في بطاقة التأكيد`,
+                toast: `ÔÜá´©Å ${confirmedUnassigned} Ï¬ÏÁ┘à┘è┘à ┘ä┘å ┘è┘ÅÏ▒┘üÏ╣ ÔÇö Ïú┘é┘ä ┘à┘å Ïº┘ä┘àÏñ┘âÏ» ┘ü┘è Ï¿ÏÀÏº┘éÏ® Ïº┘äÏ¬Ïú┘â┘èÏ»`,
                 type: 'warning'
             });
         }
         const confirmedSummary = accounts.map((acc, index) => {
-            const alias = acc.displayName || acc.email?.split?.('@')?.[0] || acc.email || 'حساب';
+            const alias = acc.displayName || acc.email?.split?.('@')?.[0] || acc.email || 'Ï¡Ï│ÏºÏ¿';
             return `${alias}:${fairAssignmentCounts[index]}`;
         }).join(' | ');
         chrome.runtime.sendMessage({
             action: 'ap_update',
-            log: `✅ خطة مؤكدة من بطاقة التأكيد | ${confirmedSummary}`,
+            log: `Ô£à Ï«ÏÀÏ® ┘àÏñ┘âÏ»Ï® ┘à┘å Ï¿ÏÀÏº┘éÏ® Ïº┘äÏ¬Ïú┘â┘èÏ» | ${confirmedSummary}`,
             type: 'info'
         });
     } else if (isFairDistribution && !retryPlanByAccountId) {
@@ -13979,7 +14021,7 @@ async function startAPProcess(config) {
         console.log('[AP] fair distribution:', fairLogPayload);
         if (totalFairAssigned <= 0) {
             await abortApUploadEarly(
-                '⚠️ التوزيع العادل: لا سعة رفع للحسابات المحددة — راجع حدود الحسابات (🛡️) أو الحد اليومي',
+                'ÔÜá´©Å Ïº┘äÏ¬┘êÏ▓┘èÏ╣ Ïº┘äÏ╣ÏºÏ»┘ä: ┘äÏº Ï│Ï╣Ï® Ï▒┘üÏ╣ ┘ä┘äÏ¡Ï│ÏºÏ¿ÏºÏ¬ Ïº┘ä┘àÏ¡Ï»Ï»Ï® ÔÇö Ï▒ÏºÏ¼Ï╣ Ï¡Ï»┘êÏ» Ïº┘äÏ¡Ï│ÏºÏ¿ÏºÏ¬ (­ƒøí´©Å) Ïú┘ê Ïº┘äÏ¡Ï» Ïº┘ä┘è┘ê┘à┘è',
                 {
                     abortDetail: { path: 'fair_distribution_zero', fairLimits, accountEmails: accounts.map((a) => a?.email) },
                     perAccount: perAccountState,
@@ -14011,23 +14053,23 @@ async function startAPProcess(config) {
             if (fairPlan.unassigned > 0) {
                 chrome.runtime.sendMessage({
                     action: 'ap_update',
-                    toast: `⚠️ سعة الحسابات المحددة لا تكفي — ${fairPlan.unassigned} تصميم لن يُرفع`,
+                    toast: `ÔÜá´©Å Ï│Ï╣Ï® Ïº┘äÏ¡Ï│ÏºÏ¿ÏºÏ¬ Ïº┘ä┘àÏ¡Ï»Ï»Ï® ┘äÏº Ï¬┘â┘ü┘è ÔÇö ${fairPlan.unassigned} Ï¬ÏÁ┘à┘è┘à ┘ä┘å ┘è┘ÅÏ▒┘üÏ╣`,
                     type: 'warning'
                 });
             }
             const fairSummary = accounts.map((acc, index) => {
-                const alias = acc.displayName || acc.email?.split?.('@')?.[0] || acc.email || 'حساب';
+                const alias = acc.displayName || acc.email?.split?.('@')?.[0] || acc.email || 'Ï¡Ï│ÏºÏ¿';
                 return `${alias}:${fairAssignmentCounts[index]}/${fairLimits[index]}`;
             }).join(' | ');
             chrome.runtime.sendMessage({
                 action: 'ap_update',
-                log: `⚖️ توزيع عادل | ${fairSummary}`,
+                log: `ÔÜû´©Å Ï¬┘êÏ▓┘èÏ╣ Ï╣ÏºÏ»┘ä | ${fairSummary}`,
                 type: 'info'
             });
         }
     } else if (!retryPlanByAccountId) {
         if (shouldForceApFairDistribution(accounts.length, allDesigns.length, config)) {
-            console.error('[AP] fair distribution: FORCED PLAN MISSING — rebuilding safety plan');
+            console.error('[AP] fair distribution: FORCED PLAN MISSING ÔÇö rebuilding safety plan');
             const fairDistribution = buildFairDistributionPlan(allDesigns.length, accounts, effectiveCountPer, todayDateForFair);
             fairAssignmentCounts = fairDistribution.assigned;
             isFairDistribution = true;
@@ -14046,7 +14088,7 @@ async function startAPProcess(config) {
         console.log('[AP] fair distribution:', {
             enabled: false,
             mode: 'sequential-fill',
-            note: 'الحساب الأول يأخذ حتى countPer تصاميم، ثم التالي — فعّل «توزيع عادل» لتقسيم متوازن',
+            note: 'Ïº┘äÏ¡Ï│ÏºÏ¿ Ïº┘äÏú┘ê┘ä ┘èÏúÏ«Ï░ Ï¡Ï¬┘ë countPer Ï¬ÏÁÏº┘à┘è┘àÏî Ï½┘à Ïº┘äÏ¬Ïº┘ä┘è ÔÇö ┘üÏ╣┘æ┘ä ┬½Ï¬┘êÏ▓┘èÏ╣ Ï╣ÏºÏ»┘ä┬╗ ┘äÏ¬┘éÏ│┘è┘à ┘àÏ¬┘êÏºÏ▓┘å',
             designs: allDesigns.length,
             accountCount: accounts.length,
             countPer: effectiveCountPer
@@ -14063,7 +14105,7 @@ async function startAPProcess(config) {
     });
     if (!hasUploadCapacity) {
         await abortApUploadEarly(
-            '⚠️ لا توجد سعة رفع للحسابات المحددة — راجع حدود الحسابات (🛡️) أو الحد اليومي',
+            'ÔÜá´©Å ┘äÏº Ï¬┘êÏ¼Ï» Ï│Ï╣Ï® Ï▒┘üÏ╣ ┘ä┘äÏ¡Ï│ÏºÏ¿ÏºÏ¬ Ïº┘ä┘àÏ¡Ï»Ï»Ï® ÔÇö Ï▒ÏºÏ¼Ï╣ Ï¡Ï»┘êÏ» Ïº┘äÏ¡Ï│ÏºÏ¿ÏºÏ¬ (­ƒøí´©Å) Ïú┘ê Ïº┘äÏ¡Ï» Ïº┘ä┘è┘ê┘à┘è',
             {
                 abortDetail: {
                     path: 'no_upload_capacity',
@@ -14093,7 +14135,7 @@ async function startAPProcess(config) {
     }
     if (projectedPlannedUploads <= 0) {
         await abortApUploadEarly(
-            '⚠️ لا توجد تصاميم مخصصة للرفع — راجع حدود الحسابات (🛡️) أو اختيار الحسابات',
+            'ÔÜá´©Å ┘äÏº Ï¬┘êÏ¼Ï» Ï¬ÏÁÏº┘à┘è┘à ┘àÏ«ÏÁÏÁÏ® ┘ä┘äÏ▒┘üÏ╣ ÔÇö Ï▒ÏºÏ¼Ï╣ Ï¡Ï»┘êÏ» Ïº┘äÏ¡Ï│ÏºÏ¿ÏºÏ¬ (­ƒøí´©Å) Ïú┘ê ÏºÏ«Ï¬┘èÏºÏ▒ Ïº┘äÏ¡Ï│ÏºÏ¿ÏºÏ¬',
             {
                 abortDetail: { path: 'projected_planned_zero', projectedPlannedUploads, accountEmails: accounts.map((a) => a?.email) },
                 perAccount: perAccountState,
@@ -14126,7 +14168,7 @@ async function startAPProcess(config) {
         const accountId = String(acc?.id || acc?.email || '');
         const accountState = perAccountState.find((item) => item.accountId === accountId);
 
-        // v16.1 Ã¢â‚¬â€ Check Limits Again in Background
+        // v16.1 ├â┬ó├óÔÇÜ┬¼├óÔé¼┬Ø Check Limits Again in Background
         const todayDate = new Date().toISOString().split('T')[0];
         if (acc.lastUploadDate !== todayDate) {
             acc.uploadedTodayCount = 0;
@@ -14157,7 +14199,7 @@ async function startAPProcess(config) {
 
         chrome.runtime.sendMessage({
             action: 'ap_update',
-                log: `📐 ${acc.displayName || acc.email?.split?.('@')?.[0] || acc.email || 'حساب'} | remainingQueue=${queueRemaining} | daily=${remainingToday} | batch=${remainingBatch} | countPer=${effectiveCountPer} | limit=${limit}${forcedStopForToday ? ' | blocked=today' : ''}${isFairDistribution ? ' | fair=on' : ''}`,
+                log: `­ƒôÉ ${acc.displayName || acc.email?.split?.('@')?.[0] || acc.email || 'Ï¡Ï│ÏºÏ¿'} | remainingQueue=${queueRemaining} | daily=${remainingToday} | batch=${remainingBatch} | countPer=${effectiveCountPer} | limit=${limit}${forcedStopForToday ? ' | blocked=today' : ''}${isFairDistribution ? ' | fair=on' : ''}`,
                 type: 'info'
             });
 
@@ -14179,8 +14221,8 @@ async function startAPProcess(config) {
             chrome.runtime.sendMessage({
                 action: 'ap_update',
                 log: forcedStopForToday
-                    ? `⛔ تخطي الحساب ${acc.email} (تم اكتشاف بلوغ الحد اليومي لهذا اليوم)`
-                    : `⚠️ تخطي الحساب ${acc.email} (تجاوز حد الرفع)`,
+                    ? `Ôøö Ï¬Ï«ÏÀ┘è Ïº┘äÏ¡Ï│ÏºÏ¿ ${acc.email} (Ï¬┘à Ïº┘âÏ¬Ï┤Ïº┘ü Ï¿┘ä┘êÏ║ Ïº┘äÏ¡Ï» Ïº┘ä┘è┘ê┘à┘è ┘ä┘çÏ░Ïº Ïº┘ä┘è┘ê┘à)`
+                    : `ÔÜá´©Å Ï¬Ï«ÏÀ┘è Ïº┘äÏ¡Ï│ÏºÏ¿ ${acc.email} (Ï¬Ï¼Ïº┘êÏ▓ Ï¡Ï» Ïº┘äÏ▒┘üÏ╣)`,
                 type: 'info'
             });
             continue;
@@ -14221,7 +14263,7 @@ async function startAPProcess(config) {
         }
 
         const startTime = Date.now();
-        const alias = acc.displayName || acc.email?.split?.('@')?.[0] || acc.email || 'حساب';
+        const alias = acc.displayName || acc.email?.split?.('@')?.[0] || acc.email || 'Ï¡Ï│ÏºÏ¿';
         if (accountState) {
             accountState.status = 'uploading';
             accountState.startedAt = new Date().toISOString();
@@ -14242,7 +14284,7 @@ async function startAPProcess(config) {
 
         chrome.runtime.sendMessage({
             action: 'ap_update',
-            log: `⏳ جاري البدء في الحساب: ${alias} (${actualCount} تصاميم)...`,
+            log: `ÔÅ│ Ï¼ÏºÏ▒┘è Ïº┘äÏ¿Ï»Ïí ┘ü┘è Ïº┘äÏ¡Ï│ÏºÏ¿: ${alias} (${actualCount} Ï¬ÏÁÏº┘à┘è┘à)...`,
             current: i + 1,
             total: totalAccounts,
             accountEmail: acc.email,
@@ -14252,7 +14294,7 @@ async function startAPProcess(config) {
         });
         chrome.runtime.sendMessage({
             action: 'ap_update',
-            log: `🗂️ ${alias} | selectedDesigns=${actualCount} | titles=${designsForAcc.slice(0, 3).map(d => d.meta?.title || d.file?.name || d.id).join(' | ')}${actualCount > 3 ? ' | ...' : ''}`,
+            log: `­ƒùé´©Å ${alias} | selectedDesigns=${actualCount} | titles=${designsForAcc.slice(0, 3).map(d => d.meta?.title || d.file?.name || d.id).join(' | ')}${actualCount > 3 ? ' | ...' : ''}`,
             type: 'info'
         });
 
@@ -14285,10 +14327,10 @@ async function startAPProcess(config) {
                         reason: 'missing_image',
                         phase: 'preflight'
                     });
-                    apMonitorAppend(`تخطي تصميم (صورة مفقودة) ثم متابعة الدفعة | ${formatApMissingImageLabel(design)}`, 'monitor');
+                    apMonitorAppend(`Ï¬Ï«ÏÀ┘è Ï¬ÏÁ┘à┘è┘à (ÏÁ┘êÏ▒Ï® ┘à┘ü┘é┘êÏ»Ï®) Ï½┘à ┘àÏ¬ÏºÏ¿Ï╣Ï® Ïº┘äÏ»┘üÏ╣Ï® | ${formatApMissingImageLabel(design)}`, 'monitor');
                     chrome.runtime.sendMessage({
                         action: 'ap_update',
-                        log: `${alias} | ${buildApMissingImageLog(design, targetPort)} — تخطي ومتابعة`,
+                        log: `${alias} | ${buildApMissingImageLog(design, targetPort)} ÔÇö Ï¬Ï«ÏÀ┘è ┘ê┘àÏ¬ÏºÏ¿Ï╣Ï®`,
                         type: 'warning'
                     });
                     continue;
@@ -14299,10 +14341,10 @@ async function startAPProcess(config) {
                 );
                 const dimensionLabel = imageDimensions
                     ? `${imageDimensions.width}x${imageDimensions.height}px / ${Math.round(imageDimensions.bytes / 1024)}KB`
-                    : 'أبعاد غير متاحة';
+                    : 'ÏúÏ¿Ï╣ÏºÏ» Ï║┘èÏ▒ ┘àÏ¬ÏºÏ¡Ï®';
                 chrome.runtime.sendMessage({
                     action: 'ap_update',
-                    log: `🖼️ ${alias} | ${formatApMissingImageLabel(design)} | مصدر=${imagePayload?.source || 'غير معروف'} | ${dimensionLabel}`,
+                    log: `­ƒû╝´©Å ${alias} | ${formatApMissingImageLabel(design)} | ┘àÏÁÏ»Ï▒=${imagePayload?.source || 'Ï║┘èÏ▒ ┘àÏ╣Ï▒┘ê┘ü'} | ${dimensionLabel}`,
                     type: 'info'
                 });
 
@@ -14336,7 +14378,7 @@ async function startAPProcess(config) {
             if (skippedMissingImages > 0) {
                 chrome.runtime.sendMessage({
                     action: 'ap_update',
-                    log: `⚠️ ${alias} | تم تخطي ${skippedMissingImages} تصميم — الصورة غير موجودة في IndexedDB ولا في مكتبة Ghost (تحقق من تشغيل السيرفر)`,
+                    log: `ÔÜá´©Å ${alias} | Ï¬┘à Ï¬Ï«ÏÀ┘è ${skippedMissingImages} Ï¬ÏÁ┘à┘è┘à ÔÇö Ïº┘äÏÁ┘êÏ▒Ï® Ï║┘èÏ▒ ┘à┘êÏ¼┘êÏ»Ï® ┘ü┘è IndexedDB ┘ê┘äÏº ┘ü┘è ┘à┘âÏ¬Ï¿Ï® Ghost (Ï¬Ï¡┘é┘é ┘à┘å Ï¬Ï┤Ï║┘è┘ä Ïº┘äÏ│┘èÏ▒┘üÏ▒)`,
                     type: 'warning'
                 });
             }
@@ -14344,8 +14386,8 @@ async function startAPProcess(config) {
             if (uploadChunks.length === 0) {
                 chrome.runtime.sendMessage({
                     action: 'ap_update',
-                    log: `⚠️ ${alias} | لا توجد تصاميم صالحة للرفع — SEO جاهز لكن ملفات الصور مفقودة أو غير قابلة للجلب من Ghost`,
-                    toast: '⚠️ التصاميم لديها SEO لكن الصور مفقودة — شغّل Ghost Server أو أعد إضافة التصاميم',
+                    log: `ÔÜá´©Å ${alias} | ┘äÏº Ï¬┘êÏ¼Ï» Ï¬ÏÁÏº┘à┘è┘à ÏÁÏº┘äÏ¡Ï® ┘ä┘äÏ▒┘üÏ╣ ÔÇö SEO Ï¼Ïº┘çÏ▓ ┘ä┘â┘å ┘à┘ä┘üÏºÏ¬ Ïº┘äÏÁ┘êÏ▒ ┘à┘ü┘é┘êÏ»Ï® Ïú┘ê Ï║┘èÏ▒ ┘éÏºÏ¿┘äÏ® ┘ä┘äÏ¼┘äÏ¿ ┘à┘å Ghost`,
+                    toast: 'ÔÜá´©Å Ïº┘äÏ¬ÏÁÏº┘à┘è┘à ┘äÏ»┘è┘çÏº SEO ┘ä┘â┘å Ïº┘äÏÁ┘êÏ▒ ┘à┘ü┘é┘êÏ»Ï® ÔÇö Ï┤Ï║┘æ┘ä Ghost Server Ïú┘ê ÏúÏ╣Ï» ÏÑÏÂÏº┘üÏ® Ïº┘äÏ¬ÏÁÏº┘à┘è┘à',
                     type: 'warning'
                 });
                 continue;
@@ -14356,7 +14398,7 @@ async function startAPProcess(config) {
 
             chrome.runtime.sendMessage({
                 action: 'ap_update',
-                log: `🧮 ${alias} | المطلوب ${actualCount} تصميم | سيتم الإرسال على ${uploadChunks.length} دفعة`,
+                log: `­ƒº« ${alias} | Ïº┘ä┘àÏÀ┘ä┘êÏ¿ ${actualCount} Ï¬ÏÁ┘à┘è┘à | Ï│┘èÏ¬┘à Ïº┘äÏÑÏ▒Ï│Ïº┘ä Ï╣┘ä┘ë ${uploadChunks.length} Ï»┘üÏ╣Ï®`,
                 type: 'info'
             });
 
@@ -14377,24 +14419,24 @@ async function startAPProcess(config) {
                 });
                 chrome.runtime.sendMessage({
                     action: 'ap_update',
-                    log: `📦 ${alias} | دفعة ${chunkIndex + 1}/${uploadChunks.length} | ${designPayload.length} تصاميم`,
+                    log: `­ƒôª ${alias} | Ï»┘üÏ╣Ï® ${chunkIndex + 1}/${uploadChunks.length} | ${designPayload.length} Ï¬ÏÁÏº┘à┘è┘à`,
                     type: 'info'
                 });
                 chrome.runtime.sendMessage({
                     action: 'ap_update',
-                    log: `🚚 ${alias} | إرسال فعلي إلى السيرفر | chunkSize=${designPayload.length} | titles=${designPayload.slice(0, 3).map(d => d.meta?.title || d.file?.name || 'untitled').join(' | ')}${designPayload.length > 3 ? ' | ...' : ''}`,
+                    log: `­ƒÜÜ ${alias} | ÏÑÏ▒Ï│Ïº┘ä ┘üÏ╣┘ä┘è ÏÑ┘ä┘ë Ïº┘äÏ│┘èÏ▒┘üÏ▒ | chunkSize=${designPayload.length} | titles=${designPayload.slice(0, 3).map(d => d.meta?.title || d.file?.name || 'untitled').join(' | ')}${designPayload.length > 3 ? ' | ...' : ''}`,
                     type: 'info'
                 });
-                console.log('[Autopilot][Upload] Ghost /upload → opening TeePublic session', {
+                console.log('[Autopilot][Upload] Ghost /upload ÔåÆ opening TeePublic session', {
                     email: acc.email,
                     chunk: chunkIndex + 1,
                     designs: designPayload.length,
                     port: targetPort
                 });
 
-                // حد انتظار طويل لكل دفعة حتى لا يتم قطع الرفع إذا كان السيرفر المحلي بطيئاً
+                // Ï¡Ï» Ïº┘åÏ¬Ï©ÏºÏ▒ ÏÀ┘ê┘è┘ä ┘ä┘â┘ä Ï»┘üÏ╣Ï® Ï¡Ï¬┘ë ┘äÏº ┘èÏ¬┘à ┘éÏÀÏ╣ Ïº┘äÏ▒┘üÏ╣ ÏÑÏ░Ïº ┘âÏº┘å Ïº┘äÏ│┘èÏ▒┘üÏ▒ Ïº┘ä┘àÏ¡┘ä┘è Ï¿ÏÀ┘èÏªÏº┘ï
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 3600000); // 60 دقيقة كحد أقصى للدفعة
+                const timeoutId = setTimeout(() => controller.abort(), 3600000); // 60 Ï»┘é┘è┘éÏ® ┘âÏ¡Ï» Ïú┘éÏÁ┘ë ┘ä┘äÏ»┘üÏ╣Ï®
 
                 const uploadRes = await fetch(nhpUrl(targetPort, '/upload'), {
                     method: 'POST',
@@ -14455,7 +14497,7 @@ async function startAPProcess(config) {
                                 });
                                 if (resItem.corrected || resItem.colorsStatus === 'corrected') {
                                     apMonitorAppend(
-                                        `✎ تصحيح ألوان/حقائب ثم نشر | ${matchedState.title || matchedState.queueItemId}`,
+                                        `Ô£Ä Ï¬ÏÁÏ¡┘èÏ¡ Ïú┘ä┘êÏº┘å/Ï¡┘éÏºÏªÏ¿ Ï½┘à ┘åÏ┤Ï▒ | ${matchedState.title || matchedState.queueItemId}`,
                                         'monitor'
                                     );
                                 }
@@ -14476,12 +14518,12 @@ async function startAPProcess(config) {
                                     phase: 'done'
                                 });
                                 apMonitorAppend(
-                                    `فشل تصميم ثم تخطي ومتابعة | ${matchedState.title || matchedState.queueItemId} | ${failReason}`,
+                                    `┘üÏ┤┘ä Ï¬ÏÁ┘à┘è┘à Ï½┘à Ï¬Ï«ÏÀ┘è ┘ê┘àÏ¬ÏºÏ¿Ï╣Ï® | ${matchedState.title || matchedState.queueItemId} | ${failReason}`,
                                     'monitor'
                                 );
                                 chrome.runtime.sendMessage({
                                     action: 'ap_update',
-                                    log: `⏭ تخطي فاشل ومتابعة | ${alias} | ${resItem.error || 'خطأ غير معروف'}`,
+                                    log: `ÔÅ¡ Ï¬Ï«ÏÀ┘è ┘üÏºÏ┤┘ä ┘ê┘àÏ¬ÏºÏ¿Ï╣Ï® | ${alias} | ${resItem.error || 'Ï«ÏÀÏú Ï║┘èÏ▒ ┘àÏ╣Ï▒┘ê┘ü'}`,
                                     type: 'error'
                                 });
                             }
@@ -14492,7 +14534,7 @@ async function startAPProcess(config) {
                     if (chunkCorrectedCount > 0) {
                         chrome.runtime.sendMessage({
                             action: 'ap_update',
-                            log: `✎ مراقب الألوان صحّح ${chunkCorrectedCount} تصميم في هذه الدفعة`,
+                            log: `Ô£Ä ┘àÏ▒Ïº┘éÏ¿ Ïº┘äÏú┘ä┘êÏº┘å ÏÁÏ¡┘æÏ¡ ${chunkCorrectedCount} Ï¬ÏÁ┘à┘è┘à ┘ü┘è ┘çÏ░┘ç Ïº┘äÏ»┘üÏ╣Ï®`,
                             type: 'info'
                         });
                     }
@@ -14522,7 +14564,7 @@ async function startAPProcess(config) {
                         designPlanned: accountState?.plannedCount || actualCount,
                         monitorCounts: apUploadMonitorRun?.counts || null,
                         log: chunkFailedCount > 0
-                            ? `📊 ${alias} | نجاح=${chunkSuccessCount} | متخطى=${chunkFailedCount} | مصحح=${chunkCorrectedCount} (الاستمرار مفعّل)`
+                            ? `­ƒôè ${alias} | ┘åÏ¼ÏºÏ¡=${chunkSuccessCount} | ┘àÏ¬Ï«ÏÀ┘ë=${chunkFailedCount} | ┘àÏÁÏ¡Ï¡=${chunkCorrectedCount} (Ïº┘äÏºÏ│Ï¬┘àÏ▒ÏºÏ▒ ┘à┘üÏ╣┘æ┘ä)`
                             : undefined,
                         type: chunkFailedCount > 0 ? 'warning' : undefined
                     });
@@ -14552,7 +14594,7 @@ async function startAPProcess(config) {
 
                         chrome.runtime.sendMessage({
                             action: 'ap_update',
-                            log: `⛔ الحساب ${alias} بلغ الحد اليومي على TeePublic. سيتم تجاوزه حتى الغد — ومتابعة بقية الحسابات.`,
+                            log: `Ôøö Ïº┘äÏ¡Ï│ÏºÏ¿ ${alias} Ï¿┘äÏ║ Ïº┘äÏ¡Ï» Ïº┘ä┘è┘ê┘à┘è Ï╣┘ä┘ë TeePublic. Ï│┘èÏ¬┘à Ï¬Ï¼Ïº┘êÏ▓┘ç Ï¡Ï¬┘ë Ïº┘äÏ║Ï» ÔÇö ┘ê┘àÏ¬ÏºÏ¿Ï╣Ï® Ï¿┘é┘èÏ® Ïº┘äÏ¡Ï│ÏºÏ¿ÏºÏ¬.`,
                             type: 'warning'
                         });
                     }
@@ -14560,11 +14602,11 @@ async function startAPProcess(config) {
                     chrome.runtime.sendMessage({
                         action: 'ap_update',
                         log: authFailure
-                            ? `⏭ فشل تسجيل الدخول للحساب ${alias} — تخطي الحساب ومتابعة البقية`
-                            : `⏭ فشل دفعة ${chunkIndex + 1} للحساب ${alias} | ${errorMsg} — تخطي ومتابعة`,
+                            ? `ÔÅ¡ ┘üÏ┤┘ä Ï¬Ï│Ï¼┘è┘ä Ïº┘äÏ»Ï«┘ê┘ä ┘ä┘äÏ¡Ï│ÏºÏ¿ ${alias} ÔÇö Ï¬Ï«ÏÀ┘è Ïº┘äÏ¡Ï│ÏºÏ¿ ┘ê┘àÏ¬ÏºÏ¿Ï╣Ï® Ïº┘äÏ¿┘é┘èÏ®`
+                            : `ÔÅ¡ ┘üÏ┤┘ä Ï»┘üÏ╣Ï® ${chunkIndex + 1} ┘ä┘äÏ¡Ï│ÏºÏ¿ ${alias} | ${errorMsg} ÔÇö Ï¬Ï«ÏÀ┘è ┘ê┘àÏ¬ÏºÏ¿Ï╣Ï®`,
                         toast: authFailure
-                            ? '⚠️ TeePublic غير مسجّل — تم تخطي الحساب ومتابعة البقية'
-                            : (ghostUnreachable ? '⚠️ Ghost Server لم يستجب — متابعة الحسابات التالية إن أمكن' : undefined),
+                            ? 'ÔÜá´©Å TeePublic Ï║┘èÏ▒ ┘àÏ│Ï¼┘æ┘ä ÔÇö Ï¬┘à Ï¬Ï«ÏÀ┘è Ïº┘äÏ¡Ï│ÏºÏ¿ ┘ê┘àÏ¬ÏºÏ¿Ï╣Ï® Ïº┘äÏ¿┘é┘èÏ®'
+                            : (ghostUnreachable ? 'ÔÜá´©Å Ghost Server ┘ä┘à ┘èÏ│Ï¬Ï¼Ï¿ ÔÇö ┘àÏ¬ÏºÏ¿Ï╣Ï® Ïº┘äÏ¡Ï│ÏºÏ¿ÏºÏ¬ Ïº┘äÏ¬Ïº┘ä┘èÏ® ÏÑ┘å Ïú┘à┘â┘å' : undefined),
                         type: 'error'
                     });
                     
@@ -14580,7 +14622,7 @@ async function startAPProcess(config) {
                         });
                     });
                     apMonitorAppend(
-                        `دفعة فاشلة ثم تخطي | ${alias} | chunk=${chunkIndex + 1} | ${errorMsg}`,
+                        `Ï»┘üÏ╣Ï® ┘üÏºÏ┤┘äÏ® Ï½┘à Ï¬Ï«ÏÀ┘è | ${alias} | chunk=${chunkIndex + 1} | ${errorMsg}`,
                         'monitor'
                     );
                     await persistApUploadMonitorRun(apUploadMonitorRun);
@@ -14612,7 +14654,7 @@ async function startAPProcess(config) {
                 if (chunkIndex < uploadChunks.length - 1) {
                     chrome.runtime.sendMessage({
                         action: 'ap_update',
-                        log: `⏳ ${alias} | انتظار قصير قبل الدفعة التالية لضمان إغلاق الجلسة السابقة...`,
+                        log: `ÔÅ│ ${alias} | Ïº┘åÏ¬Ï©ÏºÏ▒ ┘éÏÁ┘èÏ▒ ┘éÏ¿┘ä Ïº┘äÏ»┘üÏ╣Ï® Ïº┘äÏ¬Ïº┘ä┘èÏ® ┘äÏÂ┘àÏº┘å ÏÑÏ║┘äÏº┘é Ïº┘äÏ¼┘äÏ│Ï® Ïº┘äÏ│ÏºÏ¿┘éÏ®...`,
                         type: 'info'
                     });
                     await delay(12000);
@@ -14639,11 +14681,11 @@ async function startAPProcess(config) {
                 });
                 chrome.runtime.sendMessage({
                     action: 'ap_update',
-                    log: `✅ اكتمل الحساب: ${alias} | الوقت: ${durationSeconds}ث | تم رفع: ${uploadedForAccount}`,
+                    log: `Ô£à Ïº┘âÏ¬┘à┘ä Ïº┘äÏ¡Ï│ÏºÏ¿: ${alias} | Ïº┘ä┘ê┘éÏ¬: ${durationSeconds}Ï½ | Ï¬┘à Ï▒┘üÏ╣: ${uploadedForAccount}`,
                     type: 'success'
                 });
             } else if (uploadedForAccount > 0 && accountState) {
-                // Partial success — keep fail-soft recovery for remaining failed designs.
+                // Partial success ÔÇö keep fail-soft recovery for remaining failed designs.
                 accountState.status = 'uploaded';
                 accountState.finishedAt = new Date().toISOString();
                 accountState.partialFailures = true;
@@ -14654,7 +14696,7 @@ async function startAPProcess(config) {
                 });
                 chrome.runtime.sendMessage({
                     action: 'ap_update',
-                    log: `⚠️ اكتمل الحساب جزئياً: ${alias} | رُفع ${uploadedForAccount} مع تخطي فاشلين — متابعة`,
+                    log: `ÔÜá´©Å Ïº┘âÏ¬┘à┘ä Ïº┘äÏ¡Ï│ÏºÏ¿ Ï¼Ï▓Ïª┘èÏº┘ï: ${alias} | Ï▒┘Å┘üÏ╣ ${uploadedForAccount} ┘àÏ╣ Ï¬Ï«ÏÀ┘è ┘üÏºÏ┤┘ä┘è┘å ÔÇö ┘àÏ¬ÏºÏ¿Ï╣Ï®`,
                     type: 'warning'
                 });
             }
@@ -14662,18 +14704,18 @@ async function startAPProcess(config) {
             let errorMsg = e.message;
             let failureToast = '';
             if (e.name === 'AbortError') {
-                errorMsg = 'انتهى وقت الاتصال (السيرفر المحلي لم يستجب أو تجمد). تم تخطي الحساب ومتابعة البقية.';
-                failureToast = '⚠️ Ghost Server لم يستجب — متابعة الحسابات التالية';
+                errorMsg = 'Ïº┘åÏ¬┘ç┘ë ┘ê┘éÏ¬ Ïº┘äÏºÏ¬ÏÁÏº┘ä (Ïº┘äÏ│┘èÏ▒┘üÏ▒ Ïº┘ä┘àÏ¡┘ä┘è ┘ä┘à ┘èÏ│Ï¬Ï¼Ï¿ Ïú┘ê Ï¬Ï¼┘àÏ»). Ï¬┘à Ï¬Ï«ÏÀ┘è Ïº┘äÏ¡Ï│ÏºÏ¿ ┘ê┘àÏ¬ÏºÏ¿Ï╣Ï® Ïº┘äÏ¿┘é┘èÏ®.';
+                failureToast = 'ÔÜá´©Å Ghost Server ┘ä┘à ┘èÏ│Ï¬Ï¼Ï¿ ÔÇö ┘àÏ¬ÏºÏ¿Ï╣Ï® Ïº┘äÏ¡Ï│ÏºÏ¿ÏºÏ¬ Ïº┘äÏ¬Ïº┘ä┘èÏ®';
             } else if (/failed to fetch|networkerror|econnrefused|fetch/i.test(String(errorMsg || ''))) {
-                failureToast = '⚠️ Ghost Server لم يستجب — تحقق من المنفذ 3019';
+                failureToast = 'ÔÜá´©Å Ghost Server ┘ä┘à ┘èÏ│Ï¬Ï¼Ï¿ ÔÇö Ï¬Ï¡┘é┘é ┘à┘å Ïº┘ä┘à┘å┘üÏ░ 3019';
             }
             chrome.runtime.sendMessage({
                 action: 'ap_update',
-                log: `⏭ تخطي حساب ومتابعة البقية: ${alias} | ${errorMsg}`,
+                log: `ÔÅ¡ Ï¬Ï«ÏÀ┘è Ï¡Ï│ÏºÏ¿ ┘ê┘àÏ¬ÏºÏ¿Ï╣Ï® Ïº┘äÏ¿┘é┘èÏ®: ${alias} | ${errorMsg}`,
                 toast: failureToast || undefined,
                 type: 'error'
             });
-            apMonitorAppend(`تخطي حساب ثم متابعة | ${alias} | ${errorMsg}`, 'monitor');
+            apMonitorAppend(`Ï¬Ï«ÏÀ┘è Ï¡Ï│ÏºÏ¿ Ï½┘à ┘àÏ¬ÏºÏ¿Ï╣Ï® | ${alias} | ${errorMsg}`, 'monitor');
             if (accountState) {
                 accountState.status = 'failed';
                 accountState.finishedAt = new Date().toISOString();
@@ -14699,16 +14741,16 @@ async function startAPProcess(config) {
                 failedAccounts: perAccountState.filter((item) => item.status === 'failed').length,
                 monitorCounts: apUploadMonitorRun?.counts || null
             });
-            // Intentionally no rethrow — account loop continues to next account.
+            // Intentionally no rethrow ÔÇö account loop continues to next account.
         }
 
-        // Delay with Countdown — advance to next account after current finishes or fails
+        // Delay with Countdown ÔÇö advance to next account after current finishes or fails
         if (i < totalAccounts - 1 && !apStopped) {
             const nextAcc = accounts[i + 1];
-            const nextAlias = nextAcc?.displayName || nextAcc?.email?.split?.('@')?.[0] || nextAcc?.email || 'التالي';
+            const nextAlias = nextAcc?.displayName || nextAcc?.email?.split?.('@')?.[0] || nextAcc?.email || 'Ïº┘äÏ¬Ïº┘ä┘è';
             chrome.runtime.sendMessage({
                 action: 'ap_update',
-                log: `⏭️ الانتقال للحساب التالي: ${nextAlias}`,
+                log: `ÔÅ¡´©Å Ïº┘äÏº┘åÏ¬┘éÏº┘ä ┘ä┘äÏ¡Ï│ÏºÏ¿ Ïº┘äÏ¬Ïº┘ä┘è: ${nextAlias}`,
                 type: 'info'
             });
             let remaining = delaySec;
@@ -14716,7 +14758,7 @@ async function startAPProcess(config) {
                 chrome.runtime.sendMessage({
                     action: 'ap_update',
                     countdown: remaining,
-                    log: `⏱️ انتظار ${remaining} ثانية قبل الحساب التالي...`
+                    log: `ÔÅ▒´©Å Ïº┘åÏ¬Ï©ÏºÏ▒ ${remaining} Ï½Ïº┘å┘èÏ® ┘éÏ¿┘ä Ïº┘äÏ¡Ï│ÏºÏ¿ Ïº┘äÏ¬Ïº┘ä┘è...`
                 });
                 await delay(1000);
                 remaining--;
@@ -14752,7 +14794,7 @@ async function startAPProcess(config) {
         } catch (_) { /* never block finish */ }
         NhpApUploadMonitor.finalizeRun(
             apUploadMonitorRun,
-            apStopped ? 'تم إيقاف التشغيل يدوياً.' : 'اكتملت الدفعة مع وضع الاستمرار عند الفشل.'
+            apStopped ? 'Ï¬┘à ÏÑ┘è┘éÏº┘ü Ïº┘äÏ¬Ï┤Ï║┘è┘ä ┘èÏ»┘ê┘èÏº┘ï.' : 'Ïº┘âÏ¬┘à┘äÏ¬ Ïº┘äÏ»┘üÏ╣Ï® ┘àÏ╣ ┘êÏÂÏ╣ Ïº┘äÏºÏ│Ï¬┘àÏ▒ÏºÏ▒ Ï╣┘åÏ» Ïº┘ä┘üÏ┤┘ä.'
         );
         await persistApUploadMonitorRun(apUploadMonitorRun);
     }
@@ -14789,9 +14831,9 @@ async function startAPProcess(config) {
         zeroUploads: !!zeroUploads,
         monitorCounts,
         toast: zeroUploads
-            ? '❌ لم يُرفع أي تصميم — الصور غير متوفرة. شغّل Ghost Server وتأكد أن التصاميم في المكتبة، أو أعد إرسالها من TeeMaster المحرّر'
+            ? 'ÔØî ┘ä┘à ┘è┘ÅÏ▒┘üÏ╣ Ïú┘è Ï¬ÏÁ┘à┘è┘à ÔÇö Ïº┘äÏÁ┘êÏ▒ Ï║┘èÏ▒ ┘àÏ¬┘ê┘üÏ▒Ï®. Ï┤Ï║┘æ┘ä Ghost Server ┘êÏ¬Ïú┘âÏ» Ïú┘å Ïº┘äÏ¬ÏÁÏº┘à┘è┘à ┘ü┘è Ïº┘ä┘à┘âÏ¬Ï¿Ï®Ïî Ïú┘ê ÏúÏ╣Ï» ÏÑÏ▒Ï│Ïº┘ä┘çÏº ┘à┘å TeeMaster Ïº┘ä┘àÏ¡Ï▒┘æÏ▒'
             : (failedCount > 0
-                ? `📊 انتهى الرفع | نجاح ${okCount} | متخطى ${failedCount} | مصحح ${correctedCount} — استخدم «استدراك الرفع الفاشل»`
+                ? `­ƒôè Ïº┘åÏ¬┘ç┘ë Ïº┘äÏ▒┘üÏ╣ | ┘åÏ¼ÏºÏ¡ ${okCount} | ┘àÏ¬Ï«ÏÀ┘ë ${failedCount} | ┘àÏÁÏ¡Ï¡ ${correctedCount} ÔÇö ÏºÏ│Ï¬Ï«Ï»┘à ┬½ÏºÏ│Ï¬Ï»Ï▒Ïº┘â Ïº┘äÏ▒┘üÏ╣ Ïº┘ä┘üÏºÏ┤┘ä┬╗`
                 : undefined),
         type: zeroUploads ? 'error' : (failedCount > 0 ? 'warning' : 'success'),
         ...(zeroUploads ? { type: 'error' } : {})
@@ -14883,7 +14925,7 @@ function resolveSeoInlineImageParts(base64, mimeType) {
 }
 
 function parseOpenAiCompatibleSeoPayload(data, _debugMeta) {
-    // ── Step 1: Extract text content from all known OpenAI-compatible shapes ────
+    // ÔöÇÔöÇ Step 1: Extract text content from all known OpenAI-compatible shapes ÔöÇÔöÇÔöÇÔöÇ
     let aiText = null;
 
     // Priority 1: Standard OpenAI choices[0].message.content
@@ -14943,7 +14985,7 @@ function parseOpenAiCompatibleSeoPayload(data, _debugMeta) {
         aiText = typeof m === 'object' ? (m.content || m.text || m.result || JSON.stringify(m)) : String(m);
     }
 
-    // ── Step 2: Debug log — safe, no keys/prompts ───────────────────────────────
+    // ÔöÇÔöÇ Step 2: Debug log ÔÇö safe, no keys/prompts ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
     const topLevelKeys = data && typeof data === 'object' ? Object.keys(data) : [];
     const choice0Keys  = choice0 && typeof choice0 === 'object' ? Object.keys(choice0) : [];
     const contentLen   = aiText ? aiText.length : 0;
@@ -14956,17 +14998,17 @@ function parseOpenAiCompatibleSeoPayload(data, _debugMeta) {
         status: _debugMeta?.status || 'unknown'
     });
 
-    // ── Step 3: If still no content, return diagnostic error ─────────────────────
+    // ÔöÇÔöÇ Step 3: If still no content, return diagnostic error ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
     if (!aiText) {
         const bodyPreview = JSON.stringify(data || {}).slice(0, 500);
         return {
-            error: `Empty response from AI — topLevelKeys: [${topLevelKeys.join(', ')}]` +
+            error: `Empty response from AI ÔÇö topLevelKeys: [${topLevelKeys.join(', ')}]` +
                    (choice0Keys.length ? `; choices[0] keys: [${choice0Keys.join(', ')}]` : '') +
                    `; body: ${bodyPreview}`
         };
     }
 
-    // ── Step 4: Try to parse a JSON object from the text ─────────────────────────
+    // ÔöÇÔöÇ Step 4: Try to parse a JSON object from the text ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
     const jsonMatch = aiText.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
         try {
@@ -14974,7 +15016,7 @@ function parseOpenAiCompatibleSeoPayload(data, _debugMeta) {
         } catch (_) { /* fall through to plain-text path */ }
     }
 
-    // ── Step 5: Return raw text for marker-based parser in seo.js ───────────────
+    // ÔöÇÔöÇ Step 5: Return raw text for marker-based parser in seo.js ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
     return { result: aiText };
 }
 
@@ -15092,7 +15134,7 @@ async function callOpenAiCompatibleSeoDirect(prompt, base64, mimeType, apiKey, o
             return { error: 'Request timed out.' };
         }
         if (/failed to fetch|networkerror|fetch failed|ECONNREFUSED/i.test(msg)) {
-            return { error: `CLI Proxy غير متاح. شغّل CLI Proxy على ${nhpUrl(8317)}` };
+            return { error: `CLI Proxy Ï║┘èÏ▒ ┘àÏ¬ÏºÏ¡. Ï┤Ï║┘æ┘ä CLI Proxy Ï╣┘ä┘ë ${nhpUrl(8317)}` };
         }
         return { error: msg };
     } finally {
@@ -15165,7 +15207,7 @@ function normalizeOfficialTrendTitle(value) {
     return String(value || '')
         .replace(/\s+/g, ' ')
         .replace(/^#+/, '')
-        .replace(/[|•·]+/g, ' ')
+        .replace(/[|ÔÇó┬À]+/g, ' ')
         .replace(/\s+t-?shirt$/i, '')
         .trim();
 }
@@ -15272,7 +15314,7 @@ async function fetchTrendingTagsHtmlFromNetwork(maxAttempts = 3) {
         }
     }
     if (lastError?.name === 'AbortError') {
-        throw new Error('انتهت مهلة جلب الترند من TeePublic');
+        throw new Error('Ïº┘åÏ¬┘çÏ¬ ┘à┘ç┘äÏ® Ï¼┘äÏ¿ Ïº┘äÏ¬Ï▒┘åÏ» ┘à┘å TeePublic');
     }
     throw lastError || new Error('Trend fetch failed');
 }
@@ -15386,6 +15428,275 @@ async function fetchOracleJson(url, token, options = {}, timeoutMs = 10000) {
         ...(token ? { Authorization: `Bearer ${token}` } : {})
     };
     return fetchJsonWithTimeout(url, { ...options, headers }, timeoutMs);
+}
+
+const NHP_ORACLE_DESIGN_JOB_PREFIX = 'nhpOracleDesignJob:';
+
+function oracleDesignJobStorageKey(jobId) {
+    return `${NHP_ORACLE_DESIGN_JOB_PREFIX}${String(jobId || '').trim()}`;
+}
+
+async function readOracleDesignJobState(jobId) {
+    const key = oracleDesignJobStorageKey(jobId);
+    const stored = await chromeLocalGet([key]);
+    return stored[key] || null;
+}
+
+async function writeOracleDesignJobState(jobId, patch = {}) {
+    const key = oracleDesignJobStorageKey(jobId);
+    const prev = (await readOracleDesignJobState(jobId)) || {};
+    const next = {
+        ...prev,
+        ...patch,
+        oracleJobId: String(jobId || prev.oracleJobId || '').trim(),
+        updatedAt: new Date().toISOString(),
+    };
+    await chrome.storage.local.set({ [key]: next });
+    return next;
+}
+
+async function oracleDesignDataUrlToBlob(dataUrl) {
+    const text = String(dataUrl || '').trim();
+    if (!text.startsWith('data:')) return null;
+    const res = await fetch(text);
+    return res.blob();
+}
+
+async function startOracleDesignGeneration(req = {}) {
+    const requestId = String(req.requestId || '').trim()
+        || `odg_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    const oracleJobId = String(req.oracleJobId || req.jobId || '').trim();
+    const provider = String(req.provider || 'GPT').trim().toUpperCase();
+
+    const rejectAck = (errorCode, error) => ({
+        ok: false,
+        accepted: false,
+        success: false,
+        requestId,
+        status: 'failed',
+        errorCode,
+        error,
+        oracleJobId: oracleJobId || null,
+        provider,
+        command: 'ORACLE_DESIGN_GENERATE',
+    });
+
+    if (!oracleJobId) {
+        return rejectAck('EXTENSION_COMMAND_REJECTED', 'ORACLE_DESIGN_GENERATE requires oracleJobId');
+    }
+
+    const prompt = String(req.prompt || '').trim();
+    const count = Math.max(1, Math.min(12, parseInt(req.count, 10) || 4));
+    const aiProvider = provider === 'GEM' || provider === 'GEMINI' ? 'gemini' : 'chatgpt';
+    const ghostPort = Number(req.ghostPort) || GHOST_SERVER_PORT;
+    const attempt = Number(req.attempt) || 1;
+    const referenceDataUrl = String(req.referenceDataUrl || '').trim();
+
+    await writeOracleDesignJobState(oracleJobId, {
+        status: 'starting',
+        stage: 'opening_extension',
+        attempt,
+        expectedCount: count,
+        completed: 0,
+        requestId,
+        startedAt: Date.now(),
+    });
+
+    const ready = await ensureGhostServerReady({ port: ghostPort, forceBootstrap: true });
+    if (!ready) {
+        await writeOracleDesignJobState(oracleJobId, {
+            status: 'failed',
+            stage: 'opening_extension',
+            errorCode: 'DESIGN_EXECUTOR_UNAVAILABLE',
+            error: 'Ghost generate server is not reachable',
+            requestId,
+        });
+        return rejectAck('DESIGN_EXECUTOR_UNAVAILABLE', 'Ghost generate server is not reachable');
+    }
+
+    await writeOracleDesignJobState(oracleJobId, { status: 'generating', stage: 'submitting_prompt', requestId });
+
+    const storedCreds = await chrome.storage.local.get(['nhpAdminAiKeys', 'nhpProxyBaseUrl', 'nhpGptApiKey']);
+    const adminKeys = storedCreds.nhpAdminAiKeys || {};
+    const apiKey = String(req.apiKey || adminKeys.gpt || storedCreds.nhpGptApiKey || '').trim();
+    const proxyBaseUrl = String(req.proxyBaseUrl || adminKeys.proxyBaseUrl || storedCreds.nhpProxyBaseUrl || '').trim();
+
+    const form = new FormData();
+    if (prompt) form.append('prompt', prompt);
+    form.append('count', String(count));
+    form.append('aiProvider', aiProvider);
+    form.append('mode', referenceDataUrl ? 'auto' : 'text');
+
+    if (referenceDataUrl.startsWith('data:image/')) {
+        const blob = await oracleDesignDataUrlToBlob(referenceDataUrl);
+        if (blob) form.append('image', blob, 'reference.png');
+    }
+
+    const ghostUrl = `${getGhostServerUrl(ghostPort)}/api/generate`;
+    const ghostHeaders = {};
+    if (apiKey) ghostHeaders['X-NHP-Api-Key'] = apiKey;
+    if (proxyBaseUrl) ghostHeaders['X-NHP-Proxy-Base-Url'] = proxyBaseUrl;
+    const resp = await fetch(ghostUrl, { method: 'POST', body: form, headers: ghostHeaders });
+    let data = null;
+    try {
+        data = await resp.json();
+    } catch (_) {
+        data = { success: false, error: `Ghost returned HTTP ${resp.status}` };
+    }
+
+    if (!resp.ok || !data?.success) {
+        await writeOracleDesignJobState(oracleJobId, {
+            status: 'failed',
+            stage: 'submitting_prompt',
+            errorCode: data?.code || 'GENERATION_SUBMIT_FAILED',
+            error: data?.error || `Ghost HTTP ${resp.status}`,
+            ghostJobId: data?.jobId || null,
+            requestId,
+        });
+        return rejectAck(
+            data?.code || 'GENERATION_SUBMIT_FAILED',
+            data?.error || `Ghost HTTP ${resp.status}`
+        );
+    }
+
+    const ghostJobId = String(data.jobId || '').trim();
+    await writeOracleDesignJobState(oracleJobId, {
+        status: 'generating',
+        stage: 'generating',
+        ghostJobId,
+        extensionTaskId: ghostJobId,
+        expectedCount: count,
+        completed: 0,
+        requestId,
+    });
+
+    return {
+        ok: true,
+        accepted: true,
+        success: true,
+        requestId,
+        status: 'submitted',
+        extensionTaskId: ghostJobId,
+        ghostJobId,
+        provider,
+        oracleJobId,
+        command: 'ORACLE_DESIGN_GENERATE',
+    };
+}
+
+async function pollOracleDesignJobStatus(req = {}) {
+    const oracleJobId = String(req.oracleJobId || req.jobId || '').trim();
+    if (!oracleJobId) throw new Error('ORACLE_DESIGN_STATUS requires oracleJobId');
+
+    const state = (await readOracleDesignJobState(oracleJobId)) || {};
+    if (state.status === 'done' || state.status === 'partial' || state.status === 'failed') {
+        return {
+            success: true,
+            command: 'ORACLE_DESIGN_STATUS',
+            oracleJobId,
+            ...state,
+        };
+    }
+
+    const ghostJobId = String(state.ghostJobId || '').trim();
+    const ghostPort = Number(req.ghostPort) || GHOST_SERVER_PORT;
+    if (!ghostJobId) {
+        return {
+            success: true,
+            command: 'ORACLE_DESIGN_STATUS',
+            oracleJobId,
+            status: state.status || 'starting',
+            stage: state.stage || 'submitting_prompt',
+            completed: 0,
+            total: state.expectedCount || 0,
+        };
+    }
+
+    const jobResp = await fetch(`${getGhostServerUrl(ghostPort)}/api/jobs/${encodeURIComponent(ghostJobId)}`);
+    const jobData = await jobResp.json().catch(() => ({}));
+    if (!jobResp.ok || !jobData?.success) {
+        await writeOracleDesignJobState(oracleJobId, {
+            status: 'failed',
+            stage: 'generating',
+            errorCode: 'GHOST_JOB_POLL_FAILED',
+            error: jobData?.error || `Ghost job poll HTTP ${jobResp.status}`,
+        });
+        const failed = await readOracleDesignJobState(oracleJobId);
+        return { success: true, command: 'ORACLE_DESIGN_STATUS', oracleJobId, ...failed };
+    }
+
+    const meta = jobData.job || {};
+    const files = Array.isArray(jobData.files) ? jobData.files : [];
+    const ghostStatus = String(meta.status || 'running').toLowerCase();
+
+    if (ghostStatus === 'done' || (ghostStatus !== 'running' && files.length > 0)) {
+        const images = [];
+        for (const file of files) {
+            const filename = String(file.filename || '').trim();
+            if (!filename) continue;
+            const fileUrl = String(file.url || `/api/generate/file/${ghostJobId}/${filename}`);
+            try {
+                const imgResp = await fetch(`${getGhostServerUrl(ghostPort)}${fileUrl.startsWith('/') ? fileUrl : `/${fileUrl}`}`);
+                if (!imgResp.ok) continue;
+                const buf = await imgResp.arrayBuffer();
+                const bytes = new Uint8Array(buf);
+                let binary = '';
+                for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]);
+                images.push({
+                    filename,
+                    url: fileUrl,
+                    dataUrl: `data:image/png;base64,${btoa(binary)}`,
+                });
+            } catch (_) {
+                images.push({ filename, url: fileUrl });
+            }
+        }
+        const expected = Number(state.expectedCount) || files.length || 0;
+        const completed = images.length;
+        const finalStatus = completed <= 0
+            ? 'failed'
+            : (expected > 0 && completed < expected ? 'partial' : 'done');
+        await writeOracleDesignJobState(oracleJobId, {
+            status: finalStatus,
+            stage: 'collecting_results',
+            completed,
+            total: expected || completed,
+            images,
+            ghostJobId,
+            error: completed <= 0 ? 'No PNG outputs from ghost job' : '',
+            errorCode: completed <= 0 ? 'NO_RESULTS' : '',
+        });
+        const doneState = await readOracleDesignJobState(oracleJobId);
+        return { success: true, command: 'ORACLE_DESIGN_STATUS', oracleJobId, ...doneState };
+    }
+
+    if (ghostStatus === 'error' || ghostStatus === 'cancelled') {
+        await writeOracleDesignJobState(oracleJobId, {
+            status: 'failed',
+            stage: 'generating',
+            errorCode: 'GENERATION_FAILED',
+            error: meta.error || `Ghost job ${ghostStatus}`,
+            ghostJobId,
+        });
+        const failed = await readOracleDesignJobState(oracleJobId);
+        return { success: true, command: 'ORACLE_DESIGN_STATUS', oracleJobId, ...failed };
+    }
+
+    const batchesCompleted = Number(meta.batchesCompleted || jobData.batchesCompleted || 0);
+    const totalBatches = Number(meta.totalBatches || jobData.totalBatches || 1);
+    const completed = files.length;
+    await writeOracleDesignJobState(oracleJobId, {
+        status: 'generating',
+        stage: meta.stage || 'generating',
+        completed,
+        total: Number(state.expectedCount) || completed,
+        ghostJobId,
+        batchesCompleted,
+        totalBatches,
+    });
+
+    const running = await readOracleDesignJobState(oracleJobId);
+    return { success: true, command: 'ORACLE_DESIGN_STATUS', oracleJobId, ...running };
 }
 
 async function waitForOracleTask(baseUrl, token, taskId, timeoutMs = 90000) {
@@ -15744,7 +16055,7 @@ async function fetchTrendsFromTeePublic() {
     } catch (error) {
         errors.push(`oracle: ${error?.message || error}`);
         console.warn('[NHP][Trends] Oracle fallback failed:', error?.message || error);
-        throw new Error(`فشل الجلب من الخلفية — ${errors.join(' | ')}`);
+        throw new Error(`┘üÏ┤┘ä Ïº┘äÏ¼┘äÏ¿ ┘à┘å Ïº┘äÏ«┘ä┘ü┘èÏ® ÔÇö ${errors.join(' | ')}`);
     }
 }
 
@@ -16000,7 +16311,7 @@ async function processUSPTO() {
         const niche = data.uPending[0];
         await setStorage({ uCurrent: niche });
 
-        // Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â­Ã™â€šÃ™â€š Ã™â€¦Ã™â€  Ã™Ë†Ã˜Â¬Ã™Ë†Ã˜Â¯ Ã˜Â§Ã™â€žÃ™â€ Ã˜Â§Ã™ÂÃ˜Â°Ã˜Â© Ã™Ë†Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â¨Ã™Ë†Ã™Å Ã˜Â¨
+        // ├â╦£├é┬º├âÔäó├óÔé¼┼¥├â╦£├é┬¬├â╦£├é┬¡├âÔäó├óÔé¼┼í├âÔäó├óÔé¼┼í ├âÔäó├óÔé¼┬ª├âÔäó├óÔé¼┬á ├âÔäó├ïÔÇá├â╦£├é┬¼├âÔäó├ïÔÇá├â╦£├é┬» ├â╦£├é┬º├âÔäó├óÔé¼┼¥├âÔäó├óÔé¼┬á├â╦£├é┬º├âÔäó├é┬ü├â╦£├é┬░├â╦£├é┬® ├âÔäó├ïÔÇá├â╦£├é┬º├âÔäó├óÔé¼┼¥├â╦£├é┬¬├â╦£├é┬¿├âÔäó├ïÔÇá├âÔäó├à┬á├â╦£├é┬¿
         let tab = null;
         if (usptoTabId) {
             try {
@@ -16029,7 +16340,7 @@ async function processUSPTO() {
             return;
         }
 
-        // Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â£Ã™Æ’Ã˜Â¯ Ã™â€¦Ã™â€  Ã˜Â£Ã™â€ Ã™â€ Ã˜Â§ Ã˜Â¹Ã™â€žÃ™â€° Ã˜ÂµÃ™ÂÃ˜Â­Ã˜Â© Ã˜Â§Ã™â€žÃ˜Â¨Ã˜Â­Ã˜Â«
+        // ├â╦£├é┬º├âÔäó├óÔé¼┼¥├â╦£├é┬¬├â╦£├é┬ú├âÔäó├åÔÇÖ├â╦£├é┬» ├âÔäó├óÔé¼┬ª├âÔäó├óÔé¼┬á ├â╦£├é┬ú├âÔäó├óÔé¼┬á├âÔäó├óÔé¼┬á├â╦£├é┬º ├â╦£├é┬╣├âÔäó├óÔé¼┼¥├âÔäó├óÔé¼┬░ ├â╦£├é┬Á├âÔäó├é┬ü├â╦£├é┬¡├â╦£├é┬® ├â╦£├é┬º├âÔäó├óÔé¼┼¥├â╦£├é┬¿├â╦£├é┬¡├â╦£├é┬½
         if (tab.url && !tab.url.includes('/search/search-information') && !tab.url.includes('/search/search-results')) {
             await chrome.tabs.update(tab.id, { url: 'https://tmsearch.uspto.gov/search/search-information' });
             await delay(3000);
@@ -16492,13 +16803,13 @@ async function tpForceRecheck(niches = []) {
 
 /** Fallback page size when TeePublic JSON omits results_per_page (live TP uses 36). */
 const TP_DESIGNS_PER_PAGE = 36;
-/** Sliding pagination often stops at digit 7 — probe existence through this cap. */
+/** Sliding pagination often stops at digit 7 ÔÇö probe existence through this cap. */
 const TP_PAGE_PROBE_START = 8;
 const TP_PAGE_PROBE_MAX = 15;
 
 function tpExtractTeePublicTotalResults(html) {
     const patterns = [
-        // Embedded search JSON (current TeePublic) — preferred over visible copy.
+        // Embedded search JSON (current TeePublic) ÔÇö preferred over visible copy.
         /"total_results"\s*:\s*(\d+)/i,
         /"totalResults"\s*:\s*(\d+)/i,
         /"nbHits"\s*:\s*(\d+)/i,
@@ -16561,8 +16872,8 @@ function tpExtractTeePublicPageOfCount(html) {
 
 /**
  * True when an anchor is a next/prev/arrow control (not a numbered page digit).
- * TeePublic often renders 1..6 plus a › next whose href is ?page=7 even when the
- * visible max digit is 6 — that alone must not invent page 7.
+ * TeePublic often renders 1..6 plus a ÔÇ║ next whose href is ?page=7 even when the
+ * visible max digit is 6 ÔÇö that alone must not invent page 7.
  */
 function tpIsTeePublicPaginationNavControl(attrs = '', text = '') {
     const a = String(attrs || '');
@@ -16570,7 +16881,7 @@ function tpIsTeePublicPaginationNavControl(attrs = '', text = '') {
     if (/rel\s*=\s*["'](?:next|prev|previous)["']/i.test(a)) return true;
     if (/aria-label\s*=\s*["'][^"']*\b(?:next|prev|previous)\b[^"']*["']/i.test(a)) return true;
     if (/\b(?:class|id)\s*=\s*["'][^"']*\b(?:next|prev|previous|arrow)\b[^"']*["']/i.test(a)) return true;
-    if (/^(?:›|»|‹|«|>|<|→|←|…|\.\.\.|next|prev|previous)$/i.test(t)) return true;
+    if (/^(?:ÔÇ║|┬╗|ÔÇ╣|┬½|>|<|ÔåÆ|ÔåÉ|ÔÇª|\.\.\.|next|prev|previous)$/i.test(t)) return true;
     if (!t) return true; // icon-only next/prev
     return false;
 }
@@ -16599,7 +16910,7 @@ function tpExtractTeePublicMaxPageFromLinks(html) {
         if (Number.isFinite(n) && n > 0 && n < 10_000) numbered.push(n);
     }
 
-    // aria-label="Page 6" / "Go to page 6" — exclude next/prev.
+    // aria-label="Page 6" / "Go to page 6" ÔÇö exclude next/prev.
     for (const m of scope.matchAll(/aria-label\s*=\s*["']([^"']+)["']/gi)) {
         const label = m[1] || '';
         if (/\b(?:next|prev|previous)\b/i.test(label)) continue;
@@ -16623,7 +16934,7 @@ function tpExtractTeePublicMaxPageFromLinks(html) {
             numbered.push(parseInt(text, 10));
             continue;
         }
-        // Non-digit label but not a nav control (rare) — trust href only if aria says Page N.
+        // Non-digit label but not a nav control (rare) ÔÇö trust href only if aria says Page N.
         if (/aria-label\s*=\s*["'][^"']*\bpage\s+\d+/i.test(attrs)) {
             numbered.push(pageNum);
         }
@@ -16644,8 +16955,8 @@ function tpExtractTeePublicMaxPage(html) {
 }
 
 /**
- * Canonical TeePublic saturation buckets (page-count SSOT — matches EmailCore / UI legend):
- *   ≤3 pages → excel, 4–6 → med, ≥7 → sat. Null/unparseable → caller returns emp.
+ * Canonical TeePublic saturation buckets (page-count SSOT ÔÇö matches EmailCore / UI legend):
+ *   Ôëñ3 pages ÔåÆ excel, 4ÔÇô6 ÔåÆ med, ÔëÑ7 ÔåÆ sat. Null/unparseable ÔåÆ caller returns emp.
  */
 function tpClassifyFromPageCount(pageCount) {
     if (pageCount == null || !Number.isFinite(pageCount) || pageCount < 0) return null;
@@ -16668,7 +16979,7 @@ function tpClassifyFromMaxPage(maxPage) {
 
 /**
  * Resolve TeePublic page count without undercounting a sliding digit window.
- * Callers should pass link-derived max only — explicit "Page X of Y" is handled
+ * Callers should pass link-derived max only ÔÇö explicit "Page X of Y" is handled
  * upstream and must not be inflated by result-count math.
  * Never undercount: take the higher of UI max vs ceil(totalResults / perPage).
  */
@@ -16734,7 +17045,7 @@ async function tpFetchTeePublicHtml(url) {
 }
 
 /**
- * When resolved page count is stuck at 7 (sliding digit window), probe ?page=8…15
+ * When resolved page count is stuck at 7 (sliding digit window), probe ?page=8ÔÇª15
  * until empty/404; return last page that still has results (cap 15).
  */
 async function tpProbeTeePublicPagesBeyond(baseUrl, confirmedPage = 7, maxPage = TP_PAGE_PROBE_MAX) {
@@ -16771,7 +17082,7 @@ async function fetchAndAnalyzeTeePublicDetailed(url) {
         const fromText = tpExtractTeePublicPageOfCount(html);
         const fromLinks = fromText == null ? tpExtractTeePublicMaxPageFromLinks(html) : null;
         const uiMaxPage = fromText != null ? fromText : fromLinks;
-        // Prefer max(UI, ceil(total/perPage)) — never undercount sliding windows.
+        // Prefer max(UI, ceil(total/perPage)) ÔÇö never undercount sliding windows.
         let pageCount = tpResolveTeePublicPageCount(uiMaxPage, totalResults, resultsPerPage);
         let source = 'none';
         if (fromText != null && totalResults != null) source = 'pageOf+resultCount';
@@ -16780,7 +17091,7 @@ async function fetchAndAnalyzeTeePublicDetailed(url) {
         else if (fromLinks != null) source = 'maxPage';
         else if (totalResults != null) source = 'resultCount';
 
-        // Stuck-at-7: TeePublic digit window often ends at 7 — probe 8→15.
+        // Stuck-at-7: TeePublic digit window often ends at 7 ÔÇö probe 8ÔåÆ15.
         if (pageCount === 7) {
             const probed = await tpProbeTeePublicPagesBeyond(url, 7, TP_PAGE_PROBE_MAX);
             if (probed > 7) {

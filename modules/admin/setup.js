@@ -136,12 +136,6 @@ const I18N = {
 
     nodeMissing: { ar: 'Node.js غير موجود', en: 'Node.js not found' },
 
-    nodePending: { ar: 'Node.js — لم يُتحقق بعد', en: 'Node.js — pending verification' },
-
-    nodePendingHint: { ar: 'قد يكون Node.js مثبتاً — سجّل Native Messaging (الخطوة 4) ثم حدّث الحالة.', en: 'Node.js may already be installed — register Native Messaging (step 4), then refresh.' },
-
-    chromeRuntimeOk: { ar: 'Chrome يعمل (الإضافة محمّلة)', en: 'Chrome running (extension loaded)' },
-
     dataOk: { ar: 'NHP_DATA موجود', en: 'NHP_DATA exists' },
 
     dataMissing: { ar: 'NHP_DATA غير موجود', en: 'NHP_DATA missing' },
@@ -198,10 +192,6 @@ let setupLastSnapshot = null;
 
 let setupLogLines = [];
 
-let setupFileLogLines = [];
-
-const SETUP_LOG_STORAGE_KEY = 'nhpSetupSessionLog';
-
 let setupShowToast = null;
 
 let wizardCurrentStep = 1;
@@ -236,56 +226,6 @@ function isExtensionContextLoaded() {
 
 
 
-function isChromeRequirementMet(snapshot) {
-
-    return snapshot?.chrome?.found === true || isExtensionContextLoaded();
-
-}
-
-
-
-function isNodeRequirementMet(snapshot) {
-
-    const node = snapshot?.node;
-
-    if (node?.found === true) return true;
-
-    if (node?.pendingVerification === true) return true;
-
-    return false;
-
-}
-
-
-
-function mergeLocalSetupPrerequisites(snapshot) {
-
-    if (!snapshot || typeof snapshot !== 'object') return snapshot;
-
-    const merged = { ...snapshot };
-
-    if (isExtensionContextLoaded()) {
-
-        merged.chrome = {
-
-            ...(merged.chrome || {}),
-
-            found: true,
-
-            verified: true,
-
-            source: merged.chrome?.source || 'extension_runtime'
-
-        };
-
-    }
-
-    return merged;
-
-}
-
-
-
 function getExtensionId() {
 
     try {
@@ -301,24 +241,6 @@ function getExtensionId() {
         : null;
 
     return match ? match[1] : '';
-
-}
-
-
-
-function logSetupStatusSnapshot(snapshot, label = '') {
-
-    if (!snapshot) return;
-
-    const services = snapshot.services || [];
-
-    const online = services.filter((s) => s.online && !s.disabled).length;
-
-    const total = services.filter((s) => !s.disabled).length;
-
-    const prefix = label ? `${label} ` : '';
-
-    setupAppendLocalLog(`${prefix}${setupT('الحالة', 'Status')}: ${snapshot.overallState || 'unknown'} | Chrome:${snapshot.chrome?.found ? 'OK' : 'NO'} Node:${snapshot.node?.found ? 'OK' : 'NO'} DATA:${snapshot.dataRootExists ? 'OK' : 'NO'} Native:${snapshot.native?.registered && !snapshot.native?.stale ? 'OK' : 'NO'} Services:${online}/${total || services.length}`);
 
 }
 
@@ -432,115 +354,7 @@ async function setupApi(endpoint, payload = {}) {
 
 
 
-function syncSetupLogPreview() {
-
-    const preview = document.getElementById('setup-log-preview');
-
-    if (!preview) return;
-
-    const parts = [];
-
-    if (setupLogLines.length) parts.push(setupLogLines.join('\n'));
-
-    if (setupFileLogLines.length) {
-
-        if (parts.length) parts.push('');
-
-        parts.push('--- setup.log ---');
-
-        parts.push(setupFileLogLines.join('\n'));
-
-    }
-
-    preview.textContent = parts.length
-
-        ? parts.join('\n')
-
-        : setupT('لا توجد سجلات بعد.', 'No log entries yet.');
-
-}
-
-
-
-async function loadPersistedSetupLog() {
-
-    try {
-
-        const stored = await chrome.storage.local.get([SETUP_LOG_STORAGE_KEY]);
-
-        const lines = stored?.[SETUP_LOG_STORAGE_KEY];
-
-        if (Array.isArray(lines) && lines.length) {
-
-            setupLogLines = lines.slice(-200);
-
-            syncSetupLogPreview();
-
-        }
-
-    } catch (_) { /* ignore */ }
-
-}
-
-
-
-async function persistSetupLogLines() {
-
-    try {
-
-        await chrome.storage.local.set({ [SETUP_LOG_STORAGE_KEY]: setupLogLines.slice(-200) });
-
-    } catch (_) { /* ignore */ }
-
-}
-
-
-
-async function fetchSetupFileLog(options = {}) {
-
-    try {
-
-        const res = await setupApi('read-log', { maxLines: options.maxLines || 200 });
-
-        if (res?.success && Array.isArray(res.lines)) {
-
-            setupFileLogLines = res.lines.filter(Boolean);
-
-            return res;
-
-        }
-
-    } catch (_) { /* ignore */ }
-
-    return null;
-
-}
-
-
-
-function ensureSetupLogDrawerPortal() {
-
-    const root = document.getElementById('admin-setup-root');
-
-    const dir = root?.getAttribute('dir') || (setupIsRtl() ? 'rtl' : 'ltr');
-
-    ['wizard-log-overlay', 'wizard-log-drawer'].forEach((id) => {
-
-        const el = document.getElementById(id);
-
-        if (!el) return;
-
-        if (el.parentElement !== document.body) document.body.appendChild(el);
-
-        if (id === 'wizard-log-drawer') el.setAttribute('dir', dir);
-
-    });
-
-}
-
-
-
-function setupAppendLocalLog(line, options = {}) {
+function setupAppendLocalLog(line) {
 
     const ts = new Date().toISOString();
 
@@ -548,15 +362,9 @@ function setupAppendLocalLog(line, options = {}) {
 
     if (setupLogLines.length > 200) setupLogLines.shift();
 
-    syncSetupLogPreview();
+    const preview = document.getElementById('setup-log-preview');
 
-    void persistSetupLogLines();
-
-    if (options.persistFile) {
-
-        void setupApi('append-log', { message: line }).catch(() => {});
-
-    }
+    if (preview) preview.textContent = setupLogLines.join('\n');
 
 }
 
@@ -622,6 +430,17 @@ async function setupOpenPath(path, showToast) {
 
 
 
+function isChromeRequirementMet(snapshot) {
+    if (snapshot?.chrome?.found === true) return true;
+    return isExtensionContextLoaded();
+}
+
+function isNodeRequirementMet(snapshot) {
+    if (snapshot?.node?.found === true) return true;
+    const services = snapshot?.services || [];
+    return services.some((svc) => svc.online === true);
+}
+
 function getStepState(stepId, snapshot) {
 
     const snap = snapshot || setupLastSnapshot;
@@ -632,13 +451,11 @@ function getStepState(stepId, snapshot) {
 
         case 1: {
 
-            const ok = isChromeRequirementMet(snap) && isNodeRequirementMet(snap);
+            const ok = isNodeRequirementMet(snap) && isChromeRequirementMet(snap);
 
-            if (ok && snap?.node?.found && snap?.chrome?.found) return 'complete';
+            if (ok) return 'complete';
 
-            if (ok) return 'warn';
-
-            if (isChromeRequirementMet(snap) || isNodeRequirementMet(snap)) return 'warn';
+            if (isNodeRequirementMet(snap) || isChromeRequirementMet(snap)) return 'warn';
 
             return 'fail';
 
@@ -706,7 +523,7 @@ function stepCanPass(stepId, snapshot) {
 
         case 1:
 
-            return isChromeRequirementMet(snap) && isNodeRequirementMet(snap);
+            return isNodeRequirementMet(snap) && isChromeRequirementMet(snap);
 
         case 2:
 
@@ -774,9 +591,7 @@ function inferFailingStep(snapshot) {
 
     if (!snapshot) return 1;
 
-    if (!isChromeRequirementMet(snapshot)) return 1;
-
-    if (!isNodeRequirementMet(snapshot)) return 1;
+    if (!isNodeRequirementMet(snapshot) || !isChromeRequirementMet(snapshot)) return 1;
 
     if (!snapshot.dataRootExists) return 2;
 
@@ -960,16 +775,6 @@ async function goToWizardStep(stepId, options = {}) {
 
     if (target === 3) renderExtensionStepUI();
 
-    const step = WIZARD_STEPS.find((s) => s.id === target);
-
-    setupAppendLocalLog(setupT(
-
-        `الخطوة ${target}: ${step ? step.labelAr : target}`,
-
-        `Step ${target}: ${step ? step.labelEn : target}`
-
-    ));
-
 }
 
 
@@ -1056,10 +861,6 @@ function showCompletedSummary(snapshot) {
 
     renderChecklist(document.getElementById('wizard-completed-checklist'), snapshot);
 
-    logSetupStatusSnapshot(snapshot, setupT('الجهاز جاهز', 'Device ready'));
-
-    setupAppendLocalLog(setupT('اكتملت التهيئة — هذا الجهاز جاهز', 'Setup complete — device ready'), { persistFile: true });
-
     renderWizardStepper();
 
     updateWizardStepCounter();
@@ -1078,13 +879,11 @@ function renderChecklist(container, snapshot) {
 
     const items = [];
 
-    if (snap?.chrome?.found || isExtensionContextLoaded()) items.push({ ok: true, text: setupI18n('chromeOk') });
+    if (isChromeRequirementMet(snap)) items.push({ ok: true, text: setupI18n('chromeOk') });
 
     else items.push({ ok: false, text: setupI18n('chromeMissing') });
 
-    if (snap?.node?.found) items.push({ ok: true, text: setupI18n('nodeOk') });
-
-    else if (snap?.node?.pendingVerification) items.push({ ok: false, text: setupI18n('nodePending') });
+    if (isNodeRequirementMet(snap)) items.push({ ok: true, text: setupI18n('nodeOk') });
 
     else items.push({ ok: false, text: setupI18n('nodeMissing') });
 
@@ -1332,15 +1131,13 @@ function renderExtensionStepUI(snapshot) {
 
 function renderSetupSnapshot(snapshot) {
 
-    setupLastSnapshot = mergeLocalSetupPrerequisites(snapshot);
+    setupLastSnapshot = snapshot;
 
 
 
-    const chromeOk = isChromeRequirementMet(setupLastSnapshot);
+    const chromeOk = isChromeRequirementMet(snapshot);
 
-    const nodeOk = setupLastSnapshot?.node?.found === true;
-
-    const nodePending = !nodeOk && setupLastSnapshot?.node?.pendingVerification === true;
+    const nodeOk = isNodeRequirementMet(snapshot);
 
     setStatusPill(
 
@@ -1348,11 +1145,7 @@ function renderSetupSnapshot(snapshot) {
 
         chromeOk ? 'ok' : 'bad',
 
-        chromeOk
-
-            ? (setupLastSnapshot?.chrome?.source === 'extension_runtime' ? setupI18n('chromeRuntimeOk') : setupI18n('chromeOk'))
-
-            : setupI18n('chromeMissing')
+        chromeOk ? setupI18n('chromeOk') : setupI18n('chromeMissing')
 
     );
 
@@ -1360,27 +1153,11 @@ function renderSetupSnapshot(snapshot) {
 
         document.getElementById('wiz-node-pill'),
 
-        nodeOk ? 'ok' : (nodePending ? 'warn' : 'bad'),
+        nodeOk ? 'ok' : 'bad',
 
-        nodeOk
-
-            ? (setupLastSnapshot?.node?.version ? `${setupI18n('nodeOk')} (${setupLastSnapshot.node.version})` : setupI18n('nodeOk'))
-
-            : (nodePending ? setupI18n('nodePending') : setupI18n('nodeMissing'))
+        nodeOk ? setupI18n('nodeOk') : setupI18n('nodeMissing')
 
     );
-
-    const nodeHint = document.querySelector('#wiz-req-node .hint');
-
-    if (nodeHint) {
-
-        nodeHint.textContent = nodePending
-
-            ? setupI18n('nodePendingHint')
-
-            : setupI18n('nodeHint');
-
-    }
 
 
 
@@ -1484,7 +1261,7 @@ function renderSetupSnapshot(snapshot) {
 
     const firstRunBtn = document.getElementById('btn-setup-first-run');
 
-    if (firstRunBtn) firstRunBtn.disabled = !isNodeRequirementMet(snapshot) || (snapshot?.node?.verified === true && snapshot?.node?.found === false);
+    if (firstRunBtn) firstRunBtn.disabled = !isNodeRequirementMet(snapshot);
 
 
 
@@ -1501,8 +1278,6 @@ function renderSetupSnapshot(snapshot) {
     if (setupModuleInitialized && !wizardTransitionLock) {
 
         if (isSetupFullyReady(snapshot) && !wizardShowingCompleted && wizardCurrentStep < 6) {
-
-            try { chrome.storage.local.set({ nhpSetupComplete: true }); } catch (_) { /* ignore */ }
 
             const stored = sessionStorage.getItem('nhp_wizard_force');
 
@@ -1536,7 +1311,7 @@ async function setupRefreshStatus(showToast, options = {}) {
 
     if (!options.quiet) setupAppendLocalLog(setupT('تحديث الحالة', 'Refresh status'));
 
-    let snapshot = await setupApi('status', { forceRefresh: options.forceRefresh === true });
+    const snapshot = await setupApi('status', { forceRefresh: options.forceRefresh === true });
 
     if (!snapshot?.success) {
 
@@ -1546,13 +1321,9 @@ async function setupRefreshStatus(showToast, options = {}) {
 
     }
 
-    snapshot = mergeLocalSetupPrerequisites(snapshot);
-
     autoConfirmExtensionIfLoaded();
 
     renderSetupSnapshot(snapshot);
-
-    logSetupStatusSnapshot(snapshot);
 
     const filesRes = await setupApi('launcher-files');
 
@@ -1584,23 +1355,9 @@ function closeAdvancedModal() {
 
 function openLogDrawer() {
 
-    ensureSetupLogDrawerPortal();
+    document.getElementById('wizard-log-overlay')?.classList.add('is-open');
 
-    void (async () => {
-
-        await fetchSetupFileLog();
-
-        syncSetupLogPreview();
-
-        document.getElementById('wizard-log-overlay')?.classList.add('is-open');
-
-        document.getElementById('wizard-log-drawer')?.classList.add('is-open');
-
-        document.getElementById('wizard-log-overlay')?.setAttribute('aria-hidden', 'false');
-
-        document.getElementById('wizard-log-drawer')?.setAttribute('aria-hidden', 'false');
-
-    })();
+    document.getElementById('wizard-log-drawer')?.classList.add('is-open');
 
 }
 
@@ -1612,25 +1369,11 @@ function closeLogDrawer() {
 
     document.getElementById('wizard-log-drawer')?.classList.remove('is-open');
 
-    document.getElementById('wizard-log-overlay')?.setAttribute('aria-hidden', 'true');
-
-    document.getElementById('wizard-log-drawer')?.setAttribute('aria-hidden', 'true');
-
 }
 
 
 
 async function copySetupReport(showToast) {
-
-    await fetchSetupFileLog();
-
-    const mergedLog = [...setupLogLines];
-
-    if (setupFileLogLines.length) {
-
-        mergedLog.push('--- setup.log ---', ...setupFileLogLines);
-
-    }
 
     const report = {
 
@@ -1638,11 +1381,7 @@ async function copySetupReport(showToast) {
 
         snapshot: setupLastSnapshot,
 
-        log: mergedLog,
-
-        sessionLog: setupLogLines,
-
-        fileLog: setupFileLogLines,
+        log: setupLogLines,
 
         wizard: {
 
@@ -1826,11 +1565,11 @@ function bindWizardNav(showToast) {
 
         setupLogLines = [];
 
-        void persistSetupLogLines();
+        const preview = document.getElementById('setup-log-preview');
 
-        syncSetupLogPreview();
+        if (preview) preview.textContent = '';
 
-        showToast?.(setupT('تم مسح عرض الجلسة', 'Session view cleared'));
+        showToast?.(setupT('تم مسح العرض', 'View cleared'));
 
     });
 
@@ -2034,7 +1773,7 @@ function bindSetupActions(showToast) {
 
     document.getElementById('btn-setup-first-run')?.addEventListener('click', async () => {
 
-        if (!isNodeRequirementMet(setupLastSnapshot) || (setupLastSnapshot?.node?.verified === true && setupLastSnapshot?.node?.found === false)) {
+        if (!isNodeRequirementMet(setupLastSnapshot)) {
 
             showToast?.(setupT('❌ Node.js مطلوب أولاً', '❌ Node.js required first'));
 
@@ -2106,10 +1845,6 @@ export async function initAdminSetupModule(helpers = {}) {
 
         applySetupI18n();
 
-        ensureSetupLogDrawerPortal();
-
-        await loadPersistedSetupLog();
-
         await setupRefreshStatus(helpers.showToast || setupShowToast, { forceRefresh: true });
 
         return;
@@ -2127,12 +1862,6 @@ export async function initAdminSetupModule(helpers = {}) {
     applySetupI18n();
 
     watchDirChanges();
-
-    ensureSetupLogDrawerPortal();
-
-    await loadPersistedSetupLog();
-
-    setupAppendLocalLog(setupT('فتح صفحة التهيئة', 'Setup page opened'));
 
     bindWizardNav(showToast);
 
@@ -2161,10 +1890,6 @@ export async function initAdminSetupModule(helpers = {}) {
 export function activateAdminSetupPanel() {
 
     applySetupI18n();
-
-    ensureSetupLogDrawerPortal();
-
-    void fetchSetupFileLog().then(() => syncSetupLogPreview()).catch(() => {});
 
     setupRefreshStatus(typeof window.showToast === 'function' ? window.showToast : null, { forceRefresh: false }).catch(() => {});
 

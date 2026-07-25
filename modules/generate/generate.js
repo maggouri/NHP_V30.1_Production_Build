@@ -138,8 +138,8 @@ const GENERATE_AI_PROVIDER_OPTIONS = Object.freeze({
   gemini: 'Gemini',
   chatgpt: 'ChatGPT'
 });
-/** حد POST /api/generate المتزامن — sequential by default to avoid CLIProxy overload */
-const GENERATE_QUEUE_MAX_CONCURRENT_DEFAULT = 1;
+/** حد POST /api/generate المتزامن — افتراضي آمن لـ Render */
+const GENERATE_QUEUE_MAX_CONCURRENT_DEFAULT = 2;
 const GENERATE_QUEUE_CONCURRENCY_DEFAULT = GENERATE_QUEUE_MAX_CONCURRENT_DEFAULT;
 const GENERATE_QUEUE_TIMEOUT_FALLBACK_MS = 10 * 60 * 1000;
 const GENERATE_QUEUE_TIMEOUT_FALLBACK_COUNT = 3;
@@ -384,7 +384,11 @@ async function generateProbeGhostPortOnce(port) {
   }
 }
 
-async function generateDetectGhostPort() {
+function generateGhostConnectHelper() {
+  return typeof globalThis !== 'undefined' ? globalThis.NhpGhostConnect : null;
+}
+
+async function generateDetectGhostPortOnce() {
   const stored = await generateReadStoredGhostPort();
   /** Prefer 3019 only; legacy 3012 / stale stored port only if primary is down. */
   const primaryPorts = [...new Set([GHOST_PORT, ...GHOST_PORT_CANDIDATES].filter((p) => Number(p) > 0))];
@@ -414,6 +418,21 @@ async function generateDetectGhostPort() {
     return fallbackPort;
   }
   return null;
+}
+
+async function generateDetectGhostPort(options = {}) {
+  const gc = generateGhostConnectHelper();
+  const onConnecting = typeof options.onConnecting === 'function' ? options.onConnecting : null;
+  const detectOnce = () => generateDetectGhostPortOnce();
+  if (!gc?.withRetry) return detectOnce();
+
+  return gc.withRetry(detectOnce, {
+    attempts: options.attempts ?? gc.RETRY?.ATTEMPTS ?? 3,
+    delayMs: options.delayMs ?? gc.RETRY?.DELAY_MS ?? 2000,
+    onRetry: (attempt, maxAttempts) => {
+      onConnecting?.(attempt + 1, maxAttempts);
+    }
+  });
 }
 
 async function generateEnsureRuntimeConfig() {
@@ -679,9 +698,15 @@ async function generateProbeCliProxyDirect(baseUrl, apiKey) {
  * Pre-flight before POST /api/generate — Ghost route, API key, CLIProxy reachability.
  * @returns {Promise<{ ok: boolean, code?: string, message: string, port?: number|null, keys?: { apiKey: string, baseUrl: string } }>}
  */
-async function generatePreflightBeforeGenerate(provider = null) {
+async function generatePreflightBeforeGenerate(provider = null, options = {}) {
   await generateEnsureRuntimeConfig();
-  const port = await generateDetectGhostPort();
+  const port = await generateDetectGhostPort({
+    onConnecting: (attempt, maxAttempts) => {
+      if (options.statusTabId != null) {
+        generateSetStatus(`جاري الاتصال بـ Ghost (${attempt}/${maxAttempts})...`, false, options.statusTabId);
+      }
+    }
+  });
   if (!port) {
     const ports = GHOST_PORT_CANDIDATES.join('، ');
     return {
@@ -4754,7 +4779,7 @@ async function generatePollJob(jobId, handlers = {}, maxWaitMs = 420000, tabId =
   let fallbackToastShown = false;
   let fallbackStageStartedAt = 0;
   /** Client fail-safe: do not leave "trying Gemini…" forever if server stays running. */
-  const FALLBACK_CLIENT_FAIL_MS = 180000;
+  const FALLBACK_CLIENT_FAIL_MS = 110000;
 
   const sleepOrAbort = (ms) => new Promise((resolve, reject) => {
     if (signal?.aborted || generateGetSession(ownerTabId)?.cancelled) {
@@ -5022,7 +5047,14 @@ async function generateProbeGenerateApi() {
 
 async function generatePingServer() {
   const { serverPill } = generateEls();
-  await generateDetectGhostPort();
+  const showConnecting = (attempt, maxAttempts) => {
+    if (serverPill) {
+      serverPill.textContent = `Ghost … ${attempt}/${maxAttempts}`;
+      serverPill.title = 'جاري الاتصال بـ Ghost Server...';
+      serverPill.classList.remove('is-online', 'is-offline');
+    }
+  };
+  await generateDetectGhostPort({ onConnecting: showConnecting });
   const port = generateResolvedGhostPort || GHOST_PORT;
   const pingUrl = generateGhostUrl('/ping');
   try {
@@ -6075,7 +6107,7 @@ async function generateExecuteGenerationNow({
   }
 
   const aiProvider = generateNormalizeAiProvider(mode || ctx.mode || generateEls().mode?.value || 'auto');
-  const preflight = await generatePreflightBeforeGenerate(aiProvider);
+  const preflight = await generatePreflightBeforeGenerate(aiProvider, { statusTabId: tabId });
   if (!preflight.ok) {
     generateSetStatus(preflight.message, true, tabId);
     generateHelpers.showToast?.(`❌ ${preflight.message}`);
@@ -6255,7 +6287,7 @@ async function generateExecuteGenerationNow({
           }
           void generateRefreshLibraryAfterGeneration({ expectedMin: 4, tabId });
         }
-      }, 900000, tabId, abortSignal);
+      }, 720000, tabId, abortSignal);
       if (session.cancelled) {
         throw Object.assign(new DOMException('Cancelled', 'AbortError'), { cancelled: true });
       }
@@ -6405,8 +6437,10 @@ async function generateExecuteGenerationNow({
       generateRemoveTypingIndicator(tabId);
       generateSetStatus('إعادة فحص الاتصال بـ Ghost و CLIProxy...', false, tabId);
       generateHelpers.showToast?.('↻ إعادة فحص الاتصال ثم إعادة المحاولة...');
-      await generateDetectGhostPort();
-      const retryPre = await generatePreflightBeforeGenerate(aiProvider);
+      await generateDetectGhostPort({ onConnecting: (attempt, maxAttempts) => {
+        generateSetStatus(`جاري الاتصال بـ Ghost (${attempt}/${maxAttempts})...`, false, tabId);
+      } });
+      const retryPre = await generatePreflightBeforeGenerate(aiProvider, { statusTabId: tabId });
       if (!retryPre.ok) {
         msg = retryPre.message;
       } else {
@@ -7072,7 +7106,11 @@ async function generateTestImageProvider(provider) {
 
   try {
     await generateEnsureRuntimeConfig();
-    const port = await generateDetectGhostPort();
+    const port = await generateDetectGhostPort({
+      onConnecting: (attempt, maxAttempts) => {
+        generateSetTestStatus(`جاري الاتصال بـ Ghost (${attempt}/${maxAttempts})...`, false);
+      }
+    });
     if (!port) {
       const ports = GHOST_PORT_CANDIDATES.join('، ');
       generateSetTestStatus(
@@ -7608,6 +7646,18 @@ export function initGenerateModule(helpers = {}) {
   generateRenderAttachChips();
   generateAutoResizeInput();
   generateUpdateWelcome();
+  if (!globalThis.__nhpLiveSyncLibraryRefreshBound) {
+    globalThis.__nhpLiveSyncLibraryRefreshBound = true;
+    try {
+      chrome.runtime?.onMessage?.addListener?.((msg) => {
+        if (msg?.action === 'GENERATE_LIBRARY_REFRESH') {
+          void generateFetchLibrary({ force: true, retries: GENERATE_LIBRARY_FETCH_RETRY_MAX });
+        }
+      });
+    } catch {
+      /* ignore */
+    }
+  }
   console.log('✨ Generate Module: ready (chat UI)');
 }
 

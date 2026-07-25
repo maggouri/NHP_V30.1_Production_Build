@@ -25,7 +25,7 @@ const {
     chooseImageSize,
     resolveGenerateEndpoint
 } = require('./prompts/apparelDesignSystemPrompt');
-const { createLibrarySmartRename, sanitizeLibraryFileName, safeLibraryFileSegment, sanitizeDisplayName } = require('./library-smart-rename');
+const { createLibrarySmartRename, sanitizeLibraryFileName, safeLibraryFileSegment, sanitizeDisplayName, sanitizeLibraryTitleCandidate } = require('./library-smart-rename');
 const {
     removePathRobust,
     removeFileRobust,
@@ -461,11 +461,11 @@ function getInputJpegQualityForQuality(quality) {
 const TIMEOUT_VISION_MS = 90000;
 const TIMEOUT_IMAGE_MS_DEFAULT = 360000;
 /** Per-provider attempt (esp. Gemini fallback) — fail fast; override via NHP_GENERATE_PROVIDER_TIMEOUT_MS */
-const TIMEOUT_PROVIDER_ATTEMPT_MS_DEFAULT = 240000;
+const TIMEOUT_PROVIDER_ATTEMPT_MS_DEFAULT = 120000;
 /** Gemini fallback / hung upstream — shorter default; NHP_GENERATE_GEMINI_TIMEOUT_MS */
 const TIMEOUT_GEMINI_ATTEMPT_MS_DEFAULT = 90000;
 /** Mark running jobs failed if stuck past this (updatedAt); NHP_GENERATE_JOB_STALE_MS */
-const TIMEOUT_JOB_STALE_MS_DEFAULT = 960000;
+const TIMEOUT_JOB_STALE_MS_DEFAULT = 480000;
 
 /** مهلة توليد الصور — اختياري: NHP_GENERATE_IMAGE_TIMEOUT_MS في .env (60000–600000) */
 function getGenerateImageTimeoutMs() {
@@ -491,7 +491,7 @@ function getGenerateTestImageTimeoutMs() {
 /** Hard cap for a single GPT/CLIProxy image attempt (headers + body). */
 function getProviderAttemptTimeoutMs() {
     const raw = Number(process.env.NHP_GENERATE_PROVIDER_TIMEOUT_MS);
-    if (Number.isFinite(raw) && raw >= 30000) return Math.min(Math.round(raw), 600000);
+    if (Number.isFinite(raw) && raw >= 30000) return Math.min(Math.round(raw), 300000);
     return Math.min(getGenerateImageTimeoutMs(), TIMEOUT_PROVIDER_ATTEMPT_MS_DEFAULT);
 }
 
@@ -505,10 +505,10 @@ function getGeminiAttemptTimeoutMs() {
 /** Running job with no progress past this → mark failed on poll. */
 function getJobStaleTimeoutMs() {
     const raw = Number(process.env.NHP_GENERATE_JOB_STALE_MS);
-    if (Number.isFinite(raw) && raw >= 60000) return Math.min(Math.round(raw), 1200000);
+    if (Number.isFinite(raw) && raw >= 60000) return Math.min(Math.round(raw), 900000);
     return Math.max(
         TIMEOUT_JOB_STALE_MS_DEFAULT,
-        getGeminiAttemptTimeoutMs() + getProviderAttemptTimeoutMs() + 120000
+        getGeminiAttemptTimeoutMs() + getProviderAttemptTimeoutMs() + 60000
     );
 }
 
@@ -1419,7 +1419,7 @@ async function callCliProxyImages({
 }
 
 /** Retry on stream disconnect / transient network errors — always non-stream (stream:false). */
-async function callCliProxyImagesWithRetry(opts, { maxRetries = 3, log, label = 'CLIProxy image' } = {}) {
+async function callCliProxyImagesWithRetry(opts, { maxRetries = 2, log, label = 'CLIProxy image' } = {}) {
     let lastErr;
     for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
         try {
@@ -1992,9 +1992,11 @@ function buildDesignRowsFromStorageMeta(storageId, meta, libDir) {
     if (splits.length) {
         return splits.map((f, i) => {
             const designId = `${storageId}__d${i + 1}`;
-            const displayName = f.displayName
-                || (Array.isArray(meta.displayNames) ? meta.displayNames[i] : '')
-                || meta.displayName
+            const displayName = sanitizeLibraryTitleCandidate(f.displayName)
+                || sanitizeLibraryTitleCandidate(Array.isArray(meta.displayNames) ? meta.displayNames[i] : '')
+                || sanitizeLibraryTitleCandidate(meta.displayName)
+                || sanitizeLibraryTitleCandidate(meta.vision?.extractedText)
+                || sanitizeLibraryTitleCandidate(meta.promptPreview)
                 || '';
             const row = {
                 ...base,
@@ -2012,7 +2014,10 @@ function buildDesignRowsFromStorageMeta(storageId, meta, libDir) {
         });
     }
     const fileName = safeLibraryFileSegment(meta.compositeFilename) || 'composite.png';
-    const displayName = sanitizeDisplayName(meta.displayName || meta.promptPreview || '');
+    const displayName = sanitizeLibraryTitleCandidate(meta.displayName)
+        || sanitizeLibraryTitleCandidate(meta.vision?.extractedText)
+        || sanitizeLibraryTitleCandidate(meta.promptPreview)
+        || '';
     const designId = `${storageId}__d1`;
     const row = {
         ...base,
@@ -2138,10 +2143,12 @@ function flattenLibraryIndexForDesigns(rawIndex, readMetaFn, libraryDir) {
                     jobId: item.jobId,
                     createdAt: item.createdAt,
                     promptPreview: item.promptPreview,
-                    displayName: f.displayName
-                        || (Array.isArray(meta?.displayNames) ? meta.displayNames[i] : '')
-                        || item.displayName
-                        || item.title
+                    displayName: sanitizeLibraryTitleCandidate(f.displayName)
+                        || sanitizeLibraryTitleCandidate(Array.isArray(meta?.displayNames) ? meta.displayNames[i] : '')
+                        || sanitizeLibraryTitleCandidate(item.displayName)
+                        || sanitizeLibraryTitleCandidate(item.title)
+                        || sanitizeLibraryTitleCandidate(meta?.vision?.extractedText)
+                        || sanitizeLibraryTitleCandidate(item.promptPreview)
                         || '',
                     batchIndex: item.batchIndex,
                     batchTotal: item.batchTotal,
@@ -2151,6 +2158,12 @@ function flattenLibraryIndexForDesigns(rawIndex, readMetaFn, libraryDir) {
                     thumbUrl: `/api/library/${item.storageId || item.id.replace(/__d\d+$/i, '') || item.id}/file/${f.name}`,
                     role: 'design'
                 };
+                if (meta?.originalDesignId || item.originalDesignId) {
+                    row.originalDesignId = meta?.originalDesignId || item.originalDesignId;
+                }
+                if (meta?.oracleObjectKey || item.oracleObjectKey) {
+                    row.oracleObjectKey = meta?.oracleObjectKey || item.oracleObjectKey;
+                }
                 if (!libraryEntryHasImageFile(libraryDir, row)) return;
                 seen.add(designId);
                 out.push(row);
@@ -2193,15 +2206,26 @@ function registerGenerateApi(app, { rootDir: rootDirInput, logFn = console.log }
     loadEnvFile(rootDir);
     const GENERATE_SERVER_MAX_CONCURRENT = Math.max(
         1,
-        Math.min(5, Number(process.env.NHP_GENERATE_MAX_CONCURRENT) || 1)
+        Math.min(5, Number(process.env.NHP_GENERATE_MAX_CONCURRENT) || 3)
     );
     let generateServerActiveJobs = 0;
-    const GENERATED_DIR = path.join(rootDir, 'generated_designs');
+    let GENERATED_DIR;
+    let INPUT_DIR;
+    try {
+        const portable = require('../utils/nhp-portable-paths').getPortablePaths({
+            appRootHint: rootDir,
+            forceReload: true
+        });
+        GENERATED_DIR = portable.get('generated_designs');
+        INPUT_DIR = path.join(portable.get('temp_uploads'), 'generate_inputs');
+    } catch (_) {
+        GENERATED_DIR = path.join(rootDir, 'generated_designs');
+        INPUT_DIR = path.join(rootDir, 'temp_uploads', 'generate_inputs');
+    }
     const JOBS_DIR = path.join(GENERATED_DIR, 'jobs');
     const LIBRARY_DIR = path.join(GENERATED_DIR, 'library');
     const LIBRARY_INDEX = path.join(LIBRARY_DIR, 'index.json');
     const GALLERY_INDEX = path.join(GENERATED_DIR, 'gallery-index.json');
-    const INPUT_DIR = path.join(rootDir, 'temp_uploads', 'generate_inputs');
 
     ensureDirs(GENERATED_DIR, JOBS_DIR, LIBRARY_DIR, INPUT_DIR);
     log(`Library directory: ${LIBRARY_DIR}`);
@@ -2358,16 +2382,52 @@ function registerGenerateApi(app, { rootDir: rootDirInput, logFn = console.log }
 
     async function saveUploadedImageToLibrary(imageBuffer, opts = {}) {
         const originalName = String(opts.originalName || '').trim();
-        let displayName = String(opts.displayName || '').trim();
+        let displayName = sanitizeLibraryTitleCandidate(opts.displayName || '');
         if (!displayName && opts.originalDesignId) {
             displayName = librarySmartRename.resolveLibraryDisplayNameFromId(opts.originalDesignId);
         }
         if (!displayName) {
-            displayName = originalName.replace(/\.[^.]+$/, '').slice(0, 80) || 'رفع يدوي';
+            displayName = sanitizeLibraryTitleCandidate(originalName) || 'رفع يدوي';
         }
         const source = String(opts.source || 'upload').trim() || 'upload';
         const originalDesignId = String(opts.originalDesignId || '').trim();
+        const oracleObjectKey = String(opts.oracleObjectKey || '').trim();
         const versionLabel = String(opts.versionLabel || '').trim();
+
+        // Dedupe Live Sync / site imports by site design id or oracle object key.
+        if (originalDesignId || oracleObjectKey) {
+            try {
+                const raw = ensureLibraryIndexSynced();
+                const items = flattenLibraryIndexForDesigns(raw, readLibraryMeta, LIBRARY_DIR);
+                for (const item of items) {
+                    const storageId = String(item.storageId || item.id || '').replace(/__d\d+$/i, '').trim();
+                    const meta = storageId ? readLibraryMeta(path.join(LIBRARY_DIR, storageId)) : null;
+                    const existingOriginal = String(
+                        item.originalDesignId || meta?.originalDesignId || ''
+                    ).trim();
+                    const existingOracle = String(
+                        item.oracleObjectKey || meta?.oracleObjectKey || ''
+                    ).trim();
+                    if (originalDesignId && existingOriginal && existingOriginal === originalDesignId) {
+                        return {
+                            skipped: true,
+                            reason: 'duplicate_originalDesignId',
+                            item: { ...item, originalDesignId: existingOriginal },
+                        };
+                    }
+                    if (oracleObjectKey && existingOracle && existingOracle === oracleObjectKey) {
+                        return {
+                            skipped: true,
+                            reason: 'duplicate_oracleObjectKey',
+                            item: { ...item, oracleObjectKey: existingOracle },
+                        };
+                    }
+                }
+            } catch (_) {
+                /* continue with upload if index scan fails */
+            }
+        }
+
         const libId = newLibraryId();
         const libDir = path.join(LIBRARY_DIR, libId);
         ensureDirs(libDir);
@@ -2417,6 +2477,7 @@ function registerGenerateApi(app, { rootDir: rootDirInput, logFn = console.log }
             files
         };
         if (originalDesignId) meta.originalDesignId = originalDesignId;
+        if (oracleObjectKey) meta.oracleObjectKey = oracleObjectKey;
         if (versionLabel) meta.versionLabel = versionLabel;
         if (imageWidth > 0 && imageHeight > 0) {
             meta.width = imageWidth;
@@ -2442,6 +2503,7 @@ function registerGenerateApi(app, { rootDir: rootDirInput, logFn = console.log }
             source
         };
         if (originalDesignId) row.originalDesignId = originalDesignId;
+        if (oracleObjectKey) row.oracleObjectKey = oracleObjectKey;
         if (versionLabel) row.versionLabel = versionLabel;
         await updateLibraryIndex((entries) => {
             const next = entries.filter((e) => e.id !== libId && e.storageId !== libId);
@@ -2538,17 +2600,14 @@ function registerGenerateApi(app, { rootDir: rootDirInput, logFn = console.log }
         } = ctx;
 
         const libraryDisplayName = (() => {
-            let name = String(
+            let name = sanitizeLibraryTitleCandidate(
                 initialLibraryDisplayName
                 || req?.body?.libraryDisplayName
                 || ''
-            ).trim();
+            );
             if (!name) {
                 const rawFile = String(req?.file?.originalname || path.basename(initialInputPath || '')).trim();
-                name = sanitizeDisplayName(rawFile.replace(/\.[^.]+$/, ''));
-                if (/^(reference|prompt-bag|image|img|upload|input|composite)$/i.test(name)) {
-                    name = '';
-                }
+                name = sanitizeLibraryTitleCandidate(rawFile);
             }
             return name;
         })();
@@ -4003,19 +4062,36 @@ function registerGenerateApi(app, { rootDir: rootDirInput, logFn = console.log }
         }
         try {
             const uploaded = [];
+            let skipped = 0;
             for (const file of files) {
                 const saved = await saveUploadedImageToLibrary(file.buffer, {
                     originalName: file.originalname || '',
                     displayName: req.body?.displayName || '',
                     source: req.body?.source || '',
                     originalDesignId: req.body?.originalDesignId || '',
+                    oracleObjectKey: req.body?.oracleObjectKey || '',
                     versionLabel: req.body?.versionLabel || ''
                 });
+                if (saved?.skipped) {
+                    skipped += 1;
+                    uploaded.push({ ...saved.item, skipped: true, reason: saved.reason });
+                    continue;
+                }
                 uploaded.push(saved.item);
+            }
+            if (skipped && skipped === uploaded.length) {
+                return res.json({
+                    success: true,
+                    skipped: true,
+                    reason: uploaded[0]?.reason || 'duplicate',
+                    count: 0,
+                    items: uploaded
+                });
             }
             return res.json({
                 success: true,
-                count: uploaded.length,
+                count: uploaded.filter((x) => !x.skipped).length,
+                skippedCount: skipped,
                 items: uploaded
             });
         } catch (err) {

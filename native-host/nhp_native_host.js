@@ -1,58 +1,54 @@
 #!/usr/bin/env node
+
 'use strict';
 
-const { exec, execFileSync } = require('child_process');
+const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const PROJECT_DIR = path.resolve(__dirname, '..');
-const PORTABLE_CONFIG_FILENAME = 'portable.config.json';
-
 let inputBuffer = Buffer.alloc(0);
+let portableApi = null;
+let setupCore = null;
 
-function readPortableConfig() {
-  const candidates = [
-    path.join(PROJECT_DIR, PORTABLE_CONFIG_FILENAME),
-    path.join(path.dirname(PROJECT_DIR), PORTABLE_CONFIG_FILENAME),
-    path.join(PROJECT_DIR, '..', 'NHP_DATA', PORTABLE_CONFIG_FILENAME),
-    path.join(path.dirname(path.dirname(PROJECT_DIR)), 'NHP_DATA', PORTABLE_CONFIG_FILENAME)
-  ];
-  for (const candidate of candidates) {
+function normalizeWinPath(value) {
+  return String(value || '').trim().replace(/\//g, '\\').replace(/\\+$/, '');
+}
+
+function resolveProjectPaths() {
+  const nativeHostDir = __dirname;
+  const projectDir = normalizeWinPath(path.dirname(nativeHostDir));
+
+  try {
+    const { getPortablePaths } = require(path.join(projectDir, 'utils', 'nhp-portable-paths'));
+    portableApi = getPortablePaths({ appRootHint: projectDir });
+    portableApi.ensureDataRoot();
+    return {
+      projectDir: normalizeWinPath(portableApi.appRoot),
+      dataRoot: normalizeWinPath(portableApi.dataRoot)
+    };
+  } catch (_) {
+    let dataRoot = normalizeWinPath(path.join(path.dirname(projectDir), 'NHP_DATA'));
     try {
-      if (fs.existsSync(candidate)) {
-        return JSON.parse(fs.readFileSync(candidate, 'utf8'));
+      const configPath = path.join(projectDir, 'portable.config.json');
+      if (fs.existsSync(configPath)) {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        const relDataRoot = String(config?.dataRoot || '').trim();
+        if (relDataRoot) {
+          dataRoot = normalizeWinPath(path.resolve(projectDir, relDataRoot));
+        }
       }
-    } catch (_) { /* try next */ }
+    } catch (_) { /* use sibling NHP_DATA default */ }
+    try {
+      if (!fs.existsSync(dataRoot)) fs.mkdirSync(dataRoot, { recursive: true });
+    } catch (_) { /* ignore */ }
+    return { projectDir, dataRoot };
   }
-  return null;
 }
 
-function resolveConfiguredDataRoot(projectDir, config) {
-  const rawRoot = String(config?.dataRoot || '').trim();
-  if (rawRoot) {
-    const resolved = path.resolve(projectDir, rawRoot);
-    if (fs.existsSync(resolved)) return resolved;
-  }
-  return '';
-}
-
-function findSiblingDataRoot(projectDir) {
-  let current = path.resolve(projectDir);
-  for (let depth = 0; depth < 8; depth += 1) {
-    const parent = path.dirname(current);
-    const sibling = path.join(parent, 'NHP_DATA');
-    if (fs.existsSync(sibling)) return sibling;
-    if (parent === current) break;
-    current = parent;
-  }
-  return path.join(path.dirname(projectDir), 'NHP_DATA');
-}
-
-function resolveDataRoot(projectDir) {
-  const config = readPortableConfig();
-  const configured = resolveConfiguredDataRoot(projectDir, config);
-  if (configured) return configured;
-  return findSiblingDataRoot(projectDir);
+function loadSetupCore(projectDir) {
+  if (setupCore) return setupCore;
+  setupCore = require(path.join(projectDir, 'utils', 'nhp-setup-core'));
+  return setupCore;
 }
 
 function writeNativeMessage(payload) {
@@ -67,7 +63,7 @@ function runPowerShell(command) {
   return new Promise((resolve) => {
     const ps = 'powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command';
     const escaped = String(command || '').replace(/"/g, '\\"');
-    exec(`${ps} "${escaped}"`, { windowsHide: true, timeout: 30000 }, (error, stdout, stderr) => {
+    exec(`${ps} "${escaped}"`, { windowsHide: true, timeout: 300000 }, (error, stdout, stderr) => {
       if (error) {
         resolve({
           success: false,
@@ -78,7 +74,6 @@ function runPowerShell(command) {
         });
         return;
       }
-
       resolve({
         success: true,
         stdout: String(stdout || ''),
@@ -88,78 +83,113 @@ function runPowerShell(command) {
   });
 }
 
-function findNodeExePath() {
-  const config = readPortableConfig();
-  const configured = String(config?.nodePath || config?.nodeExe || '').trim();
-  const candidates = [];
-  if (configured) candidates.push(path.resolve(PROJECT_DIR, configured));
-  candidates.push(
-    path.join(process.env.ProgramFiles || 'C:\\Program Files', 'nodejs', 'node.exe'),
-    path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'nodejs', 'node.exe'),
-    path.join(process.env.LOCALAPPDATA || '', 'Programs', 'nodejs', 'node.exe'),
-    path.join(process.env.LOCALAPPDATA || '', 'Programs', 'node', 'node.exe')
-  );
-  for (const candidate of candidates) {
-    if (candidate && fs.existsSync(candidate)) return path.resolve(candidate);
-  }
-  return '';
-}
+async function handleSetupAction(action, message) {
+  const resolved = resolveProjectPaths();
+  const overrideDir = normalizeWinPath(message.projectDir || message.appRoot || '');
+  const projectDir = resolveSetupAppRoot({
+    appRootHint: resolved.projectDir,
+    projectDir: overrideDir
+  });
+  const core = loadSetupCore(projectDir);
+  const extensionId = String(message.extensionId || message.extension_id || '').trim();
+  const setupOptions = { appRootHint: projectDir, projectDir };
 
-function findChromeExePath() {
-  const candidates = [
-    path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Google', 'Chrome', 'Application', 'chrome.exe'),
-    path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'Google', 'Chrome', 'Application', 'chrome.exe'),
-    path.join(process.env.LOCALAPPDATA || '', 'Google', 'Chrome', 'Application', 'chrome.exe')
-  ];
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) return path.resolve(candidate);
+  if (action === 'setup_status') {
+    return core.getSetupStatus(setupOptions);
   }
-  return '';
-}
 
-function readNodeVersion(nodeExe) {
-  if (!nodeExe) return null;
-  try {
-    return String(execFileSync(nodeExe, ['--version'], { encoding: 'utf8', windowsHide: true })).trim();
-  } catch (_) {
-    return null;
+  if (action === 'setup_init_data') {
+    return core.initNhpData(setupOptions);
   }
-}
 
-function detectPrerequisites() {
-  const nodeExe = findNodeExePath();
-  const chromeExe = findChromeExePath();
+  if (action === 'setup_register_native') {
+    return core.registerNativeMessaging(extensionId, setupOptions);
+  }
+
+  if (action === 'setup_run_launcher') {
+    const launcher = String(message.launcher || message.script || '').trim();
+    const args = Array.isArray(message.args) ? message.args.map(String) : [];
+    return core.runWhitelistedLauncher(projectDir, launcher, args, {
+      timeout: Number(message.timeout) || 300000
+    });
+  }
+
+  if (action === 'setup_first_run') {
+    return core.firstRunBootstrap(extensionId, setupOptions);
+  }
+
+  if (action === 'setup_launcher_files') {
+    return {
+      success: true,
+      files: core.getLauncherFilesMeta(projectDir)
+    };
+  }
+
+  if (action === 'setup_append_log') {
+    return core.appendSetupLog(String(message.message || ''), setupOptions);
+  }
+
   return {
-    success: true,
-    node: {
-      found: !!nodeExe,
-      version: readNodeVersion(nodeExe),
-      path: nodeExe || null,
-      source: nodeExe ? 'filesystem' : null
-    },
-    chrome: {
-      found: !!chromeExe,
-      path: chromeExe || null,
-      source: chromeExe ? 'filesystem' : null
-    }
+    success: false,
+    error: `Unsupported setup action: ${action}`
   };
+}
+
+function findAppRootFromCandidate(candidate) {
+  let dir = normalizeWinPath(candidate);
+  if (!dir) return '';
+  for (let depth = 0; depth < 8; depth += 1) {
+    if (fs.existsSync(path.join(dir, 'manifest.json')) || fs.existsSync(path.join(dir, 'package.json'))) {
+      return dir;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return '';
+}
+
+function resolveSetupAppRoot(options = {}) {
+  const override = normalizeWinPath(options.projectDir || options.appRoot || '');
+  const hint = normalizeWinPath(options.appRootHint || override);
+  const candidates = [override, hint].filter(Boolean);
+  const seen = new Set();
+  for (const candidate of candidates) {
+    const key = candidate.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const resolved = findAppRootFromCandidate(candidate);
+    if (resolved) return resolved;
+  }
+  return hint || override || normalizeWinPath(path.dirname(__dirname));
 }
 
 async function handleMessage(message) {
   const action = String(message && message.action ? message.action : '');
+
   if (action === 'ping') {
-    const dataRoot = resolveDataRoot(PROJECT_DIR);
+    const { projectDir, dataRoot } = resolveProjectPaths();
     return {
       success: true,
-      projectDir: PROJECT_DIR,
+      host: 'com.nhp.server_launcher',
+      projectDir,
       dataRoot,
-      hasManifest: fs.existsSync(path.join(PROJECT_DIR, 'manifest.json')),
-      hasPackage: fs.existsSync(path.join(PROJECT_DIR, 'package.json'))
+      hasManifest: fs.existsSync(path.join(projectDir, 'manifest.json')),
+      hasPackage: fs.existsSync(path.join(projectDir, 'package.json'))
     };
   }
-  if (action === 'detect_prerequisites') {
-    return detectPrerequisites();
+
+  if (action.startsWith('setup_')) {
+    try {
+      return await handleSetupAction(action, message || {});
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message || String(error)
+      };
+    }
   }
+
   if (action !== 'execute_command') {
     return {
       success: false,

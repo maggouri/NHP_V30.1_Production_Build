@@ -77,6 +77,10 @@
         token: 'emailcore_creaty_token',
         userId: 'emailcore_creaty_user_id',
     };
+    const EMAILCORE_LIVE_SYNC_ENABLED_KEY = 'emailcore_live_sync_enabled';
+    const EMAILCORE_LIVE_SYNC_META_KEY = 'emailcore_live_sync_meta';
+    const EMAILCORE_LIVE_SYNC_BUSY = 'emailcore_live_sync_busy';
+    const EMAILCORE_GHOST_LIBRARY_URL = 'http://127.0.0.1:3019/api/library';
     const EMAILCORE_SESSION_KEYS = {
         sessionToken: 'emailcore_session_token',
         userId: 'emailcore_session_user_id',
@@ -1911,6 +1915,58 @@
             return true;
         }
 
+        if (action === 'EMAILCORE_LIVE_SYNC_SET') {
+            const enabled = request.enabled === true || request.enabled === '1' || request.enabled === 1;
+            chrome.storage.local.set({ [EMAILCORE_LIVE_SYNC_ENABLED_KEY]: enabled }, () => {
+                (async () => {
+                    try {
+                        const stored = await chrome.storage.local.get([
+                            CREATY_STORAGE_KEYS.apiBase,
+                            CREATY_STORAGE_KEYS.userId,
+                            CREATY_STORAGE_KEYS.token,
+                        ]);
+                        const apiBase = normalizeEmailCoreApiBase(stored[CREATY_STORAGE_KEYS.apiBase]);
+                        const userId = String(stored[CREATY_STORAGE_KEYS.userId] || DEFAULT_EMAILCORE_CREATY_USER_ID).trim();
+                        const token = String(stored[CREATY_STORAGE_KEYS.token] || DEFAULT_EMAILCORE_CREATY_TOKEN).trim();
+                        if (userId && token) {
+                            const url = new URL(`${apiBase}/api/extension/live-sync/settings`);
+                            url.searchParams.set('userId', userId);
+                            await fetch(url, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'x-creaty-token': token,
+                                    'x-extension-id': chrome.runtime.id,
+                                },
+                                body: JSON.stringify({ enabled }),
+                            }).catch(() => null);
+                        }
+                    } catch (err) {
+                        console.warn('[EmailCore][LiveSync] server mirror failed', err?.message || err);
+                    }
+                    if (enabled) {
+                        pollLiveSyncLibrary({ force: true }).catch((err) => {
+                            console.warn('[EmailCore][LiveSync]', err?.message || err);
+                        });
+                    }
+                })();
+                sendResponse({ success: true, ok: true, enabled });
+            });
+            return true;
+        }
+
+        if (action === 'EMAILCORE_LIVE_SYNC_STATUS') {
+            chrome.storage.local.get([EMAILCORE_LIVE_SYNC_ENABLED_KEY, EMAILCORE_LIVE_SYNC_META_KEY], (stored) => {
+                sendResponse({
+                    success: true,
+                    ok: true,
+                    enabled: stored[EMAILCORE_LIVE_SYNC_ENABLED_KEY] === true,
+                    meta: stored[EMAILCORE_LIVE_SYNC_META_KEY] || {},
+                });
+            });
+            return true;
+        }
+
         if (action === 'EMAILCORE_EXTENSION_LOGIN') {
             (async () => {
                 try {
@@ -2449,8 +2505,231 @@
     const EMAILCORE_ST_EARLY_KEY = 'nhpEarlyRadarFeed';
     const EMAILCORE_PIPELINE_ALERT_ALARM = 'emailcore-pipeline-alerts';
     const EMAILCORE_DESIGN_JOBS_ALARM = 'emailcore-design-jobs-bridge';
+    const EMAILCORE_LIVE_SYNC_ALARM = 'emailcore-live-sync-library';
     const EMAILCORE_PIPELINE_ALERT_SEEN_KEY = 'emailcore_pipeline_alert_seen_id';
     const EMAILCORE_PIPELINE_ALERT_OPEN_KEY = 'emailcore_pipeline_alert_open';
+
+    function normalizeLiveSyncNameKey(displayName, nicheId, nicheName) {
+        const name = String(displayName || '').trim().toLowerCase().replace(/\s+/g, ' ');
+        const niche = String(nicheId || nicheName || '').trim().toLowerCase();
+        return name ? `${name}|${niche}` : '';
+    }
+
+    async function loadLocalLibraryDedupeIndex() {
+        const ids = new Set();
+        const oracleKeys = new Set();
+        const nameKeys = new Set();
+        try {
+            const res = await fetch(EMAILCORE_GHOST_LIBRARY_URL, { method: 'GET' });
+            const data = await res.json().catch(() => ({}));
+            const items = Array.isArray(data?.items) ? data.items : [];
+            for (const item of items) {
+                const storageId = String(item?.storageId || item?.id || '').replace(/__d\d+$/i, '').trim();
+                const designId = String(item?.id || '').trim();
+                if (storageId) ids.add(storageId);
+                if (designId) ids.add(designId);
+                const original = String(item?.originalDesignId || item?.metadata?.originalDesignId || '').trim();
+                if (original) ids.add(original);
+                const siteId = String(item?.siteDesignId || item?.metadata?.siteDesignId || '').trim();
+                if (siteId) ids.add(siteId);
+                const oracleKey = String(
+                    item?.oracleObjectKey
+                    || item?.metadata?.oracleObjectKey
+                    || item?.objectKey
+                    || ''
+                ).trim();
+                if (oracleKey) oracleKeys.add(oracleKey);
+                const nk = normalizeLiveSyncNameKey(
+                    item?.displayName || item?.fileName || item?.title,
+                    item?.nicheId,
+                    item?.nicheName
+                );
+                if (nk) nameKeys.add(nk);
+            }
+        } catch (err) {
+            throw new Error(`Ghost library unreachable (127.0.0.1:3019): ${err?.message || err}`);
+        }
+        return { ids, oracleKeys, nameKeys };
+    }
+
+    function isLiveSyncDuplicate(design, index) {
+        const siteId = String(design?.id || '').trim();
+        const extId = String(design?.extensionLibraryId || '').trim();
+        const oracleKey = String(design?.oracleObjectKey || '').trim();
+        const nameKey = normalizeLiveSyncNameKey(design?.displayName, design?.nicheId, design?.nicheName);
+        if (siteId && index.ids.has(siteId)) return true;
+        if (extId && index.ids.has(extId)) return true;
+        if (oracleKey && index.oracleKeys.has(oracleKey)) return true;
+        if (nameKey && index.nameKeys.has(nameKey)) return true;
+        return false;
+    }
+
+    async function uploadSiteDesignToGhostLibrary(design, imageBlob, auth) {
+        const form = new FormData();
+        const fileName = `${String(design.displayName || design.id || 'design').replace(/[^\w\u0600-\u06FF.-]+/g, '_').slice(0, 80)}.png`;
+        form.append('file', imageBlob, fileName);
+        form.append('displayName', String(design.displayName || design.id || 'Live Sync'));
+        form.append('source', 'emailcore-live-sync');
+        form.append('originalDesignId', String(design.id || ''));
+        form.append('oracleObjectKey', String(design.oracleObjectKey || ''));
+        form.append('nicheId', String(design.nicheId || ''));
+        form.append('nicheName', String(design.nicheName || ''));
+        if (auth?.userId) form.append('siteUserId', String(auth.userId));
+
+        const res = await fetch(`${EMAILCORE_GHOST_LIBRARY_URL}/upload`, {
+            method: 'POST',
+            body: form,
+        });
+        const data = await res.json().catch(() => ({}));
+        // Ghost may return HTTP 200 + { success:true, skipped:true } for deduped Live Sync rows.
+        if (data?.skipped) {
+            return { skipped: true, reason: data?.reason || 'duplicate', data };
+        }
+        if (!res.ok || data?.success === false) {
+            if (/duplicate|already exists|موجود/i.test(String(data?.error || ''))) {
+                return { skipped: true, reason: data?.reason || 'duplicate', data };
+            }
+            throw new Error(data?.error || `library upload HTTP ${res.status}`);
+        }
+        return { ok: true, data };
+    }
+
+    async function pollLiveSyncLibrary({ force = false } = {}) {
+        const flags = await chrome.storage.local.get([
+            EMAILCORE_LIVE_SYNC_ENABLED_KEY,
+            EMAILCORE_LIVE_SYNC_BUSY,
+            CREATY_STORAGE_KEYS.apiBase,
+            CREATY_STORAGE_KEYS.userId,
+            CREATY_STORAGE_KEYS.token,
+        ]);
+        if (flags[EMAILCORE_LIVE_SYNC_BUSY] === true && !force) {
+            return { skipped: true, reason: 'busy' };
+        }
+
+        const apiBase = normalizeEmailCoreApiBase(flags[CREATY_STORAGE_KEYS.apiBase]);
+        const userId = String(flags[CREATY_STORAGE_KEYS.userId] || DEFAULT_EMAILCORE_CREATY_USER_ID).trim();
+        const token = String(flags[CREATY_STORAGE_KEYS.token] || DEFAULT_EMAILCORE_CREATY_TOKEN).trim();
+        if (!userId || !token) {
+            return { skipped: true, reason: 'missing_creaty' };
+        }
+
+        let localEnabled = flags[EMAILCORE_LIVE_SYNC_ENABLED_KEY] === true;
+        // Always reconcile with site preference so Live Sync works without same-browser bridge.
+        // force=true (bridge SET) still imports when local was just enabled even if server lags briefly.
+        await chrome.storage.local.set({ [EMAILCORE_LIVE_SYNC_BUSY]: true });
+        const auth = { apiBase, userId, token };
+        let imported = 0;
+        let skipped = 0;
+        let failed = 0;
+        try {
+            const listUrl = new URL(`${apiBase}/api/extension/designs/generated`);
+            listUrl.searchParams.set('userId', userId);
+            listUrl.searchParams.set('limit', '200');
+            const listRes = await fetch(listUrl, {
+                headers: {
+                    'x-creaty-token': token,
+                    'x-extension-id': chrome.runtime.id,
+                },
+            });
+            const listData = await listRes.json().catch(() => ({}));
+            if (!listRes.ok) {
+                if (/404|not found/i.test(String(listData?.error || listRes.status))) {
+                    return { skipped: true, reason: 'endpoint_missing' };
+                }
+                throw new Error(listData?.error || `live-sync list HTTP ${listRes.status}`);
+            }
+
+            const hasServerFlag = typeof listData?.live_sync_enabled === 'boolean';
+            if (hasServerFlag) {
+                const serverEnabled = listData.live_sync_enabled === true;
+                if (serverEnabled !== localEnabled) {
+                    await chrome.storage.local.set({ [EMAILCORE_LIVE_SYNC_ENABLED_KEY]: serverEnabled });
+                    localEnabled = serverEnabled;
+                }
+                if (!serverEnabled) {
+                    return { skipped: true, reason: 'disabled', live_sync_enabled: false };
+                }
+            } else if (!localEnabled && !force) {
+                return { skipped: true, reason: 'disabled' };
+            }
+
+            const designs = Array.isArray(listData?.designs) ? listData.designs : [];
+            const index = await loadLocalLibraryDedupeIndex();
+
+            for (const design of designs) {
+                if (isLiveSyncDuplicate(design, index)) {
+                    skipped += 1;
+                    continue;
+                }
+                const key = String(design.oracleObjectKey || '').trim();
+                if (!key) {
+                    skipped += 1;
+                    continue;
+                }
+                try {
+                    const mediaUrl = new URL(
+                        design.mediaUrl
+                            ? (String(design.mediaUrl).startsWith('http')
+                                ? design.mediaUrl
+                                : `${apiBase}${design.mediaUrl}`)
+                            : `${apiBase}/api/extension/designs/media`
+                    );
+                    if (!mediaUrl.searchParams.get('key')) mediaUrl.searchParams.set('key', key);
+                    mediaUrl.searchParams.set('userId', userId);
+                    const mediaRes = await fetch(mediaUrl, {
+                        headers: {
+                            'x-creaty-token': token,
+                            'x-extension-id': chrome.runtime.id,
+                        },
+                    });
+                    if (!mediaRes.ok) {
+                        failed += 1;
+                        continue;
+                    }
+                    const blob = await mediaRes.blob();
+                    if (!blob || !blob.size) {
+                        failed += 1;
+                        continue;
+                    }
+                    const result = await uploadSiteDesignToGhostLibrary(design, blob, auth);
+                    if (result?.skipped) {
+                        skipped += 1;
+                    } else {
+                        imported += 1;
+                        const siteId = String(design.id || '').trim();
+                        const oracleKey = String(design.oracleObjectKey || '').trim();
+                        const nameKey = normalizeLiveSyncNameKey(design.displayName, design.nicheId, design.nicheName);
+                        if (siteId) index.ids.add(siteId);
+                        if (oracleKey) index.oracleKeys.add(oracleKey);
+                        if (nameKey) index.nameKeys.add(nameKey);
+                    }
+                } catch (err) {
+                    failed += 1;
+                    console.warn('[EmailCore][LiveSync] import failed', design?.id, err?.message || err);
+                }
+            }
+
+            const meta = {
+                lastRunAt: new Date().toISOString(),
+                imported,
+                skipped,
+                failed,
+                listed: designs.length,
+                live_sync_enabled: hasServerFlag ? listData.live_sync_enabled === true : localEnabled,
+            };
+            await chrome.storage.local.set({ [EMAILCORE_LIVE_SYNC_META_KEY]: meta });
+            if (imported > 0) {
+                try {
+                    chrome.runtime.sendMessage({ action: 'GENERATE_LIBRARY_REFRESH', source: 'live-sync' });
+                } catch {
+                    /* ignore */
+                }
+            }
+            return { ok: true, ...meta };
+        } finally {
+            await chrome.storage.local.set({ [EMAILCORE_LIVE_SYNC_BUSY]: false });
+        }
+    }
 
     async function pollPipelineAlerts() {
         const storedAuth = await chrome.storage.local.get([
@@ -3020,6 +3299,7 @@
     chrome.alarms.create(EMAILCORE_ST_FEEDS_ALARM, { periodInMinutes: 6 * 60 });
     chrome.alarms.create(EMAILCORE_PIPELINE_ALERT_ALARM, { periodInMinutes: 1 });
     chrome.alarms.create(EMAILCORE_DESIGN_JOBS_ALARM, { periodInMinutes: 1 });
+    chrome.alarms.create(EMAILCORE_LIVE_SYNC_ALARM, { periodInMinutes: 1 });
     chrome.alarms.onAlarm.addListener((alarm) => {
         if (alarm.name === EMAILCORE_MAIL_ALARM) {
             pollEmailCoreMessages().catch((error) => {
@@ -3044,6 +3324,14 @@
                 const msg = error?.message || String(error);
                 if (/Failed to fetch|NetworkError|fetch failed/i.test(msg)) return;
                 console.warn('[EmailCore][DesignJobsBridge]', msg);
+            });
+            return;
+        }
+        if (alarm.name === EMAILCORE_LIVE_SYNC_ALARM) {
+            pollLiveSyncLibrary().catch((error) => {
+                const msg = error?.message || String(error);
+                if (/Failed to fetch|NetworkError|fetch failed|Ghost library unreachable/i.test(msg)) return;
+                console.warn('[EmailCore][LiveSync]', msg);
             });
             return;
         }
@@ -3087,6 +3375,9 @@
     setTimeout(() => {
         pollDesignJobsBridge().catch(() => {});
     }, 30_000);
+    setTimeout(() => {
+        pollLiveSyncLibrary().catch(() => {});
+    }, 35_000);
 
     // Message hooks for Admin / popup manual sync + status
     chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {

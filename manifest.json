@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Niche Hunter Pro - USPTO + TeePublic + AI",
-  "version": "40.0.2",
+  "version": "40.0.3",
   "description": "أداة متكاملة: فحص USPTO + تحليل TeePublic + Niche Commander بالذكاء الاصطناعي",
   "icons": {
     "16": "icon.png",

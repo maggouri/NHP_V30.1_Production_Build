@@ -3047,24 +3047,15 @@ function renderDashboardServersList(servers = []) {
     if (feedback) feedback.textContent = 'لا توجد سيرفرات مسجّلة.';
     return;
   }
-  const enabled = servers.filter((item) => !item.disabled);
-  const onlineEnabled = enabled.filter((item) => item.online).length;
-  const disabledCount = servers.filter((item) => item.disabled).length;
-  if (feedback) {
-    feedback.textContent = disabledCount > 0
-      ? `${onlineEnabled} / ${enabled.length} متصل (${disabledCount} معطّلة)`
-      : `${onlineEnabled} / ${servers.length} متصل`;
-  }
+  const onlineCount = servers.filter((item) => item.online).length;
+  if (feedback) feedback.textContent = `${onlineCount} / ${servers.length} متصل`;
   servers.forEach((server) => {
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:0.5rem;padding:0.375rem 0.5rem;border-radius:0.5rem;border:1px solid rgba(255,255,255,0.08);background:rgba(0,0,0,0.2);';
-    const dot = server.disabled ? '#94a3b8' : (server.online ? '#34d399' : '#f87171');
+    const dot = server.online ? '#34d399' : '#f87171';
     const label = server.label || server.id || 'Server';
     const port = server.port || '—';
-    const statusLabel = server.disabled
-      ? (server.online ? 'DIS' : 'DIS')
-      : (server.online ? 'OK' : 'OFF');
-    row.innerHTML = `<span style="display:flex;align-items:center;gap:0.5rem;min-width:0;font-size:0.6875rem;color:#e2e8f0;"><span style="width:0.5rem;height:0.5rem;border-radius:9999px;background:${dot};flex-shrink:0;"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${label} <span style="color:#94a3b8">:${port}</span></span></span><span style="font-size:0.625rem;color:${dot};font-weight:700;">${statusLabel}</span>`;
+    row.innerHTML = `<span style="display:flex;align-items:center;gap:0.5rem;min-width:0;font-size:0.6875rem;color:#e2e8f0;"><span style="width:0.5rem;height:0.5rem;border-radius:9999px;background:${dot};flex-shrink:0;"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${label} <span style="color:#94a3b8">:${port}</span></span></span><span style="font-size:0.625rem;color:${dot};font-weight:700;">${server.online ? 'OK' : 'OFF'}</span>`;
     list.appendChild(row);
   });
 }
@@ -3592,6 +3583,8 @@ async function autoSyncCloudData() {
   if (store.cloudSyncEnabled === false) return; // Silent return if disabled
 
   if (typeof GitHubSync === 'undefined') return;
+  await GitHubSync.loadTokenFromStorage();
+  if (!GitHubSync.hasValidToken()) return;
   const user = await AuthManager.getCurrentUser();
   if (!user) return;
 
@@ -3984,7 +3977,9 @@ function reconcileStartupStorage(storedResult) {
 
 function initializeWithStorageData(result) {
   applyStartupPreferences(result);
-  const active = resolveStartupActiveTab(result);
+  const hash = String(window.location.hash || '').replace(/^#/, '').trim().toLowerCase();
+  const wantsAdminSetup = hash === 'setup' || hash === 'admin/setup' || hash.endsWith('/setup');
+  const active = wantsAdminSetup ? 'admin' : resolveStartupActiveTab(result);
   switchTab(active);
   const urlParams = new URLSearchParams(window.location.search);
   const forcedTab = urlParams.get('tab');
@@ -4659,7 +4654,7 @@ window.NHP_scheduleUnifiedSync = function NHP_scheduleUnifiedSync(changes = {}) 
       window.NHP_backgroundSyncData();
       return;
     }
-    if (typeof GitHubSync === 'undefined' || !GitHubSync?.config?.token || GitHubSync.config.token === 'YOUR_GITHUB_TOKEN') {
+    if (typeof GitHubSync === 'undefined' || !GitHubSync?.hasValidToken?.()) {
       return;
     }
     chrome.storage.local.get(['cloudSyncEnabled', 'savedDesignQueue', 'ap_accounts', 'teepublic_manager_data', 'usptoHistory'], async (res) => {

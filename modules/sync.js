@@ -81,7 +81,7 @@ const backgroundSyncData = debounce(async (data) => {
     chrome.storage.local.get(['cloudSyncEnabled'], async (store) => {
         if (store.cloudSyncEnabled === false) return;
 
-        if (typeof GitHubSync !== 'undefined' && GitHubSync.config.token !== 'YOUR_GITHUB_TOKEN') {
+        if (typeof GitHubSync !== 'undefined' && GitHubSync.hasValidToken && GitHubSync.hasValidToken()) {
             try {
                 chrome.storage.local.get(['savedDesignQueue', 'ap_accounts', 'teepublic_manager_data', 'usptoHistory'], async (res) => {
                     const fullData = {
