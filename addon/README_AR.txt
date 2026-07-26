@@ -50,7 +50,10 @@
   حتى لا تنكسر الروابط القديمة.
 
 --------------------------------------------------------------------------------
-البيانات المحمولة
+البيانات المحمولة (مسارات نسبية — لا تعتمد على C:\Users\...)
 --------------------------------------------------------------------------------
-  App Root  = مجلد الإضافة (Desktop\NHP_V30.1_Production_Build)
-  Data Root = Desktop\NHP_DATA (سجلات، tmp، ...)
+  App Root  = مجلد المشروع (والد addon\ — يُحسب من موقع السكربت عبر %~dp0)
+  Data Root = شقيق App Root باسم NHP_DATA (سجلات، tmp، ...) — أو NHP_DATA_ROOT
+  بعد نقل المجلد بالكامل: شغّل 00_Register_Native_Messaging مرة، أو Start All
+  (Portable Init يعيد كتابة مسار Native Messaging للجهاز الحالي).
+  cliproxy: auth-dir=./auths و tls.cert/key نسبية داخل cliproxyapi-local\

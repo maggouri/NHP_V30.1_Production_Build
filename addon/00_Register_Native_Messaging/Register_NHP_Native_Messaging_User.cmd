@@ -69,6 +69,11 @@ if errorlevel 1 (
   exit /b 1
 )
 
+REM Ensure host path matches this App Root (portable after folder moves).
+if exist "%NHP_ROOT%\utils\nhp-repair-native-host-path.ps1" (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%NHP_ROOT%\utils\nhp-repair-native-host-path.ps1" -ProjectDir "%NHP_ROOT%"
+)
+
 echo.
 echo [SUCCESS] Native Messaging registered successfully.
 echo.

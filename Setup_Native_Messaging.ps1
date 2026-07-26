@@ -110,13 +110,35 @@ if ([string]::IsNullOrWhiteSpace($ExtensionId)) {
 }
 
 $allowedOrigin = "chrome-extension://$ExtensionId/"
+$defaultOrigin = "chrome-extension://$DefaultExtensionId/"
+$allowedOrigins = @($allowedOrigin, $defaultOrigin)
+$examplePath = Join-Path $nativeHostDir "com.nhp.server_launcher.example.json"
+foreach ($seedPath in @($manifestPath, $examplePath)) {
+    if (-not (Test-Path -LiteralPath $seedPath)) { continue }
+    try {
+        $existingRaw = [System.IO.File]::ReadAllText($seedPath).TrimStart([char]0xFEFF)
+        $existing = $existingRaw | ConvertFrom-Json
+        if ($existing.allowed_origins) {
+            $allowedOrigins += @($existing.allowed_origins)
+        }
+    } catch {
+        Write-Warning "Could not merge origins from '$seedPath': $($_.Exception.Message)"
+    }
+}
+$allowedOrigins = @(
+    $allowedOrigins |
+        ForEach-Object { [string]$_ } |
+        ForEach-Object { $_.Trim() } |
+        Where-Object { $_ -match '^chrome-extension://' } |
+        Select-Object -Unique
+)
 
 $manifestObject = [ordered]@{
     name = "com.nhp.server_launcher"
     description = "NHP local launcher host"
     path = $hostLauncherPath
     type = "stdio"
-    allowed_origins = @($allowedOrigin)
+    allowed_origins = @($allowedOrigins)
 }
 
 if (-not (Test-Path -LiteralPath $nativeHostDir)) {
@@ -124,13 +146,16 @@ if (-not (Test-Path -LiteralPath $nativeHostDir)) {
 }
 
 $manifestJson = ($manifestObject | ConvertTo-Json -Depth 10)
-Set-Content -LiteralPath $manifestPath -Value $manifestJson -Encoding UTF8
+$utf8NoBom = New-Object System.Text.UTF8Encoding $false
+[System.IO.File]::WriteAllText($manifestPath, $manifestJson, $utf8NoBom)
 
 New-Item -Path $registryKey -Force | Out-Null
 Set-ItemProperty -Path $registryKey -Name "(default)" -Value $manifestPath
 
 Write-Host "[OK] Native messaging manifest written: $manifestPath"
 Write-Host "[OK] Registry updated: HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.nhp.server_launcher"
-Write-Host "[OK] Allowed origin: $allowedOrigin"
-Write-Host "[NOTE] Host launcher path: $hostLauncherPath"
+Write-Host "[OK] Allowed origins:"
+$allowedOrigins | ForEach-Object { Write-Host "       $_" }
+Write-Host "[NOTE] Host launcher path (absolute, current App Root): $hostLauncherPath"
 Write-Host "[NOTE] Native host script expected at: $hostScriptPath"
+Write-Host "[NOTE] After moving the build folder, re-run Register or Start All (portable repair)."

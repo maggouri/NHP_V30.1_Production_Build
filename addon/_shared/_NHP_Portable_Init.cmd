@@ -56,4 +56,11 @@ if not exist "%CLIPROXY_DIR%\auths" mkdir "%CLIPROXY_DIR%\auths"
 if not exist "%NHP_DATA_ROOT%\server_logs" mkdir "%NHP_DATA_ROOT%\server_logs"
 if not exist "%NHP_DATA_ROOT%\.tmp" mkdir "%NHP_DATA_ROOT%\.tmp"
 
+REM Chrome NM host path must be absolute — rewrite to this App Root after folder moves.
+if exist "%NHP_ROOT%\utils\nhp-repair-native-host-path.ps1" (
+  if exist "%NHP_ROOT%\native-host\nhp_native_host.cmd" (
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%NHP_ROOT%\utils\nhp-repair-native-host-path.ps1" -ProjectDir "%NHP_ROOT%" >nul 2>&1
+  )
+)
+
 exit /b 0

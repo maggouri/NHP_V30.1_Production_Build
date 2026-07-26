@@ -1,9 +1,14 @@
 # Copy to config.yaml and set your secrets locally (config.yaml is gitignored).
+# Paths below are relative to this folder (addon/cliproxyapi-local).
+# Keep them portable — do not hardcode per-machine Desktop / user profile paths.
 host: "127.0.0.1"
 port: 8317
 
 tls:
   enable: false
+  # When enabling TLS, use paths relative to this config directory, e.g.:
+  # cert: "./certs/server.crt"
+  # key: "./certs/server.key"
   cert: ""
   key: ""
 
@@ -13,6 +18,7 @@ remote-management:
   disable-control-panel: false
   disable-auto-update-panel: true
 
+# OAuth / credential JSON files (relative to this config directory)
 auth-dir: "./auths"
 
 api-keys:

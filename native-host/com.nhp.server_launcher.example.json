@@ -1,0 +1,9 @@
+{
+  "name": "com.nhp.server_launcher",
+  "description": "NHP local launcher host — path is rewritten to an absolute path for the current machine by Register / Portable Init (Chrome requires absolute host path).",
+  "path": "nhp_native_host.cmd",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://bhhahkcjolghbigcognobplmgdbkmekb/"
+  ]
+}
