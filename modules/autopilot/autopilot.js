@@ -3523,6 +3523,11 @@ function showApUploadConfirmModal(editableState) {
 function closeApUploadConfirmModal(result = null) {
     const modal = document.getElementById('ap-upload-confirm-modal');
     if (modal) {
+        // Blur focused control before aria-hidden/hide to avoid a11y "focused inside aria-hidden" warnings.
+        const active = document.activeElement;
+        if (active && typeof active.blur === 'function' && modal.contains(active)) {
+            active.blur();
+        }
         modal.classList.remove('ap-modal-open');
         modal.hidden = true;
         modal.setAttribute('aria-hidden', 'true');
