@@ -56,7 +56,7 @@ echo ========================================
 powershell -NoProfile -ExecutionPolicy Bypass -File "%NHP_ROOT%\NHP_Check_Server_Ports.ps1"
 echo.
 echo Logs: %NHP_LOG_DIR%
-echo Tip: use NHP_Start_All_Servers_Hidden.vbs for zero windows.
+echo Tip: use addon\_shared\NHP_Start_All_Servers_Hidden.vbs for zero windows.
 echo.
 echo Press any key to close this window...
 pause >nul

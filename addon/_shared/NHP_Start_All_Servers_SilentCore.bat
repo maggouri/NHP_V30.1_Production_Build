@@ -2,7 +2,7 @@
 setlocal EnableExtensions EnableDelayedExpansion
 chcp 65001 >nul 2>&1
 
-REM Resolve paths: addon\01_Start_All -> addon -> project root
+REM Resolve paths: addon\_shared -> addon -> project root
 set "START_DIR=%~dp0"
 if "%START_DIR:~-1%"=="\" set "START_DIR=%START_DIR:~0,-1%"
 for %%I in ("%START_DIR%\..") do set "ADDON_DIR=%%~fI"

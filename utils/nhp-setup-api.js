@@ -587,17 +587,17 @@
 
         if (endpoint === 'start-all') {
             const bulk = typeof NhpLocalServers !== 'undefined' ? NhpLocalServers.BULK_SCRIPTS?.startAll : null;
-            return runBulkLauncher(appRoot, bulk || 'addon\\01_Start_All\\NHP_Start_All_Servers_SilentCore.bat', deps, 'start-all');
+            return runBulkLauncher(appRoot, bulk || 'addon\\_shared\\NHP_Start_All_Servers_SilentCore.bat', deps, 'start-all');
         }
 
         if (endpoint === 'stop-all') {
             const bulk = typeof NhpLocalServers !== 'undefined' ? NhpLocalServers.BULK_SCRIPTS?.stopAll : null;
-            return runBulkLauncher(appRoot, bulk || 'addon\\02_Stop_All\\NHP_Stop_All_Servers_SilentCore.bat', deps, 'stop-all');
+            return runBulkLauncher(appRoot, bulk || 'addon\\_shared\\NHP_Stop_All_Servers_SilentCore.bat', deps, 'stop-all');
         }
 
         if (endpoint === 'restart-all') {
             const bulk = typeof NhpLocalServers !== 'undefined' ? NhpLocalServers.BULK_SCRIPTS?.restartAll : null;
-            return runBulkLauncher(appRoot, bulk || 'addon\\03_Restart_All\\NHP_Restart_All_Servers_SilentCore.bat', deps, 'restart-all');
+            return runBulkLauncher(appRoot, bulk || 'addon\\_shared\\NHP_Restart_All_Servers_SilentCore.bat', deps, 'restart-all');
         }
 
         if (endpoint === 'run-launcher') {

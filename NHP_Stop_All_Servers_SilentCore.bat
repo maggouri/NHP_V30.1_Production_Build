@@ -1,3 +1,3 @@
 @echo off
-call "%~dp0addon\02_Stop_All\NHP_Stop_All_Servers_SilentCore.bat" %*
+call "%~dp0addon\_shared\NHP_Stop_All_Servers_SilentCore.bat" %*
 exit /b %ERRORLEVEL%

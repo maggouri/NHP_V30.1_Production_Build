@@ -22,11 +22,12 @@
 --------------------------------------------------------------------------------
   الطريقة الموصى بها — انقر مرتين:
 
-      addon\01_Start_All\START_SERVERS.bat
+      addon\01_Start_All\NHP_Start_All_Servers.bat
 
-  أو من PowerShell:
+  أو من جذر المشروع:
 
-      addon\01_Start_All\START_SERVERS.ps1
+      START_NHP_PORTABLE.cmd
+      NHP_Start_All_Servers.bat
 
   ماذا يفعل السكربت؟
   • يكتشف مسار المشروع تلقائياً (لا يحتاج تعديل مسارات).
@@ -47,7 +48,8 @@
 
   السجلات: server_logs\
 
-  لإيقاف السيرفرات: addon\02_Stop_All\NHP_Stop_All_Servers_SilentCore.bat
+  لإيقاف السيرفرات: addon\02_Stop_All\NHP_Stop_All_Servers.bat
+  (صامت للإضافة: addon\_shared\NHP_Stop_All_Servers_SilentCore.bat)
 
 --------------------------------------------------------------------------------
 4) تحميل الإضافة في Chrome
@@ -81,7 +83,7 @@
 
   ب) أو عيّن مسار المشروع يدوياً من Admin → إعدادات المسار.
 
-  بدون هذه الخطوة: شغّل السيرفرات يدوياً عبر addon\01_Start_All\START_SERVERS.bat — وهذا كافٍ للاستخدام العادي.
+  بدون هذه الخطوة: شغّل السيرفرات يدوياً عبر addon\01_Start_All\NHP_Start_All_Servers.bat — وهذا كافٍ للاستخدام العادي.
 
 --------------------------------------------------------------------------------
 7) CLIProxyAPI — OAuth للتوليد بالصور (اختياري)

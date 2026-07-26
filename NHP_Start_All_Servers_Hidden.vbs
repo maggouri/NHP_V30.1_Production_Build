@@ -1,4 +1,4 @@
-' Launch all NHP node servers with window style 0 (hidden). Double-click or: wscript.exe //B NHP_Start_All_Servers_Hidden.vbs
+' Hidden launcher -> project-root SilentCore stub -> addon\_shared
 Option Explicit
 Dim sh, fso, dir, coreBat
 Set sh = CreateObject("WScript.Shell")

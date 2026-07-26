@@ -10610,8 +10610,8 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                 if (command === 'start' || command === 'restart') {
                     await clearNhpLocalServerDisabled('', { clearAll: true });
                     const relScript = command === 'restart'
-                        ? (bulkScripts?.restartAll || 'addon\\03_Restart_All\\NHP_Restart_All_Servers_SilentCore.bat')
-                        : (bulkScripts?.startAll || 'addon\\01_Start_All\\NHP_Start_All_Servers_SilentCore.bat');
+                        ? (bulkScripts?.restartAll || 'addon\\_shared\\NHP_Restart_All_Servers_SilentCore.bat')
+                        : (bulkScripts?.startAll || 'addon\\_shared\\NHP_Start_All_Servers_SilentCore.bat');
                     const scriptPath = NhpLocalServers?.joinProjectPath(projectDir, relScript)
                         || `${projectDir}\\${relScript}`;
                     const launchResult = await executeNhpLauncherScript(scriptPath, {
@@ -10624,7 +10624,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                         return;
                     }
                 } else {
-                    const relScript = bulkScripts?.stopAll || 'addon\\02_Stop_All\\NHP_Stop_All_Servers_SilentCore.bat';
+                    const relScript = bulkScripts?.stopAll || 'addon\\_shared\\NHP_Stop_All_Servers_SilentCore.bat';
                     const scriptPath = NhpLocalServers?.joinProjectPath(projectDir, relScript)
                         || `${projectDir}\\${relScript}`;
                     const launchResult = await executeNhpLauncherScript(scriptPath, {

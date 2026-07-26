@@ -19,9 +19,9 @@
     ]);
 
     const BULK_SCRIPTS = Object.freeze({
-        startAll: 'addon\\01_Start_All\\NHP_Start_All_Servers_SilentCore.bat',
-        stopAll: 'addon\\02_Stop_All\\NHP_Stop_All_Servers_SilentCore.bat',
-        restartAll: 'addon\\03_Restart_All\\NHP_Restart_All_Servers_SilentCore.bat'
+        startAll: 'addon\\_shared\\NHP_Start_All_Servers_SilentCore.bat',
+        stopAll: 'addon\\_shared\\NHP_Stop_All_Servers_SilentCore.bat',
+        restartAll: 'addon\\_shared\\NHP_Restart_All_Servers_SilentCore.bat'
     });
 
     const DISABLED_STORAGE_KEY = 'nhpLocalServersDisabled';

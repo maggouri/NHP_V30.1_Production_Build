@@ -9,20 +9,19 @@
   4) 02_Stop_All / 03_Restart_All   — إيقاف الكل أو إعادة التشغيل
 
 --------------------------------------------------------------------------------
-المجلدات
+المجلدات (ملف تشغيل واحد لكل مجلد مرقّم)
 --------------------------------------------------------------------------------
   00_Register_Native_Messaging\
-      Register_NHP_Native_Messaging_User.bat   << الأولوية الأولى (نقر مزدوج)
+      Register_NHP_Native_Messaging_User.bat   << نقر مزدوج مرة واحدة
 
   01_Start_All\
       NHP_Start_All_Servers.bat                << تشغيل الكل (نافذة مرئية)
-      NHP_Start_All_Servers_SilentCore.bat     << تشغيل الكل (صامت / للإضافة)
 
   02_Stop_All\
-      NHP_Stop_All_Servers.bat
+      NHP_Stop_All_Servers.bat                 << إيقاف الكل
 
   03_Restart_All\
-      NHP_Restart_All_Servers.bat
+      NHP_Restart_All_Servers.bat              << إعادة تشغيل الكل
 
   servers\
       teepublic_ghost_3019\     TeePublic Ghost        :3019
@@ -34,11 +33,11 @@
       ai_bridge_3031\           AI Bridge              :3031
       cliproxy_8317\            CLIProxyAPI Local      :8317
 
-  _shared\                      مساعدات داخلية (لا تنقرها عادة)
+  _shared\                      مساعدات داخلية (SilentCore / Hidden / Init)
   cliproxyapi-local\            ثنائي وإعدادات CLIProxy
 
 --------------------------------------------------------------------------------
-مسارات النقر المزدوج المهمة
+مسارات النقر المزدوج
 --------------------------------------------------------------------------------
   Register:
     addon\00_Register_Native_Messaging\Register_NHP_Native_Messaging_User.bat
@@ -46,8 +45,19 @@
   Start All:
     addon\01_Start_All\NHP_Start_All_Servers.bat
 
-  ملاحظة: توجد اختصارات (stubs) بنفس الأسماء القديمة في جذر addon\
-  حتى لا تنكسر الروابط القديمة.
+  Stop All:
+    addon\02_Stop_All\NHP_Stop_All_Servers.bat
+
+  Restart All:
+    addon\03_Restart_All\NHP_Restart_All_Servers.bat
+
+  للإضافة (صامت):
+    addon\_shared\NHP_Start_All_Servers_SilentCore.bat
+    addon\_shared\NHP_Stop_All_Servers_SilentCore.bat
+    addon\_shared\NHP_Restart_All_Servers_SilentCore.bat
+
+  ملاحظة: اختصارات بنفس الأسماء في جذر المشروع (خارج addon\)
+  ما زالت تعمل للتوافق مع الروابط القديمة.
 
 --------------------------------------------------------------------------------
 البيانات المحمولة (مسارات نسبية — لا تعتمد على C:\Users\...)

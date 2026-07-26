@@ -1,4 +1,4 @@
-' Stop all NHP node servers (hidden). Double-click or: wscript.exe //B NHP_Stop_All_Servers_Hidden.vbs
+' Hidden launcher -> project-root SilentCore stub -> addon\_shared
 Option Explicit
 Dim sh, fso, dir, coreBat
 Set sh = CreateObject("WScript.Shell")
