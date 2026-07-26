@@ -40,14 +40,17 @@ const AP_MAX_PER_ACCOUNT_STORAGE_KEY = 'ap_max_per_account';
 function isApCountPerAuto(value) {
     if (value == null || value === '') return true;
     const normalized = String(value).trim().toLowerCase();
-    return normalized === 'auto' || normalized === 'تلقائي';
+    return normalized === 'auto'
+        || normalized === 'تلقائي'
+        || normalized === 'غير محدود'
+        || normalized === 'unlimited';
 }
 
 function parseApMaxPerAccountValue(raw) {
     if (isApCountPerAuto(raw)) return { auto: true, countPer: null };
     const parsed = parseInt(String(raw).trim(), 10);
     if (Number.isFinite(parsed) && parsed > 0) {
-        return { auto: false, countPer: Math.min(50, Math.max(1, parsed)) };
+        return { auto: false, countPer: Math.max(1, parsed) };
     }
     return { auto: true, countPer: null };
 }
@@ -62,8 +65,46 @@ function syncApDesignsPerInputFromParsed(parsed) {
 }
 
 async function saveApMaxPerAccountPreference(value) {
-    const payload = isApCountPerAuto(value) ? 'auto' : String(Math.min(50, Math.max(1, parseInt(value, 10) || 1)));
+    const payload = isApCountPerAuto(value) ? 'auto' : String(Math.max(1, parseInt(value, 10) || 1));
     await new Promise((resolve) => chrome.storage.local.set({ [AP_MAX_PER_ACCOUNT_STORAGE_KEY]: payload }, resolve));
+}
+
+function isApUnlimitedCapacity(capacity) {
+    const n = Number(capacity);
+    return n === Infinity || n === Number.POSITIVE_INFINITY || !Number.isFinite(n);
+}
+
+function hasApUploadCapacity(capacity) {
+    if (isApUnlimitedCapacity(capacity)) return true;
+    return Math.max(0, Number(capacity) || 0) > 0;
+}
+
+function formatApCapacityLabel(capacity) {
+    if (isApUnlimitedCapacity(capacity)) return 'السعة: غير محدود';
+    const n = Math.max(0, Number(capacity) || 0);
+    return n > 0 ? `السعة: ${n}` : 'بدون سعة';
+}
+
+function getApUploadConfirmRemainingForRow(state, index) {
+    if (!state || !Array.isArray(state.rows)) return 0;
+    const total = Math.max(0, Number(state.totalDesigns) || 0);
+    let others = 0;
+    state.rows.forEach((row, i) => {
+        if (i === index || !row?.included) return;
+        others += Math.max(0, Math.floor(Number(row.designCount) || 0));
+    });
+    return Math.max(0, total - others);
+}
+
+function clampApUploadConfirmRowCount(state, index, nextValue) {
+    const row = state?.rows?.[index];
+    if (!row) return 0;
+    const requested = Math.max(0, Math.floor(Number(nextValue) || 0));
+    const remaining = getApUploadConfirmRemainingForRow(state, index);
+    const poolCap = Math.min(requested, remaining);
+    if (isApUnlimitedCapacity(row.capacity)) return poolCap;
+    const cap = Math.max(0, Number(row.capacity) || 0);
+    return Math.min(cap, poolCap);
 }
 let autopilotAccounts = [];
 let activeAdminAccountSourceTab = 'normal';
@@ -1609,6 +1650,31 @@ async function loadAPAccounts(existingData = null) {
         syncApDesignsPerInputFromParsed(parseApMaxPerAccountValue(res.ap_max_per_account ?? AP.designsPer.value));
     }
 
+    // v40.0.13 — one-time: drop legacy artificial 50 ceiling → unlimited by default
+    if (!res.ap_unlimited_capacity_v40_0_13) {
+        syncApDesignsPerInputFromParsed({ auto: true, countPer: null });
+        let clearedBatch = 0;
+        Object.keys(accountsDB).forEach((platformKey) => {
+            (accountsDB[platformKey] || []).forEach((acc) => {
+                if (acc && acc.batchLimit != null) {
+                    acc.batchLimit = null;
+                    clearedBatch += 1;
+                }
+            });
+        });
+        const migratePayload = {
+            ap_unlimited_capacity_v40_0_13: true,
+            [AP_MAX_PER_ACCOUNT_STORAGE_KEY]: 'auto',
+            ap_accounts_teepublic: accountsDB.teepublic,
+            ap_accounts_redbubble: accountsDB.redbubble,
+            ap_accounts_amazon: accountsDB.amazon,
+            ap_accounts_pinterest: accountsDB.pinterest
+        };
+        if (currentPlatform === 'teepublic') migratePayload.ap_accounts = accountsDB.teepublic;
+        await new Promise((resolve) => chrome.storage.local.set(migratePayload, resolve));
+        if (clearedBatch) migrationNeeded = true;
+    }
+
     if (AP.fairDistrib) {
         if (apFairDistributionSessionExplicitOff) {
             AP.fairDistrib.checked = false;
@@ -3136,15 +3202,19 @@ function buildApUploadConfirmEditableState(uploadAccounts, designCount, effectiv
     const rows = accounts.map((acc, index) => {
         const email = String(acc?.email || '').trim();
         const label = acc?.displayName || email.split('@')[0] || email || 'حساب';
-        const capacity = Math.max(0, Number(limits[index]) || 0);
-        const designCountForAccount = Math.min(Math.max(0, Number(preview.rows[index]?.designCount) || 0), capacity);
+        const capacity = limits[index];
+        const unlimited = isApUnlimitedCapacity(capacity);
+        const rawAssigned = Math.max(0, Number(preview.rows[index]?.designCount) || 0);
+        const designCountForAccount = unlimited
+            ? rawAssigned
+            : Math.min(rawAssigned, Math.max(0, Number(capacity) || 0));
         return {
             accountId: String(acc?.id || acc?.email || ''),
             label,
             email,
-            capacity,
+            capacity: unlimited ? Infinity : Math.max(0, Number(capacity) || 0),
             designCount: designCountForAccount,
-            included: capacity > 0
+            included: hasApUploadCapacity(capacity)
         };
     });
     return {
@@ -3163,18 +3233,23 @@ function applyAutoDistributionToApUploadConfirmState(state) {
     if (!state || !Array.isArray(state.rows) || !Array.isArray(state.uploadAccounts)) return state;
     const includedAccounts = state.rows
         .map((row, index) => ({ row, acc: state.uploadAccounts[index] }))
-        .filter(({ row }) => row.included && row.capacity > 0);
+        .filter(({ row }) => row.included && hasApUploadCapacity(row.capacity));
     if (!includedAccounts.length) return state;
 
     const accounts = includedAccounts.map(({ acc }) => acc);
     const countPerForLimit = state.countPerAuto ? null : state.countPer;
     const preview = buildApUploadStartPreview(accounts, state.totalDesigns, countPerForLimit, state.previewOptions || {});
     includedAccounts.forEach(({ row }, index) => {
-        const cap = Math.max(0, Number(row.capacity) || 0);
-        row.designCount = Math.min(Math.max(0, Number(preview.rows[index]?.designCount) || 0), cap);
+        const rawAssigned = Math.max(0, Number(preview.rows[index]?.designCount) || 0);
+        if (isApUnlimitedCapacity(row.capacity)) {
+            row.designCount = rawAssigned;
+        } else {
+            const cap = Math.max(0, Number(row.capacity) || 0);
+            row.designCount = Math.min(rawAssigned, cap);
+        }
     });
     state.rows.forEach((row) => {
-        if (!row.included || row.capacity <= 0) row.designCount = 0;
+        if (!row.included || !hasApUploadCapacity(row.capacity)) row.designCount = 0;
     });
     return state;
 }
@@ -3184,13 +3259,14 @@ function rebuildApUploadConfirmStateCapacities(state) {
     const countPerForLimit = state.countPerAuto ? null : state.countPer;
     const limits = state.uploadAccounts.map((acc) => computeApAccountUploadLimit(acc, countPerForLimit));
     state.rows.forEach((row, index) => {
-        const capacity = Math.max(0, Number(limits[index]) || 0);
-        row.capacity = capacity;
-        if (capacity <= 0) {
+        const capacity = limits[index];
+        const unlimited = isApUnlimitedCapacity(capacity);
+        row.capacity = unlimited ? Infinity : Math.max(0, Number(capacity) || 0);
+        if (!hasApUploadCapacity(row.capacity)) {
             row.included = false;
             row.designCount = 0;
-        } else if ((Number(row.designCount) || 0) > capacity) {
-            row.designCount = capacity;
+        } else if (!unlimited && (Number(row.designCount) || 0) > row.capacity) {
+            row.designCount = row.capacity;
         }
     });
     return applyAutoDistributionToApUploadConfirmState(state);
@@ -3219,16 +3295,18 @@ function validateApUploadConfirmState(state) {
     let overCapacity = false;
 
     state.rows.forEach((row) => {
-        if (!row.included || row.capacity <= 0) {
+        if (!row.included || !hasApUploadCapacity(row.capacity)) {
             row.designCount = 0;
             return;
         }
-        const cap = Math.max(0, Number(row.capacity) || 0);
         let count = Math.max(0, Math.floor(Number(row.designCount) || 0));
-        if (count > cap) {
-            count = cap;
-            row.designCount = cap;
-            overCapacity = true;
+        if (!isApUnlimitedCapacity(row.capacity)) {
+            const cap = Math.max(0, Number(row.capacity) || 0);
+            if (count > cap) {
+                count = cap;
+                row.designCount = cap;
+                overCapacity = true;
+            }
         }
         row.designCount = count;
         if (count > 0) {
@@ -3242,7 +3320,7 @@ function validateApUploadConfirmState(state) {
     let level = 'ok';
 
     if (activeCount === 0) {
-        message = 'فعّل حساباً واحداً على الأقل بسعة رفع';
+        message = 'فعّل حساباً واحداً على الأقل للرفع';
         level = 'error';
     } else if (totalAssigned <= 0) {
         message = 'عيّن تصميماً واحداً على الأقل';
@@ -3254,7 +3332,7 @@ function validateApUploadConfirmState(state) {
         message = 'تم ضبط بعض الحسابات إلى الحد الأقصى المسموح';
         level = 'warn';
     } else if (unassigned > 0) {
-        message = `${unassigned} تصميم لن يُرفع — السعة غير كافية`;
+        message = `${unassigned} تصميم لن يُرفع — وزّعها على الحسابات أو أعد التوزيع`;
         level = 'warn';
     } else {
         message = 'جاهز للرفع';
@@ -3323,18 +3401,24 @@ function renderApUploadConfirmModal(state) {
 
     listEl.innerHTML = rows.map((row, index) => {
         const excludedClass = !row.included ? ' is-excluded' : '';
-        const noCapClass = row.capacity <= 0 ? ' is-no-capacity' : '';
+        const noCapClass = !hasApUploadCapacity(row.capacity) ? ' is-no-capacity' : '';
         const emailLine = row.email && row.email !== row.label
             ? `<span class="ap-upload-confirm-row-email" dir="ltr">${row.email}</span>`
             : '';
-        const capLabel = row.capacity > 0 ? `السعة: ${row.capacity}` : 'بدون سعة';
-        const disabled = !row.included || row.capacity <= 0;
+        const capLabel = formatApCapacityLabel(row.capacity);
+        const disabled = !row.included || !hasApUploadCapacity(row.capacity);
         const count = Math.max(0, Number(row.designCount) || 0);
+        const remainingForRow = getApUploadConfirmRemainingForRow(state, index);
         const atMin = count <= 0;
-        const atMax = count >= row.capacity;
+        const atMax = isApUnlimitedCapacity(row.capacity)
+            ? count >= remainingForRow
+            : count >= Math.min(Math.max(0, Number(row.capacity) || 0), remainingForRow);
+        const maxAttr = isApUnlimitedCapacity(row.capacity)
+            ? `max="${remainingForRow}"`
+            : `max="${Math.max(0, Number(row.capacity) || 0)}"`;
         return `<div class="ap-upload-confirm-row${excludedClass}${noCapClass}" role="listitem" data-index="${index}">
             <label class="ap-upload-confirm-toggle" title="${row.included ? 'استبعاد من الرفع' : 'تضمين في الرفع'}">
-                <input type="checkbox" class="ap-upload-confirm-include" data-index="${index}" ${row.included ? 'checked' : ''} ${row.capacity <= 0 ? 'disabled' : ''}>
+                <input type="checkbox" class="ap-upload-confirm-include" data-index="${index}" ${row.included ? 'checked' : ''} ${!hasApUploadCapacity(row.capacity) ? 'disabled' : ''}>
             </label>
             <div class="ap-upload-confirm-row-info">
                 <span class="ap-upload-confirm-row-label">${row.label}</span>
@@ -3343,7 +3427,7 @@ function renderApUploadConfirmModal(state) {
             </div>
             <div class="ap-upload-confirm-stepper">
                 <button type="button" class="ap-upload-confirm-stepper-btn ap-upload-confirm-minus" data-index="${index}" aria-label="تقليل" ${disabled || atMin ? 'disabled' : ''}>−</button>
-                <input type="number" class="ap-upload-confirm-stepper-input" data-index="${index}" min="0" max="${row.capacity}" value="${count}" ${disabled ? 'disabled' : ''} aria-label="عدد التصاميم">
+                <input type="number" class="ap-upload-confirm-stepper-input" data-index="${index}" min="0" ${maxAttr} value="${count}" ${disabled ? 'disabled' : ''} aria-label="عدد التصاميم">
                 <button type="button" class="ap-upload-confirm-stepper-btn ap-upload-confirm-plus" data-index="${index}" aria-label="زيادة" ${disabled || atMax ? 'disabled' : ''}>+</button>
             </div>
         </div>`;
@@ -3353,21 +3437,20 @@ function renderApUploadConfirmModal(state) {
 function updateApUploadConfirmRowCount(index, nextValue) {
     if (!_apUploadConfirmState || !Array.isArray(_apUploadConfirmState.rows)) return;
     const row = _apUploadConfirmState.rows[index];
-    if (!row || !row.included || row.capacity <= 0) return;
-    const cap = Math.max(0, Number(row.capacity) || 0);
-    row.designCount = Math.min(cap, Math.max(0, Math.floor(Number(nextValue) || 0)));
+    if (!row || !row.included || !hasApUploadCapacity(row.capacity)) return;
+    row.designCount = clampApUploadConfirmRowCount(_apUploadConfirmState, index, nextValue);
     renderApUploadConfirmModal(_apUploadConfirmState);
 }
 
 function toggleApUploadConfirmRowIncluded(index, included) {
     if (!_apUploadConfirmState || !Array.isArray(_apUploadConfirmState.rows)) return;
     const row = _apUploadConfirmState.rows[index];
-    if (!row || row.capacity <= 0) return;
+    if (!row || !hasApUploadCapacity(row.capacity)) return;
     row.included = included === true;
     if (!row.included) {
         row.designCount = 0;
-    } else if (row.designCount <= 0 && row.capacity > 0) {
-        row.designCount = 1;
+    } else if (row.designCount <= 0 && hasApUploadCapacity(row.capacity)) {
+        row.designCount = clampApUploadConfirmRowCount(_apUploadConfirmState, index, 1);
     }
     renderApUploadConfirmModal(_apUploadConfirmState);
 }
@@ -4034,7 +4117,17 @@ function setupEventListeners() {
         syncApDesignsPerInputFromParsed(parsed);
         void saveApMaxPerAccountPreference(parsed.auto ? 'auto' : parsed.countPer);
         if (parsed.auto) {
-            if (!silent) showToast('✅ وضع تلقائي — يُستخدم حد السعة لكل حساب');
+            let cleared = 0;
+            autopilotAccounts.forEach((acc) => {
+                if (isAutopilotAccountSelected(acc) && acc.batchLimit != null) {
+                    acc.batchLimit = null;
+                    cleared += 1;
+                }
+            });
+            if (cleared) {
+                saveCurrentAccounts(() => renderAPAccounts());
+            }
+            if (!silent) showToast('✅ وضع غير محدود — بدون سقف لكل حساب');
             return;
         }
         const value = parsed.countPer;
@@ -4752,28 +4845,21 @@ function computeApAccountUploadLimit(account, effectiveCountPer) {
     if (account.dailyLimitReachedDate && account.dailyLimitReachedDate !== todayDate) {
         delete account.dailyLimitReachedDate;
     }
-    const forcedStopForToday = account.dailyLimitReachedDate === todayDate;
-    const dailyCap = resolveApAccountDailyLimit(account);
-    const batchCap = toApFiniteUploadLimit(account?.batchLimit);
-    const uploadedToday = Math.max(0, Number(account.uploadedTodayCount) || 0);
-    const uploadedSession = Math.max(0, Number(account.sessionUploadedCount) || 0);
-    const remainingToday = forcedStopForToday
-        ? 0
-        : (dailyCap == null ? Infinity : Math.max(0, dailyCap - uploadedToday));
-    const remainingBatch = batchCap == null ? Infinity : Math.max(0, batchCap - uploadedSession);
+    // Platform hard-stop only — no artificial daily/50 ceiling for planning capacity.
+    if (account.dailyLimitReachedDate === todayDate) return 0;
+
     const countPerAuto = effectiveCountPer == null;
-    const caps = [remainingToday];
-    // «تلقائي» = daily shield only — per-account batch limits must not skew fair split.
-    if (!countPerAuto) {
-        caps.push(remainingBatch);
-        if (Number.isFinite(Number(effectiveCountPer)) && Number(effectiveCountPer) > 0) {
-            caps.push(Number(effectiveCountPer));
-        }
-    }
+    // «تلقائي» / empty = unlimited per account (design pool is the only safety).
+    if (countPerAuto) return Infinity;
+
+    const batchCap = toApFiniteUploadLimit(account?.batchLimit);
+    const uploadedSession = Math.max(0, Number(account.sessionUploadedCount) || 0);
+    const remainingBatch = batchCap == null ? Infinity : Math.max(0, batchCap - uploadedSession);
+    const countPerCap = toApFiniteUploadLimit(effectiveCountPer);
+    const caps = [remainingBatch];
+    if (countPerCap != null) caps.push(countPerCap);
     const finiteCaps = caps.filter((v) => Number.isFinite(v));
-    if (!finiteCaps.length) {
-        return countPerAuto ? Infinity : 0;
-    }
+    if (!finiteCaps.length) return Infinity;
     return Math.max(0, Math.min(...finiteCaps));
 }
 
@@ -4958,7 +5044,7 @@ function repairAutopilotStaticText() {
     if (settingsLabels?.[1]) settingsLabels[1].textContent = 'تأخير بين الرفع (ثواني)';
     setText('label[for="ap-visual-mode"]', 'الوضع البصري (فتح التبويبات أمامك)');
     setText('label[for="ap-auto-login"]', 'دخول آلي');
-    setHtml('label[for="ap-fair-distribution"]', 'توزيع عادل ⚖️ <span class="text-[8px] text-slate-500 block">تقسيم التصاميم بالتساوي بين الحسابات مع احترام حد كل حساب (🛡️)</span>');
+    setHtml('label[for="ap-fair-distribution"]', 'توزيع عادل ⚖️ <span class="text-[8px] text-slate-500 block">تقسيم التصاميم بالتساوي بين الحسابات (سعة غير محدودة ما لم تحدد حداً)</span>');
     setHtml('label[for="ap-random-distribution"]', 'توزيع عشوائي <span class="text-[8px] text-slate-500 block">عند التعطيل: توزيع دائري متتالي</span>');
     setText('#ap-random-distribution + label + span', 'دائري');
 

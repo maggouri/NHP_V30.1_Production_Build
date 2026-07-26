@@ -13266,14 +13266,17 @@ function toFiniteUploadLimit(value) {
 function isApCountPerAuto(value) {
     if (value == null || value === '') return true;
     const normalized = String(value).trim().toLowerCase();
-    return normalized === 'auto' || normalized === 'Ï¬┘ä┘éÏºÏª┘è';
+    return normalized === 'auto'
+        || normalized === 'unlimited'
+        || normalized === 'Ï¬┘ä┘éÏºÏª┘è'
+        || normalized === 'غير محدود';
 }
 
 function parseApCountPerFromConfig(value) {
     if (isApCountPerAuto(value)) return null;
     const parsed = parseInt(String(value).trim(), 10);
     if (Number.isFinite(parsed) && parsed > 0) {
-        return Math.min(50, Math.max(1, parsed));
+        return Math.max(1, parsed);
     }
     return null;
 }
@@ -13301,28 +13304,21 @@ function computeAccountUploadLimit(acc, effectiveCountPer, todayDate) {
     if (acc.dailyLimitReachedDate && acc.dailyLimitReachedDate !== todayDate) {
         delete acc.dailyLimitReachedDate;
     }
-    const forcedStopForToday = acc.dailyLimitReachedDate === todayDate;
-    const dailyCap = resolveAccountDailyLimit(acc);
-    const batchCap = toFiniteUploadLimit(acc?.batchLimit);
-    const uploadedToday = Math.max(0, Number(acc.uploadedTodayCount) || 0);
-    const uploadedSession = Math.max(0, Number(acc.sessionUploadedCount) || 0);
-    const remainingToday = forcedStopForToday
-        ? 0
-        : (dailyCap == null ? Infinity : Math.max(0, dailyCap - uploadedToday));
-    const remainingBatch = batchCap == null ? Infinity : Math.max(0, batchCap - uploadedSession);
+    // Platform hard-stop only — no artificial daily/50 ceiling for planning capacity.
+    if (acc.dailyLimitReachedDate === todayDate) return 0;
+
     const countPerAuto = effectiveCountPer == null;
-    const caps = [remainingToday];
-    // ┬½Ï¬┘ä┘éÏºÏª┘è┬╗ = daily shield only ÔÇö per-account batch limits must not skew fair split.
-    if (!countPerAuto) {
-        caps.push(remainingBatch);
-        if (Number.isFinite(Number(effectiveCountPer)) && Number(effectiveCountPer) > 0) {
-            caps.push(Number(effectiveCountPer));
-        }
-    }
+    // Empty / auto max-per = unlimited per account (design pool is the only safety).
+    if (countPerAuto) return Infinity;
+
+    const batchCap = toFiniteUploadLimit(acc?.batchLimit);
+    const uploadedSession = Math.max(0, Number(acc.sessionUploadedCount) || 0);
+    const remainingBatch = batchCap == null ? Infinity : Math.max(0, batchCap - uploadedSession);
+    const countPerCap = toFiniteUploadLimit(effectiveCountPer);
+    const caps = [remainingBatch];
+    if (countPerCap != null) caps.push(countPerCap);
     const finiteCaps = caps.filter((value) => Number.isFinite(value));
-    if (!finiteCaps.length) {
-        return countPerAuto ? Infinity : 0;
-    }
+    if (!finiteCaps.length) return Infinity;
     return Math.max(0, Math.min(...finiteCaps));
 }
 
@@ -14099,7 +14095,7 @@ async function startAPProcess(config) {
     const hasUploadCapacity = accounts.some((acc, index) => {
         const runtimeCap = computeAccountUploadLimit(acc, countPerForRuntimeCap, todayDateForFair);
         if (fairAssignmentCounts) {
-            return Math.min(fairAssignmentCounts[index] || 0, runtimeCap) > 0;
+            return (fairAssignmentCounts[index] || 0) > 0;
         }
         return runtimeCap > 0;
     });
@@ -14180,10 +14176,16 @@ async function startAPProcess(config) {
         }
 
         const runtimeCap = computeAccountUploadLimit(acc, countPerForRuntimeCap, todayDate);
+        // Confirmed modal plan is authoritative — do not re-clamp to runtime capacity.
         const rawLimit = fairAssignmentCounts
-            ? Math.min(fairAssignmentCounts[i] || 0, runtimeCap)
+            ? Math.max(0, Math.floor(Number(fairAssignmentCounts[i]) || 0))
             : runtimeCap;
-        const limit = Number.isFinite(Number(rawLimit)) ? Math.max(0, Number(rawLimit)) : 0;
+        const queueRemaining = fairAssignmentCounts
+            ? Math.max(0, allDesigns.length - fairDesignOffset)
+            : Math.max(0, allDesigns.length - currentIndex);
+        const limit = (rawLimit === Infinity || rawLimit === Number.POSITIVE_INFINITY)
+            ? queueRemaining
+            : (Number.isFinite(Number(rawLimit)) ? Math.max(0, Number(rawLimit)) : 0);
         const forcedStopForToday = acc.dailyLimitReachedDate === todayDate;
         const dailyCap = resolveAccountDailyLimit(acc);
         const batchCap = toFiniteUploadLimit(acc?.batchLimit);
@@ -14193,9 +14195,6 @@ async function startAPProcess(config) {
         const remainingBatch = batchCap == null
             ? Infinity
             : Math.max(0, batchCap - (Number(acc.sessionUploadedCount) || 0));
-        const queueRemaining = fairAssignmentCounts
-            ? Math.max(0, allDesigns.length - fairDesignOffset)
-            : Math.max(0, allDesigns.length - currentIndex);
 
         chrome.runtime.sendMessage({
             action: 'ap_update',
