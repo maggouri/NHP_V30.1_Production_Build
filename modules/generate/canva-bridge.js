@@ -4701,7 +4701,7 @@ function canvaRenderPreview() {
 
   const nicheLabel = showItem ? canvaResolveItemDisplayName(item) : '';
   const fileName = showItem
-    ? (nicheLabel || item.fileName || item.displayName || item.promptPreview || item.id)
+    ? (item.fileName || nicheLabel || item.displayName || item.promptPreview || item.id)
     : '—';
   // Under-thumb / preview subtitle must stay the niche (never pipeline stems).
   const designLabel = showItem
