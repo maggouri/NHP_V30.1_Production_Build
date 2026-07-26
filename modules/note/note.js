@@ -867,6 +867,54 @@ function NC_normalizeTrendMatchKey(text) {
         .trim();
 }
 
+/** Drop smoke/synthetic niches (e.g. "00002") — never sync into نوتة المهام. */
+function NC_isSyntheticOrTestNiche(name) {
+    const s = String(name || '').trim();
+    if (!s) return true;
+    if (/^\d{3,}$/.test(s)) return true;
+    const lower = s.toLowerCase();
+    if (/^(test|sample|dummy|fake|placeholder|asdf|xxx|yyy|zzz)([\s_\-.#]|$)/i.test(lower)) return true;
+    if (/^(niche\s*)?(test|dummy|sample)\s*[-_]?\d*$/i.test(lower)) return true;
+    if (/^smoke[\s_\-.]/i.test(lower)) return true;
+    return false;
+}
+
+/** Official TP rank for sort: live Trends / eligible feed / stored niche.rank. */
+function NC_resolveOfficialTpRank(niche) {
+    const live = NC_getTrendRank(niche?.text || niche?.niche || '');
+    if (Number.isFinite(live) && live >= 1) return live;
+    const fromFields = Number(
+        niche?.officialTeePublicRank ?? niche?.tp_rank ?? niche?.trend_rank ?? niche?.trendRank ?? niche?.rank
+    );
+    if (Number.isFinite(fromFields) && fromFields >= 1 && fromFields < 999999) return Math.trunc(fromFields);
+    return null;
+}
+
+/** Sort key: Official TP remaining first (ascending rank), then Early Radar; pages only as tiebreak. */
+function NC_compareNichesByOfficialTpRank(a, b) {
+    const nicheA = a?.niche || a;
+    const nicheB = b?.niche || b;
+    const intakeA = Number.isFinite(a?.intakeRank) ? a.intakeRank : NC_intakeSortRank(nicheA);
+    const intakeB = Number.isFinite(b?.intakeRank) ? b.intakeRank : NC_intakeSortRank(nicheB);
+    if (intakeA !== intakeB) return intakeA - intakeB;
+
+    const rankA = Number.isFinite(a?.trendRank) ? a.trendRank : NC_resolveOfficialTpRank(nicheA);
+    const rankB = Number.isFinite(b?.trendRank) ? b.trendRank : NC_resolveOfficialTpRank(nicheB);
+    const ra = Number.isFinite(rankA) && rankA >= 1 ? rankA : Number.POSITIVE_INFINITY;
+    const rb = Number.isFinite(rankB) && rankB >= 1 ? rankB : Number.POSITIVE_INFINITY;
+    if (ra !== rb) return ra - rb;
+
+    const pagesA = Number.isFinite(a?.pages) ? a.pages : NC_resolveNichePageCount(nicheA);
+    const pagesB = Number.isFinite(b?.pages) ? b.pages : NC_resolveNichePageCount(nicheB);
+    const pa = Number.isFinite(pagesA) ? pagesA : Number.POSITIVE_INFINITY;
+    const pb = Number.isFinite(pagesB) ? pagesB : Number.POSITIVE_INFINITY;
+    if (pa !== pb) return pa - pb;
+
+    const idxA = Number.isFinite(a?.originalIndex) ? a.originalIndex : 0;
+    const idxB = Number.isFinite(b?.originalIndex) ? b.originalIndex : 0;
+    return idxA - idxB;
+}
+
 function NC_buildTrendRankIndex(trends) {
     const exact = new Map();
     const normalized = new Map();
@@ -1240,34 +1288,19 @@ function NC_getSortedNiches(filter = "") {
         .map((niche, index) => ({
             niche,
             originalIndex: index,
-            trendRank: NC_getTrendRank(niche.text),
+            trendRank: NC_resolveOfficialTpRank(niche),
             archiveRecord: getArchiveRecord(NC_archiveIndex, niche.text),
             pages: NC_resolveNichePageCount(niche),
             intakeRank: NC_intakeSortRank(niche),
         }))
         .filter(({ niche, pages }) => {
+            if (NC_isSyntheticOrTestNiche(niche?.text)) return false;
             if (!niche.text.toLowerCase().includes(filter.toLowerCase())) return false;
             // Hide niches with known page count > 15 (unknown pages still shown).
             if (Number.isFinite(pages) && pages > NC_MAX_DISPLAY_PAGES) return false;
             return true;
         })
-        .sort((a, b) => {
-            // Official TeePublic trends first, then Early Radar (الرادار).
-            if (a.intakeRank !== b.intakeRank) return a.intakeRank - b.intakeRank;
-
-            const aPages = Number.isFinite(a.pages) ? a.pages : Number.POSITIVE_INFINITY;
-            const bPages = Number.isFinite(b.pages) ? b.pages : Number.POSITIVE_INFINITY;
-            if (aPages !== bPages) return aPages - bPages;
-
-            const aIsLiveTrend = Number.isFinite(a.trendRank);
-            const bIsLiveTrend = Number.isFinite(b.trendRank);
-            if (aIsLiveTrend !== bIsLiveTrend) return aIsLiveTrend ? -1 : 1;
-            if (aIsLiveTrend && bIsLiveTrend && a.trendRank !== b.trendRank) {
-                return a.trendRank - b.trendRank;
-            }
-
-            return a.originalIndex - b.originalIndex;
-        });
+        .sort(NC_compareNichesByOfficialTpRank);
 }
 
 function NC_getMetaBadges(niche) {
@@ -2481,11 +2514,19 @@ async function NC_updateBulk() {
 
         NC_state.niches = uniqueLines.map(line => {
             const lower = line.toLowerCase();
-            const rank = trendRankMap.get(lower) || 999999;
+            if (NC_isSyntheticOrTestNiche(line)) return null;
+            const live = NC_getTrendRank(line);
+            const rank = (Number.isFinite(live) && live >= 1)
+                ? live
+                : (trendRankMap.get(lower) || 999999);
 
             if (oldNichesMap.has(lower)) {
                 const old = oldNichesMap.get(lower);
                 old.rank = rank;
+                if (rank < 999999) {
+                    old.officialTeePublicRank = rank;
+                    old.trend_rank = rank;
+                }
                 return old;
             }
 
@@ -2496,6 +2537,8 @@ async function NC_updateBulk() {
                 isCompleted: isPreviouslyDone,
                 done: isPreviouslyDone,
                 rank: rank,
+                officialTeePublicRank: rank < 999999 ? rank : null,
+                trend_rank: rank < 999999 ? rank : null,
                 addedAt: new Date().toISOString()
             };
             lifecycleItems.push({
@@ -2504,9 +2547,9 @@ async function NC_updateBulk() {
                 quality: null
             });
             return created;
-        });
+        }).filter(Boolean);
 
-        NC_state.niches.sort((a, b) => (a.rank || 999999) - (b.rank || 999999));
+        NC_state.niches.sort(NC_compareNichesByOfficialTpRank);
 
         const nextBatchKey = NC_batchKeyFromNiches(NC_state.niches);
         if (previousBatchKey && previousBatchKey !== nextBatchKey) {
@@ -2616,7 +2659,7 @@ function NC_mapFinalCleanItemsToNotes(items, trendRankMap) {
     const combinedRaw = [];
     for (const row of Array.isArray(items) ? items : []) {
         const text = String(row?.niche || row?.niche_display || row?.text || '').trim();
-        if (!text) continue;
+        if (!text || NC_isSyntheticOrTestNiche(text) || NC_isSyntheticOrTestNiche(row?.niche_key)) continue;
         const status = String(row?.analysis_status || row?.quality || '').trim().toLowerCase();
         const quality = status === 'excellent' || status === 'exc'
             ? 'excellent'
@@ -2636,10 +2679,23 @@ function NC_mapFinalCleanItemsToNotes(items, trendRankMap) {
                 row?.niche_display,
             ], pageCount);
         }
+        const serverRank = Number(
+            row?.officialTeePublicRank ?? row?.tp_rank ?? row?.trend_rank ?? row?.trendRank
+        );
+        const fromEligible = NC_getTrendRank(text);
+        const fromDaily = trendRankMap?.get?.(text.toLowerCase());
+        let rank = 999999;
+        if (Number.isFinite(serverRank) && serverRank >= 1) rank = Math.trunc(serverRank);
+        else if (Number.isFinite(fromEligible) && fromEligible >= 1) rank = Math.trunc(fromEligible);
+        else if (Number.isFinite(fromDaily) && fromDaily >= 1) rank = Math.trunc(fromDaily);
+        // Official-synced niches without a real Official TP rank stay out of Notes.
+        if (intake_source !== 'early_radar' && rank >= 999999) continue;
         combinedRaw.push({
             text,
             quality,
-            rank: trendRankMap.get(text.toLowerCase()) || 999999,
+            rank,
+            officialTeePublicRank: rank < 999999 ? rank : null,
+            trend_rank: rank < 999999 ? rank : null,
             analysis_status: status || quality,
             pageCount,
             pages: pageCount,
@@ -2657,11 +2713,61 @@ function NC_mapFinalCleanItemsToNotes(items, trendRankMap) {
     });
 }
 
+/** Map Design Images eligible_niches → Notes (Official TP remaining order). */
+function NC_mapEligibleNichesToNotes(eligible) {
+    const combinedRaw = [];
+    for (const row of Array.isArray(eligible) ? eligible : []) {
+        const text = String(row?.niche || row?.niche_display || row?.name || row?.text || '').trim();
+        if (!text || NC_isSyntheticOrTestNiche(text) || NC_isSyntheticOrTestNiche(row?.niche_key)) continue;
+        const status = String(row?.class || row?.classification || row?.quality || row?.analysis_status || '').trim().toLowerCase();
+        const quality = status === 'excellent' || status === 'exc'
+            ? 'excellent'
+            : (status === 'saturated' || status === 'sat'
+                ? 'saturated'
+                : (status === 'medium' || status === 'average' || status === 'med' ? 'average' : (status || 'average')));
+        const intake_source = NC_resolveIntakeSource(row);
+        const pageCount = NC_extractPageCountFromRecord(row);
+        if (Number.isFinite(pageCount) && pageCount > NC_MAX_DISPLAY_PAGES) continue;
+        if (Number.isFinite(pageCount)) {
+            NC_indexPageCountKeys([text, row?.niche_key, row?.niche, row?.niche_display], pageCount);
+        }
+        const rankNum = Number(
+            row?.officialTeePublicRank ?? row?.tp_rank ?? row?.trend_rank ?? row?.trendRank
+        );
+        const fromIndex = NC_getTrendRank(text);
+        let rank = 999999;
+        if (Number.isFinite(rankNum) && rankNum >= 1) rank = Math.trunc(rankNum);
+        else if (Number.isFinite(fromIndex) && fromIndex >= 1) rank = Math.trunc(fromIndex);
+        if (intake_source !== 'early_radar' && rank >= 999999) continue;
+        combinedRaw.push({
+            text,
+            quality,
+            rank,
+            officialTeePublicRank: rank < 999999 ? rank : null,
+            trend_rank: rank < 999999 ? rank : null,
+            analysis_status: status || quality,
+            pageCount,
+            pages: pageCount,
+            intake_source,
+            from_early_radar: intake_source === 'early_radar' || row?.from_early_radar === true,
+            source_batch_id: row?.source_batch_id || null,
+        });
+    }
+    const seen = new Set();
+    return combinedRaw.filter((item) => {
+        const lower = item.text.trim().toLowerCase();
+        if (seen.has(lower)) return false;
+        seen.add(lower);
+        return true;
+    });
+}
+
 async function NC_applyCombinedNicheImport(combined, _options = {}) {
     const isRecheckImport = _options?.recheck === true || _options?.source === 'recheck';
     const emptyMessage = _options?.emptyMessage || '⚠️ لا توجد نيتشات للاستيراد';
     const sourceLabel = _options?.sourceLabel || 'analysis';
-    const combinedRaw = Array.isArray(combined) ? combined : [];
+    const combinedRaw = (Array.isArray(combined) ? combined : [])
+        .filter((item) => item && !NC_isSyntheticOrTestNiche(item.text));
 
     if (combinedRaw.length === 0) {
         showToastRef(emptyMessage);
@@ -2694,6 +2800,14 @@ async function NC_applyCombinedNicheImport(combined, _options = {}) {
             done: isCompleted,
             quality: item.quality || existingItem?.quality || '',
             rank: item.rank,
+            officialTeePublicRank: item.officialTeePublicRank
+                ?? item.trend_rank
+                ?? (Number.isFinite(item.rank) && item.rank < 999999 ? item.rank : existingItem?.officialTeePublicRank)
+                ?? null,
+            trend_rank: item.trend_rank
+                ?? item.officialTeePublicRank
+                ?? (Number.isFinite(item.rank) && item.rank < 999999 ? item.rank : existingItem?.trend_rank)
+                ?? null,
             pageCount: Number.isFinite(item.pageCount) ? item.pageCount
                 : (Number.isFinite(item.pages) ? item.pages
                     : (Number.isFinite(existingItem?.pageCount) ? existingItem.pageCount : null)),
@@ -2724,17 +2838,7 @@ async function NC_applyCombinedNicheImport(combined, _options = {}) {
         return preparedItem;
     });
 
-    nextItems.sort((a, b) => {
-        const ia = NC_intakeSortRank(a);
-        const ib = NC_intakeSortRank(b);
-        if (ia !== ib) return ia - ib;
-        const pa = NC_resolveNichePageCount(a);
-        const pb = NC_resolveNichePageCount(b);
-        const pagesA = Number.isFinite(pa) ? pa : Number.POSITIVE_INFINITY;
-        const pagesB = Number.isFinite(pb) ? pb : Number.POSITIVE_INFINITY;
-        if (pagesA !== pagesB) return pagesA - pagesB;
-        return (a.rank || 999999) - (b.rank || 999999);
-    });
+    nextItems.sort(NC_compareNichesByOfficialTpRank);
 
     const nextBatchKey = nextItems
         .map((n) => String(n.text || '').trim().toLowerCase())
@@ -2849,6 +2953,17 @@ export async function NC_fetchNichesFromSite(options = {}) {
         }
         const items = Array.isArray(data.items) ? data.items : [];
         NC_ingestFinalCleanFeedItems(items);
+
+        // Prefer Design Images eligible remainder (Official TP order) when sync has it.
+        let eligible = [];
+        try {
+            const imagesResult = await imagesPromise;
+            if (imagesResult?.updated || NC_designImagesByKey.size || NC_trendRankByKey.size) {
+                const stored = await NC_loadDesignImagesFeedFromStorage();
+                eligible = Array.isArray(stored?.eligible_niches) ? stored.eligible_niches : [];
+            }
+        } catch (_) { /* fall through to final-clean */ }
+
         const dailyTrends = await new Promise((resolve) => {
             chrome.storage.local.get(['dailyTrends'], (res) => resolve(res.dailyTrends || []));
         });
@@ -2858,7 +2973,10 @@ export async function NC_fetchNichesFromSite(options = {}) {
             trendRankMap.set(String(tText || '').trim().toLowerCase(), i + 1);
         });
 
-        const combined = NC_mapFinalCleanItemsToNotes(items, trendRankMap);
+        let combined = NC_mapEligibleNichesToNotes(eligible);
+        if (!combined.length) {
+            combined = NC_mapFinalCleanItemsToNotes(items, trendRankMap);
+        }
         const result = await NC_applyCombinedNicheImport(combined, {
             source: 'site',
             sourceLabel: 'site',
@@ -2882,11 +3000,10 @@ export async function NC_fetchNichesFromSite(options = {}) {
         console.warn('NC_fetchNichesFromSite:', err);
     } finally {
         try {
-            const imagesResult = await imagesPromise;
-            if (imagesResult?.updated) {
-                NC_listRenderFingerprint = '';
-                NC_requestRenderListSoon(NC_getNotesSearchFilter());
-            }
+            // Ensure images promise settled even if we awaited it earlier.
+            await imagesPromise;
+            NC_listRenderFingerprint = '';
+            NC_requestRenderListSoon(NC_getNotesSearchFilter());
         } catch (_) { /* refresh already logs */ }
         NC_importInFlight = Math.max(0, NC_importInFlight - 1);
         if (btn) {
@@ -2951,15 +3068,21 @@ export async function NC_importFromAnalysis(_options = {}) {
         const mapBucket = (list, quality) => (Array.isArray(list) ? list : []).map((n) => {
             const text = String(n || '').trim();
             const pageCount = resolveImportPages(text);
+            const live = NC_getTrendRank(text);
+            const rank = (Number.isFinite(live) && live >= 1)
+                ? live
+                : (trendRankMap.get(text.toLowerCase()) || 999999);
             return {
                 text,
                 quality,
-                rank: trendRankMap.get(text.toLowerCase()) || 999999,
+                rank,
+                officialTeePublicRank: rank < 999999 ? rank : null,
+                trend_rank: rank < 999999 ? rank : null,
                 pageCount,
                 pages: pageCount,
             };
         }).filter((item) => {
-            if (!item.text) return false;
+            if (!item.text || NC_isSyntheticOrTestNiche(item.text)) return false;
             // Same Notes rule as site final-clean: hide known pages > 15.
             if (Number.isFinite(item.pageCount) && item.pageCount > NC_MAX_DISPLAY_PAGES) return false;
             return true;
@@ -3362,15 +3485,24 @@ async function runNoteModuleInit(helpers) {
         });
 
         let changed = false;
+        NC_state.niches = NC_state.niches.filter((n) => !NC_isSyntheticOrTestNiche(n?.text));
         NC_state.niches.forEach(n => {
-            const currentRank = trendRankMap.get(n.text.trim().toLowerCase()) || 999999;
+            const live = NC_resolveOfficialTpRank(n);
+            const fromDaily = trendRankMap.get(n.text.trim().toLowerCase());
+            const currentRank = (Number.isFinite(live) && live >= 1)
+                ? live
+                : (fromDaily || 999999);
             if (n.rank !== currentRank) {
                 n.rank = currentRank;
+                if (currentRank < 999999) {
+                    n.officialTeePublicRank = currentRank;
+                    n.trend_rank = currentRank;
+                }
                 changed = true;
             }
         });
 
-        NC_state.niches.sort((a, b) => (a.rank || 999999) - (b.rank || 999999));
+        NC_state.niches.sort(NC_compareNichesByOfficialTpRank);
         
         if (changed) {
             await NC_saveToLocal();
