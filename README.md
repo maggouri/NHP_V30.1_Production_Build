@@ -34,7 +34,7 @@ Follow `LOAD_EXTENSION.txt` in this folder — load unpacked from:
 
 Example: `D:/Dev/NHP_PLATFORM/02_Chrome_Extension`
 
-Workspace root `LOAD_EXTENSION.txt` points here. Root `NHP_Start_All_Servers.bat` delegates to this folder.
+Workspace root `LOAD_EXTENSION.txt` points here. Root `NHP_Start_All_Servers.cmd` delegates to this folder.
 
 ## Sync to EmailCore
 

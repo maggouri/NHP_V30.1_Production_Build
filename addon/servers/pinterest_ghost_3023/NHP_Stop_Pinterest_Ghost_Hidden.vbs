@@ -1,9 +1,9 @@
-' Shared hidden launcher: Foo_Hidden.vbs runs Foo_SilentCore.bat (window style 0).
+' Shared hidden launcher: Foo_Hidden.vbs runs Foo_SilentCore.cmd (window style 0).
 Option Explicit
 Dim sh, fso, dir, coreBat
 Set sh = CreateObject("WScript.Shell")
 Set fso = CreateObject("Scripting.FileSystemObject")
-coreBat = Replace(WScript.ScriptFullName, "_Hidden.vbs", "_SilentCore.bat")
+coreBat = Replace(WScript.ScriptFullName, "_Hidden.vbs", "_SilentCore.cmd")
 If Not fso.FileExists(coreBat) Then
   WScript.Echo "Missing: " & coreBat
   WScript.Quit 1

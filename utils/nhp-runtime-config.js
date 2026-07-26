@@ -13,7 +13,7 @@
         proxyEndpoints: 'nhpProxyEndpoints'
     });
 
-    /** Empty = portable; set via Admin or addon\00_Register_Native_Messaging\Register_NHP_Native_Messaging_User.bat after copy. */
+    /** Empty = portable; set via Admin or addon\00_Register_Native_Messaging\Register_NHP_Native_Messaging_User.cmd after copy. */
     const DEFAULT_WINDOWS_PROJECT_DIR = '';
     const DEFAULT_WIN_HOST = '127.0.0.1';
     const DEFAULT_WIN_CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';

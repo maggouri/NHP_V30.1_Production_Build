@@ -3,7 +3,7 @@
   "default_locale": "en",
   "name": "__MSG_extName__",
   "short_name": "Niche Hunter Pro",
-  "version": "40.0.17",
+  "version": "40.0.18",
   "description": "__MSG_extDescription__",
   "icons": {
     "16": "icons/icon16.png",
@@ -323,7 +323,7 @@
         "tailwind-built.css",
         "studio_hub.js",
         "startup-script-templates.json",
-        "NHP_Start_All_Servers.bat.template",
+        "NHP_Start_All_Servers.cmd.template",
         "assets/*",
         "emailcore-account-utils.js",
         "teepublic-signup-main.js"

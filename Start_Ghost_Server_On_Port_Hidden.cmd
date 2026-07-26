@@ -1,6 +1,6 @@
-﻿@echo off
+@echo off
 setlocal EnableExtensions
-REM Start ghost-server.js on port %1 with no visible console (used by NHP_Start_All_Servers.bat).
+REM Start ghost-server.js on port %1 with no visible console (used by NHP_Start_All_Servers.cmd).
 cd /d "%~dp0"
 
 set "GHOST_PORT=%~1"

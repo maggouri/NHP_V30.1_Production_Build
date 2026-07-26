@@ -11,10 +11,10 @@
 
     const LAUNCHER_FILE_DEFS = Object.freeze([
         { file: 'FIRST_RUN.cmd', labelAr: 'التشغيل الأول', labelEn: 'First Run' },
-        { file: 'NHP_Start_All_Servers_SilentCore.bat', labelAr: 'تشغيل الكل', labelEn: 'Start All' },
-        { file: 'NHP_Stop_All_Servers_SilentCore.bat', labelAr: 'إيقاف الكل', labelEn: 'Stop All' },
-        { file: 'NHP_Restart_All_Servers_SilentCore.bat', labelAr: 'إعادة التشغيل', labelEn: 'Restart All' },
-        { file: 'NHP_Check_Server_Ports.bat', labelAr: 'فحص المنافذ', labelEn: 'Check Ports' },
+        { file: 'NHP_Start_All_Servers_SilentCore.cmd', labelAr: 'تشغيل الكل', labelEn: 'Start All' },
+        { file: 'NHP_Stop_All_Servers_SilentCore.cmd', labelAr: 'إيقاف الكل', labelEn: 'Stop All' },
+        { file: 'NHP_Restart_All_Servers_SilentCore.cmd', labelAr: 'إعادة التشغيل', labelEn: 'Restart All' },
+        { file: 'NHP_Check_Server_Ports.cmd', labelAr: 'فحص المنافذ', labelEn: 'Check Ports' },
         { file: 'CHECK_PORTS.cmd', labelAr: 'فحص المنافذ (cmd)', labelEn: 'Check Ports (cmd)' }
     ]);
 
@@ -487,7 +487,7 @@
 
     async function registerNativeMessaging(appRoot, extensionId, deps) {
         const extId = String(extensionId || chrome.runtime.id || '').trim();
-        const scriptRel = 'addon\\00_Register_Native_Messaging\\Register_NHP_Native_Messaging_User.bat';
+        const scriptRel = 'addon\\00_Register_Native_Messaging\\Register_NHP_Native_Messaging_User.cmd';
         const scriptPath = deps.joinProjectPath ? deps.joinProjectPath(appRoot, scriptRel) : joinWinPath(appRoot, scriptRel);
         const launch = await deps.executeNhpLauncherScript(scriptPath, { interactive: true, serverId: 'setup', command: 'register-native' });
         if (!launch?.success) {
@@ -587,17 +587,17 @@
 
         if (endpoint === 'start-all') {
             const bulk = typeof NhpLocalServers !== 'undefined' ? NhpLocalServers.BULK_SCRIPTS?.startAll : null;
-            return runBulkLauncher(appRoot, bulk || 'addon\\_shared\\NHP_Start_All_Servers_SilentCore.bat', deps, 'start-all');
+            return runBulkLauncher(appRoot, bulk || 'addon\\_shared\\NHP_Start_All_Servers_SilentCore.cmd', deps, 'start-all');
         }
 
         if (endpoint === 'stop-all') {
             const bulk = typeof NhpLocalServers !== 'undefined' ? NhpLocalServers.BULK_SCRIPTS?.stopAll : null;
-            return runBulkLauncher(appRoot, bulk || 'addon\\_shared\\NHP_Stop_All_Servers_SilentCore.bat', deps, 'stop-all');
+            return runBulkLauncher(appRoot, bulk || 'addon\\_shared\\NHP_Stop_All_Servers_SilentCore.cmd', deps, 'stop-all');
         }
 
         if (endpoint === 'restart-all') {
             const bulk = typeof NhpLocalServers !== 'undefined' ? NhpLocalServers.BULK_SCRIPTS?.restartAll : null;
-            return runBulkLauncher(appRoot, bulk || 'addon\\_shared\\NHP_Restart_All_Servers_SilentCore.bat', deps, 'restart-all');
+            return runBulkLauncher(appRoot, bulk || 'addon\\_shared\\NHP_Restart_All_Servers_SilentCore.cmd', deps, 'restart-all');
         }
 
         if (endpoint === 'run-launcher') {

@@ -29,21 +29,21 @@ echo Logs:      %NHP_LOG_DIR%
 echo.
 
 echo [1/8] TeePublic Ghost (3019)...
-call :LaunchOne "%ADDON_DIR%\servers\teepublic_ghost_3019\NHP_Start_TeePublic_Ghost_SilentCore.bat" "TeePublic_3019"
+call :LaunchOne "%ADDON_DIR%\servers\teepublic_ghost_3019\NHP_Start_TeePublic_Ghost_SilentCore.cmd" "TeePublic_3019"
 echo [2/8] Creaty Signup (3020)...
-call :LaunchOne "%ADDON_DIR%\servers\creaty_signup_3020\NHP_Start_Creaty_Signup_SilentCore.bat" "CreatySignup_3020"
+call :LaunchOne "%ADDON_DIR%\servers\creaty_signup_3020\NHP_Start_Creaty_Signup_SilentCore.cmd" "CreatySignup_3020"
 echo [3/8] Redbubble Ghost (3021)...
-call :LaunchOne "%ADDON_DIR%\servers\redbubble_ghost_3021\NHP_Start_Redbubble_Ghost_SilentCore.bat" "Redbubble_3021"
+call :LaunchOne "%ADDON_DIR%\servers\redbubble_ghost_3021\NHP_Start_Redbubble_Ghost_SilentCore.cmd" "Redbubble_3021"
 echo [4/8] Amazon Ghost (3022)...
-call :LaunchOne "%ADDON_DIR%\servers\amazon_ghost_3022\NHP_Start_Amazon_Ghost_SilentCore.bat" "Amazon_3022"
+call :LaunchOne "%ADDON_DIR%\servers\amazon_ghost_3022\NHP_Start_Amazon_Ghost_SilentCore.cmd" "Amazon_3022"
 echo [5/8] Pinterest Ghost (3023)...
-call :LaunchOne "%ADDON_DIR%\servers\pinterest_ghost_3023\NHP_Start_Pinterest_Ghost_SilentCore.bat" "Pinterest_3023"
+call :LaunchOne "%ADDON_DIR%\servers\pinterest_ghost_3023\NHP_Start_Pinterest_Ghost_SilentCore.cmd" "Pinterest_3023"
 echo [6/8] Creaty Workflow Ghost (3024)...
-call :LaunchOne "%ADDON_DIR%\servers\creaty_workflow_3024\NHP_Start_Creaty_Workflow_Ghost_SilentCore.bat" "CreatyWorkflow_3024"
+call :LaunchOne "%ADDON_DIR%\servers\creaty_workflow_3024\NHP_Start_Creaty_Workflow_Ghost_SilentCore.cmd" "CreatyWorkflow_3024"
 echo [7/8] AI Bridge (3031)...
-call :LaunchOne "%ADDON_DIR%\servers\ai_bridge_3031\NHP_Start_AI_Bridge_SilentCore.bat" "AIBridge_3031"
+call :LaunchOne "%ADDON_DIR%\servers\ai_bridge_3031\NHP_Start_AI_Bridge_SilentCore.cmd" "AIBridge_3031"
 echo [8/8] CLIProxyAPI Local (8317)...
-call :LaunchOne "%ADDON_DIR%\servers\cliproxy_8317\NHP_Start_CLIProxyAPI_Local_SilentCore.bat" "CLIProxy_8317"
+call :LaunchOne "%ADDON_DIR%\servers\cliproxy_8317\NHP_Start_CLIProxyAPI_Local_SilentCore.cmd" "CLIProxy_8317"
 
 echo.
 echo Waiting for servers (up to 120s)...

@@ -2602,8 +2602,8 @@ export async function initAdminModule(helpers) {
         if (nhpNativeHostBannerTitle) {
             nhpNativeHostBannerTitle.textContent = nativeHostBannerTitleFor(snapshot);
         }
-        const registerScript = snapshot?.registerScript || 'addon\\00_Register_Native_Messaging\\Register_NHP_Native_Messaging_User.bat';
-        const registerCommand = snapshot?.registerCommand || `addon\\00_Register_Native_Messaging\\Register_NHP_Native_Messaging_User.bat ${snapshot?.extensionId || ''}`.trim();
+        const registerScript = snapshot?.registerScript || 'addon\\00_Register_Native_Messaging\\Register_NHP_Native_Messaging_User.cmd';
+        const registerCommand = snapshot?.registerCommand || `addon\\00_Register_Native_Messaging\\Register_NHP_Native_Messaging_User.cmd ${snapshot?.extensionId || ''}`.trim();
         const bridgeNote = snapshot?.localBridgeOnline
             ? 'جسر 3009 متصل (اختياري).'
             : 'جسر 3009 غير مشغّل (اختياري — Native Messaging هو الطريقة الأساسية).';
@@ -2631,7 +2631,7 @@ export async function initAdminModule(helpers) {
 
     btnNhpCopyRegisterCmd?.addEventListener('click', async () => {
         const cmd = nhpNativeHostSnapshot?.registerCommand
-            || `addon\\00_Register_Native_Messaging\\Register_NHP_Native_Messaging_User.bat ${nhpNativeHostSnapshot?.extensionId || ''}`.trim();
+            || `addon\\00_Register_Native_Messaging\\Register_NHP_Native_Messaging_User.cmd ${nhpNativeHostSnapshot?.extensionId || ''}`.trim();
         try {
             await navigator.clipboard.writeText(cmd);
             showToast('📋 تم نسخ أمر تسجيل Native Messaging');
@@ -2842,7 +2842,7 @@ export async function initAdminModule(helpers) {
             if (!result?.success) {
                 throw new Error(result?.error || 'تعذر تنزيل السكربت');
             }
-            const label = ext === 'bat' ? 'NHP_Start_All_Servers.bat' : 'NHP_Start_All_Servers.sh';
+            const label = (ext === 'cmd' || ext === 'bat') ? 'NHP_Start_All_Servers.cmd' : 'NHP_Start_All_Servers.sh';
             if (result.source === 'bridge') {
                 showToast(`✅ تم تنزيل ${label} — إن ظهر «téléchargement» غيّر الاسم إلى .bat وفعّل Débloquer`);
             } else {

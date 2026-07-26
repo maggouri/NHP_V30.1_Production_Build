@@ -18,7 +18,7 @@ E:\NHP_V30.1_Production_Build\NHP_PLATFORM\02_Chrome_Extension
 - Creaty Server — منفذ 3020
 - AI Bridge Server — منفذ 3031 (RENAME AI / SEO)
 
-شغّل الكل عبر `NHP_Start_All_Servers.bat` أو ملفات `Start_*_Server*.cmd`.
+شغّل الكل عبر `NHP_Start_All_Servers.cmd` أو ملفات `Start_*_Server*.cmd`.
 
 ## نسخة بديلة (اختيارية)
 

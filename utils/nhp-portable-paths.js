@@ -7,7 +7,7 @@
 
     const NATIVE_HOST = 'com.nhp.server_launcher';
     const DEFAULT_EXTENSION_ID = 'bhhahkcjolghbigcognobplmgdbkmekb';
-    const REGISTER_SCRIPT_NAME = 'addon\\00_Register_Native_Messaging\\Register_NHP_Native_Messaging_User.bat';
+    const REGISTER_SCRIPT_NAME = 'addon\\00_Register_Native_Messaging\\Register_NHP_Native_Messaging_User.cmd';
     const PROJECT_DIR_STORAGE_KEY = 'nhpProjectDir';
     const EMAILCORE_DIR_STORAGE_KEY = 'emailcoreProjectDir';
     const PORTABLE_CONFIG_FILENAME = 'portable.config.json';
@@ -173,10 +173,10 @@
         const extId = getRuntimeExtensionId();
         const kind = classifyNativeHostError(err);
         if (kind === 'not_registered') {
-            return 'Native Messaging غير مسجّل — شغّل addon\\00_Register_Native_Messaging\\Register_NHP_Native_Messaging_User.bat مرة واحدة ثم أعد تحميل الإضافة.';
+            return 'Native Messaging غير مسجّل — شغّل addon\\00_Register_Native_Messaging\\Register_NHP_Native_Messaging_User.cmd مرة واحدة ثم أعد تحميل الإضافة.';
         }
         if (kind === 'forbidden') {
-            return `Native Messaging مرفوض — معرّف الإضافة (${extId}) لا يطابق allowed_origins. أعد تشغيل addon\\00_Register_Native_Messaging\\Register_NHP_Native_Messaging_User.bat ${extId}`;
+            return `Native Messaging مرفوض — معرّف الإضافة (${extId}) لا يطابق allowed_origins. أعد تشغيل addon\\00_Register_Native_Messaging\\Register_NHP_Native_Messaging_User.cmd ${extId}`;
         }
         if (kind === 'host_outdated') {
             return 'Native Messaging متصل لكن المضيف قديم — أعد تشغيل سكربت التسجيل ثم أعد تحميل الإضافة.';
@@ -196,7 +196,7 @@
             registerCommand: `"${scriptPath}" ${extId}`,
             messageAr:
                 `لتشغيل السيرفرات من الإضافة: شغّل مرة واحدة (نقر مزدوج):\n${scriptPath}\n` +
-                `أو من cmd:\naddon\\00_Register_Native_Messaging\\Register_NHP_Native_Messaging_User.bat ${extId}\n` +
+                `أو من cmd:\naddon\\00_Register_Native_Messaging\\Register_NHP_Native_Messaging_User.cmd ${extId}\n` +
                 'ثم أعد تحميل الإضافة من chrome://extensions'
         };
     }
@@ -405,6 +405,6 @@ if (typeof module !== 'undefined' && module.exports && typeof process !== 'undef
     module.exports = {
         getPortablePaths,
         DEFAULT_EXTENSION_ID: 'bhhahkcjolghbigcognobplmgdbkmekb',
-        REGISTER_SCRIPT_NAME: 'addon\\00_Register_Native_Messaging\\Register_NHP_Native_Messaging_User.bat'
+        REGISTER_SCRIPT_NAME: 'addon\\00_Register_Native_Messaging\\Register_NHP_Native_Messaging_User.cmd'
     };
 }

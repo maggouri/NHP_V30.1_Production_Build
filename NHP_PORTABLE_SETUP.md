@@ -12,7 +12,7 @@ Do **not** load Chrome from `NHP_DATA` or any new extension folder.
 ## Start
 
 1. Double-click `START_NHP_PORTABLE.cmd (forwards to addon\01_Start_All)`
-2. Or use `addon\01_Start_All\NHP_Start_All_Servers.bat` (also initializes Data Root)
+2. Or use `addon\01_Start_All\NHP_Start_All_Servers.cmd` (also initializes Data Root)
 
 ## Config
 

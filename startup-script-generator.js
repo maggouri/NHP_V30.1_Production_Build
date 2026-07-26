@@ -21,7 +21,7 @@ function normalizeRootForShell(rootDir, format) {
 }
 
 function loadBatTemplateBody() {
-    const templatePath = path.join(__dirname, 'NHP_Start_All_Servers.bat.template');
+    const templatePath = path.join(__dirname, 'NHP_Start_All_Servers.cmd.template');
     if (fs.existsSync(templatePath)) {
         return fs.readFileSync(templatePath, 'utf8');
     }

@@ -1029,7 +1029,7 @@ app.get('/addon/nhp-start-all-servers.bat', (_req, res) => {
     try {
         const body = buildStartupScript(ROOT_DIR, 'bat');
         res.setHeader('Content-Type', 'application/x-msdownload');
-        res.setHeader('Content-Disposition', 'attachment; filename=NHP_Start_All_Servers.bat');
+        res.setHeader('Content-Disposition', 'attachment; filename=NHP_Start_All_Servers.cmd');
         res.send(Buffer.from(body, 'utf8'));
     } catch (error) {
         log(`startup-script bat failed: ${error.message}`, 'ERROR');

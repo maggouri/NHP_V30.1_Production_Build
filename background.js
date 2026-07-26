@@ -1,4 +1,4 @@
-﻿/**
+/**
  * background.js ÔÇö Niche Hunter Pro v9.0
  * ┘èÏ»┘èÏ▒ ┘àÏ¡Ï▒┘æ┘â Ïº┘ä┘üÏ¡ÏÁ: USPTO(┘éÏº┘å┘ê┘å┘è) + TeePublic(┘à┘åÏº┘üÏ│Ï®) + Ïº┘äÏ░┘âÏºÏí Ïº┘äÏºÏÁÏÀ┘åÏºÏ╣┘è + ÏúÏ¬┘àÏ¬Ï® Ïº┘äÏ▒┘üÏ╣
  *
@@ -427,7 +427,7 @@ async function executeNhpLauncherScript(scriptPath, {
             command,
             port,
             nativeHostRequired: true,
-            error: hint?.messageAr || 'Project directory is not configured. Run Register_NHP_Native_Messaging_User.bat once, then reload the extension.',
+            error: hint?.messageAr || 'Project directory is not configured. Run Register_NHP_Native_Messaging_User.cmd once, then reload the extension.',
             registerScript: hint?.registerScript || '',
             registerCommand: hint?.registerCommand || ''
         };
@@ -4388,7 +4388,7 @@ async function controlNhpLocalServer(serverId = '', command = 'start', interacti
             serverId: id,
             command: action,
             port: def.port,
-            error: 'Project directory is not configured. Run Register_NHP_Native_Messaging_User.bat once, then reload the extension.'
+            error: 'Project directory is not configured. Run Register_NHP_Native_Messaging_User.cmd once, then reload the extension.'
         };
     }
 
@@ -4739,7 +4739,7 @@ async function bootstrapGhostServerForMemory(context = 'core', platform = 'teepu
         recordNhpDiagnosticLog('info', ['[Server Bootstrap] Native messaging unavailable', {
             error: e?.message || String(e),
             runtimeId: chrome?.runtime?.id || 'unknown',
-            hint: 'Run Register_NHP_Native_Messaging_User.bat and ensure allowed_origins uses this runtimeId.'
+            hint: 'Run Register_NHP_Native_Messaging_User.cmd and ensure allowed_origins uses this runtimeId.'
         }]);
     }
 
@@ -9342,7 +9342,7 @@ function stopHeartbeat() {
 }
 
 async function loadNhpStartupBatTemplateText() {
-    const templateUrl = chrome.runtime.getURL('NHP_Start_All_Servers.bat.template');
+    const templateUrl = chrome.runtime.getURL('NHP_Start_All_Servers.cmd.template');
     const response = await fetch(templateUrl);
     if (!response.ok) throw new Error(`Bat template fetch failed (${response.status})`);
     return response.text();
@@ -9398,7 +9398,7 @@ async function buildNhpStartupScriptText(format) {
 }
 
 function nhpStartupScriptFilename(format) {
-    return format === 'sh' ? 'NHP_Start_All_Servers.sh' : 'NHP_Start_All_Servers.bat';
+    return format === 'sh' ? 'NHP_Start_All_Servers.sh' : 'NHP_Start_All_Servers.cmd';
 }
 
 function chromeDownloadFile(url, filename) {
@@ -10610,8 +10610,8 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                 if (command === 'start' || command === 'restart') {
                     await clearNhpLocalServerDisabled('', { clearAll: true });
                     const relScript = command === 'restart'
-                        ? (bulkScripts?.restartAll || 'addon\\_shared\\NHP_Restart_All_Servers_SilentCore.bat')
-                        : (bulkScripts?.startAll || 'addon\\_shared\\NHP_Start_All_Servers_SilentCore.bat');
+                        ? (bulkScripts?.restartAll || 'addon\\_shared\\NHP_Restart_All_Servers_SilentCore.cmd')
+                        : (bulkScripts?.startAll || 'addon\\_shared\\NHP_Start_All_Servers_SilentCore.cmd');
                     const scriptPath = NhpLocalServers?.joinProjectPath(projectDir, relScript)
                         || `${projectDir}\\${relScript}`;
                     const launchResult = await executeNhpLauncherScript(scriptPath, {
@@ -10624,7 +10624,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                         return;
                     }
                 } else {
-                    const relScript = bulkScripts?.stopAll || 'addon\\_shared\\NHP_Stop_All_Servers_SilentCore.bat';
+                    const relScript = bulkScripts?.stopAll || 'addon\\_shared\\NHP_Stop_All_Servers_SilentCore.cmd';
                     const scriptPath = NhpLocalServers?.joinProjectPath(projectDir, relScript)
                         || `${projectDir}\\${relScript}`;
                     const launchResult = await executeNhpLauncherScript(scriptPath, {

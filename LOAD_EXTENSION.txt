@@ -24,7 +24,7 @@
      إذا ظهر dbogillpojmdiahjdambllmlalgjibho فأنت حمّلت NHP EMAILCORE بالخطأ.
 
   7. شغّل السيرفرات من نفس المجلد:
-       NHP_Start_All_Servers.bat
+       NHP_Start_All_Servers.cmd
      أو من الإضافة: Admin → Repair Local Services
 
   8. منافذ Studio المطلوبة:
@@ -54,7 +54,7 @@ This folder is both your main extension and local servers.
      If you see dbogillpojmdiahjdambllmlalgjibho you loaded NHP EMAILCORE instead.
 
   7. Start servers from the same folder:
-       NHP_Start_All_Servers.bat
+       NHP_Start_All_Servers.cmd
      Or from the extension: Admin → Repair Local Services
 
   8. Studio ports:

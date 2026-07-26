@@ -2,7 +2,7 @@
 setlocal EnableExtensions
 title NHP - Register Native Messaging
 
-REM addon\00_Register_Native_Messaging\Register_NHP_Native_Messaging_User.bat
+REM addon\00_Register_Native_Messaging\Register_NHP_Native_Messaging_User.cmd
 set "REG_DIR=%~dp0"
 if "%REG_DIR:~-1%"=="\" set "REG_DIR=%REG_DIR:~0,-1%"
 for %%I in ("%REG_DIR%\..") do set "ADDON_DIR=%%~fI"

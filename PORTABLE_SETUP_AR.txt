@@ -22,12 +22,12 @@
 --------------------------------------------------------------------------------
   الطريقة الموصى بها — انقر مرتين:
 
-      addon\01_Start_All\NHP_Start_All_Servers.bat
+      addon\01_Start_All\NHP_Start_All_Servers.cmd
 
   أو من جذر المشروع:
 
       START_NHP_PORTABLE.cmd
-      NHP_Start_All_Servers.bat
+      NHP_Start_All_Servers.cmd
 
   ماذا يفعل السكربت؟
   • يكتشف مسار المشروع تلقائياً (لا يحتاج تعديل مسارات).
@@ -48,8 +48,8 @@
 
   السجلات: server_logs\
 
-  لإيقاف السيرفرات: addon\02_Stop_All\NHP_Stop_All_Servers.bat
-  (صامت للإضافة: addon\_shared\NHP_Stop_All_Servers_SilentCore.bat)
+  لإيقاف السيرفرات: addon\02_Stop_All\NHP_Stop_All_Servers.cmd
+  (صامت للإضافة: addon\_shared\NHP_Stop_All_Servers_SilentCore.cmd)
 
 --------------------------------------------------------------------------------
 4) تحميل الإضافة في Chrome
@@ -76,14 +76,14 @@
   إذا أردت أزرار "تشغيل السيرفر" من لوحة Admin داخل الإضافة:
 
   أ) بعد تحميل الإضافة، شغّل (مرة واحدة لكل جهاز — نقر مزدوج):
-         addon\00_Register_Native_Messaging\Register_NHP_Native_Messaging_User.bat
+         addon\00_Register_Native_Messaging\Register_NHP_Native_Messaging_User.cmd
      إذا فشل الاكتشاف التلقائي، مرّر معرّف الإضافة من chrome://extensions:
-         addon\00_Register_Native_Messaging\Register_NHP_Native_Messaging_User.bat YOUR_EXTENSION_ID
+         addon\00_Register_Native_Messaging\Register_NHP_Native_Messaging_User.cmd YOUR_EXTENSION_ID
      (البديل القديم: Register_NHP_Native_Messaging_User.cmd في جذر المشروع)
 
   ب) أو عيّن مسار المشروع يدوياً من Admin → إعدادات المسار.
 
-  بدون هذه الخطوة: شغّل السيرفرات يدوياً عبر addon\01_Start_All\NHP_Start_All_Servers.bat — وهذا كافٍ للاستخدام العادي.
+  بدون هذه الخطوة: شغّل السيرفرات يدوياً عبر addon\01_Start_All\NHP_Start_All_Servers.cmd — وهذا كافٍ للاستخدام العادي.
 
 --------------------------------------------------------------------------------
 7) CLIProxyAPI — OAuth للتوليد بالصور (اختياري)

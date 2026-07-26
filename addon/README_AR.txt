@@ -12,16 +12,16 @@
 المجلدات (ملف تشغيل واحد لكل مجلد مرقّم)
 --------------------------------------------------------------------------------
   00_Register_Native_Messaging\
-      Register_NHP_Native_Messaging_User.bat   << نقر مزدوج مرة واحدة
+      Register_NHP_Native_Messaging_User.cmd   << نقر مزدوج مرة واحدة
 
   01_Start_All\
-      NHP_Start_All_Servers.bat                << تشغيل الكل (نافذة مرئية)
+      NHP_Start_All_Servers.cmd                << تشغيل الكل (نافذة مرئية)
 
   02_Stop_All\
-      NHP_Stop_All_Servers.bat                 << إيقاف الكل
+      NHP_Stop_All_Servers.cmd                 << إيقاف الكل
 
   03_Restart_All\
-      NHP_Restart_All_Servers.bat              << إعادة تشغيل الكل
+      NHP_Restart_All_Servers.cmd              << إعادة تشغيل الكل
 
   servers\
       teepublic_ghost_3019\     TeePublic Ghost        :3019
@@ -40,21 +40,21 @@
 مسارات النقر المزدوج
 --------------------------------------------------------------------------------
   Register:
-    addon\00_Register_Native_Messaging\Register_NHP_Native_Messaging_User.bat
+    addon\00_Register_Native_Messaging\Register_NHP_Native_Messaging_User.cmd
 
   Start All:
-    addon\01_Start_All\NHP_Start_All_Servers.bat
+    addon\01_Start_All\NHP_Start_All_Servers.cmd
 
   Stop All:
-    addon\02_Stop_All\NHP_Stop_All_Servers.bat
+    addon\02_Stop_All\NHP_Stop_All_Servers.cmd
 
   Restart All:
-    addon\03_Restart_All\NHP_Restart_All_Servers.bat
+    addon\03_Restart_All\NHP_Restart_All_Servers.cmd
 
   للإضافة (صامت):
-    addon\_shared\NHP_Start_All_Servers_SilentCore.bat
-    addon\_shared\NHP_Stop_All_Servers_SilentCore.bat
-    addon\_shared\NHP_Restart_All_Servers_SilentCore.bat
+    addon\_shared\NHP_Start_All_Servers_SilentCore.cmd
+    addon\_shared\NHP_Stop_All_Servers_SilentCore.cmd
+    addon\_shared\NHP_Restart_All_Servers_SilentCore.cmd
 
   ملاحظة: اختصارات بنفس الأسماء في جذر المشروع (خارج addon\)
   ما زالت تعمل للتوافق مع الروابط القديمة.

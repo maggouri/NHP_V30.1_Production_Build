@@ -2,7 +2,7 @@
 setlocal EnableExtensions
 chcp 65001 >nul 2>&1
 title NHP - Start All Servers
-REM Run from project folder (double-click). For download copy, use Admin panel .bat download.
+REM Run from project folder (double-click). For download copy, use Admin panel .cmd download.
 
 call :EnsureNodePath
 if errorlevel 1 (

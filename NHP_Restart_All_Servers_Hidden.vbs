@@ -4,7 +4,7 @@ Dim sh, fso, dir, coreBat
 Set sh = CreateObject("WScript.Shell")
 Set fso = CreateObject("Scripting.FileSystemObject")
 dir = fso.GetParentFolderName(WScript.ScriptFullName)
-coreBat = dir & "\NHP_Restart_All_Servers_SilentCore.bat"
+coreBat = dir & "\NHP_Restart_All_Servers_SilentCore.cmd"
 If Not fso.FileExists(coreBat) Then
   WScript.Echo "Missing: " & coreBat
   WScript.Quit 1
