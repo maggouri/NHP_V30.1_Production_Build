@@ -255,15 +255,17 @@ function canvaLooksLikeLocalLibraryRef(id) {
 
 function canvaIsEditedDesign(item) {
   if (!item) return false;
-  // Site-imported generated designs keep niche identity on Generated/Library — not Edited.
-  if (canvaIsLiveSyncImport(item)) return false;
   const source = canvaNormalizeLibrarySource(item.source || item.meta?.source);
   const versionLabel = item.versionLabel || item.meta?.versionLabel;
-  const originalDesignId = item.originalDesignId || item.meta?.originalDesignId;
-  if (source === 'canva') return true;
+  // Explicit TeeMaster / Canva edit markers win even when originalDesignId is a site dsg_ id
+  // (Live Sync parents). Otherwise RemBG/TeeMaster results stay stuck on the Generated tab.
+  if (source === 'canva' || source === 'teemaster') return true;
   if (versionLabel === 'Canva Edited') return true;
   if (versionLabel === CANVA_TEEMASTER_EDITED_VERSION) return true;
-  if (source === 'teemaster') return true;
+  if (/^nhp\s*rembg/i.test(String(versionLabel || ''))) return true;
+  // Site-imported generated designs keep niche identity on Generated/Library — not Edited.
+  if (canvaIsLiveSyncImport(item)) return false;
+  const originalDesignId = item.originalDesignId || item.meta?.originalDesignId;
   // Only local parent refs mean "edited version of …" (not site dsg_ ids).
   if (originalDesignId && canvaLooksLikeLocalLibraryRef(originalDesignId)) return true;
   if (originalDesignId && !/^dsg_/i.test(String(originalDesignId))) return true;
@@ -506,6 +508,7 @@ function canvaEls() {
     libTeeMasterSendOnly: document.getElementById('canva-bridge-lib-teemaster-send-only'),
     libTeeMasterEdited: document.getElementById('canva-bridge-lib-teemaster-edited'),
     libTeeMasterFullPath: document.getElementById('canva-bridge-lib-teemaster-full-path'),
+    libAiRembg: document.getElementById('canva-bridge-lib-ai-rembg'),
     libFullPipeline: document.getElementById('canva-bridge-lib-full-pipeline'),
     libSendSeo: document.getElementById('canva-bridge-lib-send-seo'),
     libSelectionCount: document.getElementById('canva-bridge-lib-selection-count'),
@@ -1212,6 +1215,21 @@ function canvaSetLibraryView(view) {
   canvaUpdateButtons();
 }
 
+/** Switch to Edited library tab (used after RemBG / TeeMaster save from Studio). */
+function canvaShowEditedLibrary(highlightId = null) {
+  canvaLibraryView = 'edited';
+  if (highlightId) canvaHighlightId = highlightId;
+  canvaUpdateLibraryTabs();
+  canvaRenderLibrary({ force: true });
+  canvaRenderPreview();
+  canvaUpdateButtons();
+  if (canvaHighlightId) {
+    canvaScrollToLibraryCard(canvaHighlightId);
+    canvaScheduleHighlightClear(canvaHighlightId);
+  }
+  try { canvaHelpers.switchTab?.('canva-bridge'); } catch (_) { /* optional */ }
+}
+
 function canvaScrollToLibraryCard(id) {
   if (!id) return;
   requestAnimationFrame(() => {
@@ -1449,6 +1467,9 @@ function canvaUpdateLibraryToolbar() {
   }
   if (els.libTeeMasterEdited) {
     els.libTeeMasterEdited.disabled = !onOriginalsTab || !hasPipelineTargets || uiBusy;
+  }
+  if (els.libAiRembg) {
+    els.libAiRembg.disabled = !onOriginalsTab || !hasPipelineTargets || uiBusy;
   }
   if (els.libTeeMasterFullPath) {
     els.libTeeMasterFullPath.disabled = !onOriginalsTab || !hasPipelineTargets || uiBusy;
@@ -3011,6 +3032,7 @@ async function canvaRunTeeMasterEditedCore(items, options = {}) {
     onProgress,
     cancelCheck,
     skipPeel = true,
+    useAiRembg = false,
     stepLabels = CANVA_TEEMASTER_EDITED_STEP_LABELS,
     batchContext = null,
     skipStudioEnsure = false,
@@ -3100,6 +3122,7 @@ async function canvaRunTeeMasterEditedCore(items, options = {}) {
   const pipelineResult = await canvaInvokeStudioTeeMasterEditedPipeline({
     targetStep2Count,
     skipPeel,
+    useAiRembg,
     queueTimeoutMs: uploadTimeoutMs,
     magicIdleTimeoutMs,
     processIdleTimeoutMs,
@@ -3795,6 +3818,88 @@ async function canvaStartTeeMasterEditedPipeline() {
     canvaHelpers.switchTab?.('canva-bridge');
     if (libTeeMasterEdited) {
       canvaSetLibBtnLabel(libTeeMasterEdited, 'معالجة TeeMaster');
+      canvaUpdateLibraryToolbar();
+    }
+  }
+}
+
+const CANVA_AI_REMBG_EDITED_STEP_LABELS = [
+  'إرسال إلى TeeMaster',
+  'إزالة الخلفية (NHP)',
+  'تكبير 5K',
+  'حفظ في التصاميم المعدّلة'
+];
+
+async function canvaStartAiRembgEditedPipeline() {
+  if (canvaTeeMasterPipelineBusy || canvaTeeMasterFullPathBusy || canvaFullPipelineBusy) {
+    canvaHelpers.showToast?.('⏳ مسار معالجة آخر يعمل بالفعل');
+    return;
+  }
+  if (canvaLibraryView !== 'all') {
+    canvaHelpers.showToast?.('⚠️ إزالة الخلفية متاحة من تبويب مكتبة التصاميم فقط');
+    return;
+  }
+
+  const ids = canvaResolveSmartRenameIds();
+  if (!ids.length) {
+    canvaHelpers.showToast?.('⚠️ لا توجد تصاميم في العرض الحالي');
+    return;
+  }
+
+  const items = ids.map((id) => canvaFindLibraryItem(id)).filter(Boolean);
+  if (!items.length) {
+    canvaHelpers.showToast?.('⚠️ لم يُعثر على التصاميم المحددة');
+    return;
+  }
+  if (items.length > CANVA_TEEMASTER_PIPELINE_MAX_DESIGNS) {
+    canvaHelpers.showToast?.(`⚠️ الحد الأقصى ${CANVA_TEEMASTER_PIPELINE_MAX_DESIGNS} تصميم في المسار — حدّد عدداً أقل`);
+    return;
+  }
+
+  const { libAiRembg } = canvaEls();
+  if (libAiRembg) {
+    libAiRembg.disabled = true;
+    canvaSetLibBtnLabel(libAiRembg, 'جاري إزالة الخلفية...');
+  }
+
+  canvaSetTeeMasterPipelineUiBusy(true);
+  canvaHelpers.switchTab?.('studio');
+
+  try {
+    const { savedCount, saveErrors, lastSavedId } = await canvaRunTeeMasterEditedCoreChunked(items, {
+      skipPeel: true,
+      useAiRembg: true,
+      stepLabels: CANVA_AI_REMBG_EDITED_STEP_LABELS,
+      onProgress: (label) => {
+        if (label) canvaSetLoading(true, label);
+      }
+    });
+
+    if (savedCount > 0) {
+      canvaSetPipelineUiPaused(false);
+      canvaShowEditedLibrary(lastSavedId);
+      const msg = saveErrors.length
+        ? `✅ RemBG: حُفظت ${savedCount} — فشل ${saveErrors.length}`
+        : `✅ RemBG + 5K: ${savedCount} تصميم في التصاميم المعدّلة`;
+      canvaHelpers.showToast?.(msg);
+      canvaSetMsg(msg, saveErrors.length ? 'warning' : 'success');
+    } else {
+      const errDetail = saveErrors.map((e) => e.error).filter(Boolean).join(' — ') || 'فشل حفظ النسخ المعدّلة';
+      canvaHelpers.showToast?.(`❌ ${errDetail}`);
+      canvaSetMsg(errDetail, 'error');
+    }
+  } catch (err) {
+    const errMsg = err?.message || String(err);
+    canvaHelpers.showToast?.(`❌ ${errMsg}`);
+    canvaSetMsg(errMsg, 'error');
+  } finally {
+    canvaSetTeeMasterPipelineUiBusy(false);
+    canvaSetPipelineUiPaused(false);
+    canvaSetLoading(false);
+    canvaHidePipelineProgress();
+    canvaHelpers.switchTab?.('canva-bridge');
+    if (libAiRembg) {
+      canvaSetLibBtnLabel(libAiRembg, 'إزالة الخلفية');
       canvaUpdateLibraryToolbar();
     }
   }
@@ -5747,6 +5852,7 @@ function canvaBindEvents() {
   els.libSendStudio?.addEventListener('click', () => { void canvaSendLibrarySelectedToStudio(); });
   els.libTeeMasterSendOnly?.addEventListener('click', () => { void canvaSendLibrarySelectedToTeeMasterOnly(); });
   els.libTeeMasterEdited?.addEventListener('click', () => { void canvaStartTeeMasterEditedPipeline(); });
+  els.libAiRembg?.addEventListener('click', () => { void canvaStartAiRembgEditedPipeline(); });
   els.libTeeMasterFullPath?.addEventListener('click', () => { void canvaStartTeeMasterFullPathPipeline(); });
   els.libFullPipeline?.addEventListener('click', () => { void canvaStartFullUploadPipeline(); });
   els.libSendSeo?.addEventListener('click', () => { void canvaSendSelectedToSeo(); });
@@ -5860,6 +5966,8 @@ export function initCanvaBridge(helpers = {}) {
   canvaBindPreviewNameInput();
   canvaUpdateLibraryTabs();
   canvaSetStep('idle');
+  window.__canvaShowEditedLibrary = canvaShowEditedLibrary;
+  window.canvaSetLibraryView = canvaSetLibraryView;
   canvaLibraryGridActive = canvaIsBridgePanelActive();
   void canvaLoadAutoConnectPref().then(() => canvaRefreshStatusAndMaybeAutoConnect());
   canvaRenderLibrary();

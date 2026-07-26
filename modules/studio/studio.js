@@ -264,6 +264,8 @@ export function initStudioModule(helpers) {
     window.studioStartFullUploadPipeline = studioStartFullUploadPipeline;
     window.studioCancelFullUploadPipeline = studioCancelFullUploadPipeline;
     window.studioStartTeeMasterEditedPipeline = studioStartTeeMasterEditedPipeline;
+    window.studioApplyAiRembgToQueue = studioApplyAiRembgToQueue;
+    window.studioRunAiRembgTeemasterEditedPipeline = studioRunAiRembgTeemasterEditedPipeline;
     window.studioDrainTeeMasterBuffer = studioDrainTeeMasterBuffer;
     window.studioWaitForTeeMasterPipelineIdle = studioWaitForTeeMasterPipelineIdle;
     window.studioWaitForStep2Empty = studioWaitForStep2Empty;
@@ -2240,6 +2242,126 @@ async function studioApplyBulkGlobalMagicToQueue(options = {}) {
     }
 }
 
+/**
+ * NHP AI RemBG on TeeMaster queue (global color-key local engine — no vendor rembg links).
+ */
+async function studioApplyAiRembgToQueue(options = {}) {
+    const TM = window.STUDIO_TME;
+    if (!TM || !Array.isArray(STUDIO.step2Files) || STUDIO.step2Files.length === 0) {
+        if (!options.fromAutoFlow) showToast('⚠️ لا توجد صور في طابور TeeMaster');
+        return { success: false, count: 0 };
+    }
+    if (STUDIO.isProcessingTeemaster || (!options.fromAutoFlow && STUDIO.isAutoPipelineRunning)) {
+        if (!options.fromAutoFlow) showToast('⚠️ انتظر حتى تنتهي العملية الحالية');
+        return { success: false, count: 0 };
+    }
+
+    studioTeemasterCommitCurrentImage();
+    const originalIndex = TM.currentIndex || 0;
+    STUDIO.isProcessingTeemaster = true;
+    studioTeemasterRefreshQueue();
+    studioUpdateAutoPipelineStatus('جاري إزالة الخلفية (NHP AI RemBG)...');
+
+    let okCount = 0;
+    try {
+        for (let index = 0; index < STUDIO.step2Files.length; index += 1) {
+            const item = STUDIO.step2Files[index];
+            if (!item?.dataURL) continue;
+            const result = await chrome.runtime.sendMessage({
+                action: 'nhp_ai_rembg',
+                dataURL: item.dataURL,
+                tolerance: options.tolerance ?? Math.max(STUDIO.tolerance || 30, 42),
+                feather: options.feather ?? 2,
+                mode: options.mode || 'global',
+                manualColorHex: STUDIO.useManual ? STUDIO.manualColorHex : undefined
+            });
+            if (!result?.success || !result?.dataURL) {
+                throw new Error(result?.error || `فشل إزالة الخلفية للصورة ${index + 1}`);
+            }
+            item.dataURL = result.dataURL;
+            item.thumbnail = await studioCreateThumbnail(result.dataURL, 120);
+            item.status = '✂️ RemBG';
+            item.meta = { ...(item.meta || {}), rembgEngine: result.engine || 'nhp-edge-v1' };
+            okCount += 1;
+            if (index === originalIndex) TM.currentIndex = index;
+        }
+
+        TM.currentIndex = studioClamp(originalIndex, 0, Math.max(0, STUDIO.step2Files.length - 1));
+        studioTeemasterRefreshQueue();
+        if (!options.fromAutoFlow) {
+            showToast(`✅ تمت إزالة الخلفية عن ${okCount} صورة`);
+        }
+        studioUpdateAutoPipelineStatus(`اكتملت إزالة الخلفية (${okCount}).`);
+        return { success: true, count: okCount };
+    } catch (error) {
+        console.error('[Studio] AI RemBG failed:', error);
+        if (!options.fromAutoFlow) showToast(`❌ فشل إزالة الخلفية: ${error?.message || error}`);
+        studioUpdateAutoPipelineStatus('حدث خطأ أثناء إزالة الخلفية.');
+        if (options.fromAutoFlow) throw error;
+        return { success: false, count: okCount, error: error?.message || String(error) };
+    } finally {
+        STUDIO.isProcessingTeemaster = false;
+        studioTeemasterRefreshQueue();
+    }
+}
+
+/**
+ * One-click: RemBG → TeeMaster 5K → save to edited designs library.
+ */
+async function studioRunAiRembgTeemasterEditedPipeline(options = {}) {
+    if (STUDIO.teemasterEditedPipeline?.active || STUDIO.fullUploadPipeline?.active || STUDIO.isProcessingTeemaster) {
+        showToast('⚠️ مسار معالجة آخر يعمل بالفعل');
+        return { success: false, error: 'pipeline_busy' };
+    }
+    const TM = window.STUDIO_TME;
+    if (!TM || !STUDIO.step2Files.length) {
+        showToast('⚠️ أضف صوراً إلى طابور TeeMaster أولاً');
+        return { success: false, error: 'empty_queue' };
+    }
+
+    const btn = document.getElementById('tm-ai-rembg-btn');
+    const originalTitle = btn?.getAttribute('title') || '';
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '…';
+    }
+
+    const step3Start = STUDIO.step3Files.length;
+    try {
+        showToast('✂️ إزالة الخلفية ثم تكبير 5K...');
+        studioGoToStep(2);
+        await studioApplyAiRembgToQueue({ fromAutoFlow: true, ...options });
+        await studioWaitForProcessingIdle(120000);
+
+        // Already transparent — flood mode with high tolerance still trims/fits to 5K canvas.
+        await studioTeemasterStartProcess();
+        await studioWaitForProcessingIdle(300000);
+
+        const newFiles = STUDIO.step3Files.slice(step3Start);
+        if (!newFiles.length) {
+            throw new Error('لم تُنتج معالجة 5K أي صورة');
+        }
+
+        if (options.skipEditedSave) {
+            showToast(`✅ جاهز: ${newFiles.length} صورة بعد RemBG + 5K`);
+            return { success: true, files: newFiles, saved: 0 };
+        }
+
+        await studioSendToEditedLibrary(newFiles);
+        return { success: true, files: newFiles, saved: newFiles.length };
+    } catch (error) {
+        console.error('[Studio] RemBG→TeeMaster pipeline failed:', error);
+        showToast(`❌ فشل مسار إزالة الخلفية: ${error?.message || error}`);
+        return { success: false, error: error?.message || String(error) };
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '✂️';
+            if (originalTitle) btn.setAttribute('title', originalTitle);
+        }
+    }
+}
+
 /** Apply comprehensive magic before TeeMaster when auto-flow runs (skipped if full pipeline already did). */
 async function studioMaybeApplyBulkMagicBeforeTeemaster(setFlowStatus, options = {}) {
     if (options.skipBulkMagic) return;
@@ -3586,6 +3708,7 @@ async function studioStartTeeMasterEditedPipeline(options = {}) {
     const {
         targetStep2Count = STUDIO.step2Files.length,
         skipPeel = false,
+        useAiRembg = false,
         queueTimeoutMs = 180000,
         magicIdleTimeoutMs = 300000,
         processIdleTimeoutMs = 300000,
@@ -3608,9 +3731,11 @@ async function studioStartTeeMasterEditedPipeline(options = {}) {
     try {
         checkCancel();
         onProgress?.({
-            label: skipPeel
-                ? 'انتظار وصول الصور إلى TeeMaster Pro 5K...'
-                : 'انتظار اكتمال Peel → TeeMaster Pro 5K...'
+            label: useAiRembg
+                ? 'انتظار الصور ثم إزالة الخلفية (NHP)...'
+                : (skipPeel
+                    ? 'انتظار وصول الصور إلى TeeMaster Pro 5K...'
+                    : 'انتظار اكتمال Peel → TeeMaster Pro 5K...')
         });
         studioGoToStep(2);
         if (typeof studioTeemasterRefreshQueue === 'function') studioTeemasterRefreshQueue();
@@ -3623,10 +3748,17 @@ async function studioStartTeeMasterEditedPipeline(options = {}) {
         }
 
         checkCancel();
-        onProgress?.({ label: 'تطبيق السحر الشامل على الطابور...' });
-        await studioWaitForProcessingIdle(120000, checkCancel);
-        await studioApplyBulkGlobalMagicToQueue();
-        await studioWaitForProcessingIdle(magicIdleTimeoutMs, checkCancel);
+        if (useAiRembg) {
+            onProgress?.({ label: 'إزالة الخلفية (NHP AI RemBG)...' });
+            await studioWaitForProcessingIdle(120000, checkCancel);
+            await studioApplyAiRembgToQueue({ fromAutoFlow: true });
+            await studioWaitForProcessingIdle(magicIdleTimeoutMs, checkCancel);
+        } else {
+            onProgress?.({ label: 'تطبيق السحر الشامل على الطابور...' });
+            await studioWaitForProcessingIdle(120000, checkCancel);
+            await studioApplyBulkGlobalMagicToQueue();
+            await studioWaitForProcessingIdle(magicIdleTimeoutMs, checkCancel);
+        }
 
         checkCancel();
         onProgress?.({ label: 'معالجة 5K (TeeMaster Pro)...' });
@@ -3980,6 +4112,22 @@ async function studioSendToDestination(dest, sourceList = null) {
 const STUDIO_EDITED_LIBRARY_UPLOAD_URL = 'http://127.0.0.1:3019/api/library/upload';
 const STUDIO_EDITED_LIBRARY_VERSION = 'TeeMaster Edited';
 
+function studioSwitchCanvaBridgeToEditedLibrary(highlightId = null) {
+    try {
+        if (typeof window.__canvaShowEditedLibrary === 'function') {
+            window.__canvaShowEditedLibrary(highlightId);
+            return;
+        }
+        if (typeof window.canvaSetLibraryView === 'function') {
+            window.canvaSetLibraryView('edited');
+        } else {
+            document.getElementById('canva-bridge-tab-edited')?.click();
+        }
+        if (typeof window.canvaHelpers?.fetchLibrary === 'function') {
+            void window.canvaHelpers.fetchLibrary();
+        }
+    } catch (_) { /* optional */ }
+}
 /**
  * Upload Studio step-3 images into Canva Bridge edited designs library.
  * Reuses POST /api/library/upload with source/versionLabel so they appear under التصاميم المعدّلة.
@@ -4059,6 +4207,10 @@ async function studioSendToEditedLibrary(sourceList = null) {
 
         if (saved > 0 && typeof window.canvaHelpers?.fetchLibrary === 'function') {
             try { await window.canvaHelpers.fetchLibrary(); } catch (_) { /* optional refresh */ }
+        }
+
+        if (saved > 0) {
+            studioSwitchCanvaBridgeToEditedLibrary();
         }
 
         if (saved > 0 && errors.length === 0) {
@@ -4408,6 +4560,9 @@ function initTeeMasterEngine() {
     document.getElementById('tm-add-crop-btn')?.addEventListener('click', studioTeemasterHandleCropAction);
     document.getElementById('tm-auto-extract-btn')?.addEventListener('click', studioAutoExtractCurrentComposite);
     document.getElementById('tm-bulk-global-magic-btn')?.addEventListener('click', studioApplyBulkGlobalMagicToQueue);
+    document.getElementById('tm-ai-rembg-btn')?.addEventListener('click', () => {
+        void studioRunAiRembgTeemasterEditedPipeline();
+    });
     studioInitTeemasterProofreaderWindowToggle();
     document.getElementById('tm-proofread-gemini-btn')?.addEventListener('click', studioTeemasterSendSelectedToProofreader);
     document.getElementById('tm-proof-select-all')?.addEventListener('change', (e) => {
@@ -5215,7 +5370,8 @@ async function studioTeemasterStartProcess() {
         manualColorHex: STUDIO.manualColorHex,
         removalMode: document.getElementById('tm-removal-mode')?.value || 'flood',
         tolerance: STUDIO.tolerance,
-        localAiUpscale: STUDIO.localAiUpscale
+        localAiUpscale: STUDIO.localAiUpscale,
+        skipBgRemove: false
     };
 
     let successCount = 0;
@@ -5229,6 +5385,8 @@ async function studioTeemasterStartProcess() {
 
         let processedOk = false;
         try {
+            // Skip second-pass chroma when NHP AI RemBG already cleared the background.
+            settings.skipBgRemove = !!(item?.meta?.rembgEngine || item?.status === '✂️ RemBG');
             // Processing step (BG Removal + 5K Resize)
             const processedDataURL = await studioTeemasterPerformHeavyProcess(item, settings);
             const processedThumbnail = await studioCreateThumbnail(processedDataURL, 160);
@@ -5375,20 +5533,23 @@ async function studioTeemasterPerformHeavyProcess(item, settings) {
                 }
 
                 // 2. Perform background removal first to find content boundaries
+                //    (skip when NHP AI RemBG already produced a transparent subject)
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = img.width;
                 tempCanvas.height = img.height;
                 const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
                 tempCtx.drawImage(img, 0, 0);
-                const tempData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-                const tol = settings.tolerance || 30;
+                if (!settings.skipBgRemove) {
+                    const tempData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                    const tol = settings.tolerance || 30;
 
-                if (settings.removalMode === 'global') {
-                    studioTeemasterApplyGlobalRemoval(tempData, bgR, bgG, bgB, tol);
-                } else {
-                    studioTeemasterApplyFloodFill(tempData, tempCanvas.width, tempCanvas.height, bgR, bgG, bgB, tol);
+                    if (settings.removalMode === 'global') {
+                        studioTeemasterApplyGlobalRemoval(tempData, bgR, bgG, bgB, tol);
+                    } else {
+                        studioTeemasterApplyFloodFill(tempData, tempCanvas.width, tempCanvas.height, bgR, bgG, bgB, tol);
+                    }
+                    tempCtx.putImageData(tempData, 0, 0);
                 }
-                tempCtx.putImageData(tempData, 0, 0);
 
                 // 3. Trim outer transparent pixels
                 let trimmed = studioTrimTransparent(tempCanvas);

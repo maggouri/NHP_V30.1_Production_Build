@@ -1,4 +1,4 @@
-/**
+﻿/**
  * background.js ÔÇö Niche Hunter Pro v9.0
  * ┘èÏ»┘èÏ▒ ┘àÏ¡Ï▒┘æ┘â Ïº┘ä┘üÏ¡ÏÁ: USPTO(┘éÏº┘å┘ê┘å┘è) + TeePublic(┘à┘åÏº┘üÏ│Ï®) + Ïº┘äÏ░┘âÏºÏí Ïº┘äÏºÏÁÏÀ┘åÏºÏ╣┘è + ÏúÏ¬┘àÏ¬Ï® Ïº┘äÏ▒┘üÏ╣
  *
@@ -8,6 +8,11 @@ try {
     importScripts('peel_banana_engine.js');
 } catch (e) {
     console.error('Failed to import peel_banana_engine.js', e);
+}
+try {
+    importScripts('nhp_ai_rembg_engine.js');
+} catch (e) {
+    console.error('Failed to import nhp_ai_rembg_engine.js', e);
 }
 try {
     importScripts('prompt_bag_image_prompts.js');
@@ -12334,6 +12339,26 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
     if (req.action === 'peel_banana') {
         if (typeof peelEngine === 'undefined') sendResponse({ success: false, error: "Engine Not Initialized" });
         else peelEngine.processPeel(req.dataURL).then(dataURL => sendResponse({ success: true, dataURL })).catch(err => sendResponse({ success: false, error: err.message }));
+        return true;
+    }
+
+    if (req.action === 'nhp_ai_rembg') {
+        (async () => {
+            try {
+                if (!globalThis.NhpAiRembg?.removeBackgroundFromDataUrl) {
+                    throw new Error('NHP AI RemBG engine not initialized');
+                }
+                const result = await globalThis.NhpAiRembg.removeBackgroundFromDataUrl(req.dataURL, {
+                    tolerance: req.tolerance,
+                    feather: req.feather,
+                    mode: req.mode,
+                    manualColorHex: req.manualColorHex
+                });
+                sendResponse(result);
+            } catch (err) {
+                sendResponse({ success: false, error: err?.message || String(err) });
+            }
+        })();
         return true;
     }
 
