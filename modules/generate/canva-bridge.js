@@ -306,24 +306,80 @@ function canvaGetOriginalDesignRef(item) {
   return String(item?.originalDesignId || item?.meta?.originalDesignId || '').trim();
 }
 
+/**
+ * Niche identity for a library row.
+ * Product rule: niche is mandatory and must never be cleared by pipeline actions
+ * (TeeMaster send-only, Peel, edited save, SEO handoff). Only explicit rename / Auto Rename may change it.
+ */
+function canvaExtractNicheIdentity(item) {
+  if (!item) return { nicheName: '', nicheId: '' };
+  const nicheName = String(
+    item.nicheName || item.niche || item.meta?.nicheName || item.meta?.niche || ''
+  ).trim();
+  const nicheId = String(item.nicheId || item.meta?.nicheId || '').trim();
+  if (nicheName && !/^dsg_/i.test(nicheName)) {
+    return { nicheName, nicheId };
+  }
+  const origId = canvaGetOriginalDesignRef(item);
+  if (origId) {
+    const orig = canvaFindLibraryItem(origId);
+    if (orig) {
+      const fromOrig = String(orig.nicheName || orig.niche || '').trim();
+      const fromOrigId = String(orig.nicheId || '').trim();
+      if (fromOrig && !/^dsg_/i.test(fromOrig)) {
+        return { nicheName: fromOrig, nicheId: fromOrigId || nicheId };
+      }
+    }
+  }
+  return { nicheName: /^dsg_/i.test(nicheName) ? '' : nicheName, nicheId };
+}
+
 /** Best display title for a library row (niche name > own title > originalDesignId inherit). */
 function canvaResolveItemDisplayName(item) {
   if (!item) return '';
-  const niche = String(item.nicheName || item.niche || item.meta?.nicheName || item.meta?.niche || '').trim();
+  const { nicheName: niche } = canvaExtractNicheIdentity(item);
   if (niche && !/^dsg_/i.test(niche)) return niche;
   const direct = String(item.displayName || item.title || '').trim();
-  if (direct && !/^dsg_/i.test(direct)) return direct;
+  if (direct && !/^dsg_/i.test(direct) && !/^canva_/i.test(direct) && !/^gen_/i.test(direct)) return direct;
   const origId = canvaGetOriginalDesignRef(item);
   if (origId) {
     const orig = canvaFindLibraryItem(origId);
     if (orig) {
       const fromOrig = String(orig.nicheName || orig.displayName || orig.title || '').trim();
-      if (fromOrig && !/^dsg_/i.test(fromOrig)) return fromOrig;
+      if (fromOrig && !/^dsg_/i.test(fromOrig) && !/^canva_/i.test(fromOrig)) return fromOrig;
     }
   }
   const fromFile = String(item.fileName || '').replace(/\.[^.]+$/, '').trim();
-  if (fromFile && !/^design_\d+$/i.test(fromFile) && !/^composite$/i.test(fromFile) && !/^dsg_/i.test(fromFile)) return fromFile;
+  if (
+    fromFile
+    && !/^design_\d+$/i.test(fromFile)
+    && !/^composite$/i.test(fromFile)
+    && !/^dsg_/i.test(fromFile)
+    && !/^canva_/i.test(fromFile)
+    && !/^gen_/i.test(fromFile)
+  ) {
+    return fromFile;
+  }
   return niche || String(item.promptPreview || '').trim();
+}
+
+/** Studio dispatch payload — keeps technical peel/link stem + mandatory niche fields. */
+function canvaBuildStudioImagePayload(item, { namePrefix = 'canva' } = {}) {
+  const { storageId, designIndex } = canvaParseLibraryItemId(item);
+  const displayName = canvaResolveItemDisplayName(item);
+  const { nicheName, nicheId } = canvaExtractNicheIdentity(item);
+  const resolvedNiche = nicheName || displayName || '';
+  return {
+    name: `${namePrefix}_${storageId}_d${designIndex}.png`,
+    timestamp: Date.now(),
+    source: 'canva_bridge_library',
+    libraryId: item?.id || null,
+    displayName: displayName || resolvedNiche,
+    // Niche is mandatory — never omit when known (send-only / Peel / edited pipelines).
+    nicheName: resolvedNiche,
+    niche: resolvedNiche,
+    nicheId: nicheId || undefined
+  };
 }
 
 /** Mirror server sanitizeLibraryFileName for SEO download / upload labels. */
@@ -2338,36 +2394,21 @@ function canvaSetFullPipelineUiBusy(busy) {
 }
 
 async function canvaSendOneDesignToStudioPeel(item) {
-  const { storageId, designIndex } = canvaParseLibraryItemId(item);
   const dataURL = await canvaFetchLibraryImageAsDataUrl(item);
   if (!dataURL.startsWith('data:image/')) {
     throw new Error('تعذّر تحويل التصميم إلى PNG');
   }
-  const imageData = {
-    name: `canva_${storageId}_d${designIndex}.png`,
-    dataURL,
-    timestamp: Date.now(),
-    source: 'canva_bridge_library',
-    libraryId: item.id,
-    displayName: canvaResolveItemDisplayName(item)
-  };
+  const imageData = { ...canvaBuildStudioImagePayload(item, { namePrefix: 'canva' }), dataURL };
   return canvaDispatchPeelStudioImage(imageData);
 }
 
 async function canvaSendOneDesignToStudioTeeMaster(item) {
-  const { storageId, designIndex } = canvaParseLibraryItemId(item);
   const dataURL = await canvaFetchLibraryImageAsDataUrl(item);
   if (!dataURL.startsWith('data:image/')) {
     throw new Error('تعذّر تحويل التصميم إلى PNG');
   }
-  const imageData = {
-    name: `canva_${storageId}_d${designIndex}.png`,
-    dataURL,
-    timestamp: Date.now(),
-    source: 'canva_bridge_library',
-    libraryId: item.id,
-    displayName: canvaResolveItemDisplayName(item)
-  };
+  // Send-only / TeeMaster handoff: retain existing niche — never rename or clear.
+  const imageData = { ...canvaBuildStudioImagePayload(item, { namePrefix: 'canva' }), dataURL };
   return canvaDispatchTeeMasterStudioImage(imageData);
 }
 
@@ -2432,7 +2473,8 @@ async function canvaSendLibrarySelectedToStudio() {
 
 /**
  * Send selected library images directly to TeeMaster Pro 5K, then stop.
- * Does not run Peel, magic, 5K process, SEO, or Autopilot — waits for the user.
+ * Does not run Peel, magic, 5K process, SEO, Autopilot, or Auto Rename —
+ * niche names on the selected library rows must remain unchanged.
  */
 async function canvaSendLibrarySelectedToTeeMasterOnly() {
   if (canvaTeeMasterPipelineBusy || canvaTeeMasterFullPathBusy || canvaFullPipelineBusy) {
@@ -3101,13 +3143,22 @@ async function canvaRunTeeMasterEditedCore(items, options = {}) {
       continue;
     }
     const displayName = canvaResolveItemDisplayName(sourceItem)
-      || String(file?.displayName || file?.meta?.displayName || '').trim()
+      || String(file?.displayName || file?.meta?.displayName || file?.nicheName || '').trim()
+      || undefined;
+    const nicheFields = canvaExtractNicheIdentity(sourceItem);
+    const nicheName = nicheFields.nicheName
+      || String(file?.nicheName || file?.niche || file?.meta?.nicheName || displayName || '').trim()
+      || undefined;
+    const nicheId = nicheFields.nicheId
+      || String(file?.nicheId || file?.meta?.nicheId || '').trim()
       || undefined;
     try {
       const saved = await canvaSaveTeeMasterEditedToLibrary({
         dataURL: file.dataURL,
         originalLibraryId,
-        displayName: displayName || undefined
+        displayName: nicheName || displayName || undefined,
+        nicheName: nicheName || undefined,
+        nicheId: nicheId || undefined
       });
       if (saved?.id) {
         savedCount += 1;
@@ -3632,19 +3683,33 @@ async function canvaPostLibraryUpload(form) {
   return data;
 }
 
-async function canvaSaveTeeMasterEditedToLibrary({ dataURL, originalLibraryId, displayName }) {
+async function canvaSaveTeeMasterEditedToLibrary({
+  dataURL,
+  originalLibraryId,
+  displayName,
+  nicheName,
+  nicheId
+}) {
   const blob = await canvaDataUrlToBlob(dataURL);
   if (blob.size > CANVA_LIBRARY_UPLOAD_MAX_BYTES) {
     const mb = (blob.size / (1024 * 1024)).toFixed(1);
     throw new Error(`صورة 5K كبيرة (${mb}MB) — الحد ${Math.round(CANVA_LIBRARY_UPLOAD_MAX_BYTES / (1024 * 1024))}MB`);
   }
-  const safeLabel = displayName ? canvaSanitizeFileName(displayName) : 'teemaster_edited.png';
+  const resolvedNiche = String(nicheName || displayName || '').trim();
+  const safeLabel = resolvedNiche ? canvaSanitizeFileName(resolvedNiche) : 'teemaster_edited.png';
   const form = new FormData();
   form.append('image', blob, safeLabel);
   form.append('originalDesignId', originalLibraryId);
   form.append('versionLabel', CANVA_TEEMASTER_EDITED_VERSION);
   form.append('source', 'teemaster');
-  if (displayName) form.append('displayName', displayName);
+  if (resolvedNiche) {
+    form.append('displayName', resolvedNiche);
+    form.append('nicheName', resolvedNiche);
+    form.append('niche', resolvedNiche);
+  } else if (displayName) {
+    form.append('displayName', displayName);
+  }
+  if (nicheId) form.append('nicheId', nicheId);
   const data = await canvaPostLibraryUpload(form);
   return data.items?.[0] || null;
 }
@@ -4238,7 +4303,7 @@ function canvaCreateLibraryCard(item, originalsWithEdits, { lazyThumb = false } 
     + (canvaLibraryBrokenIds.has(item.id) ? ' is-broken' : '');
   card.title = canvaLibraryBrokenIds.has(item.id)
     ? canvaBrokenIssueTooltip(item.id)
-    : (item.promptPreview || item.displayName || item.id);
+    : (canvaResolveItemDisplayName(item) || item.promptPreview || item.displayName || item.id);
   card.dataset.libId = item.id;
 
   const chk = document.createElement('input');
@@ -4634,11 +4699,13 @@ function canvaRenderPreview() {
     }
   }
 
+  const nicheLabel = showItem ? canvaResolveItemDisplayName(item) : '';
   const fileName = showItem
-    ? (item.fileName || item.displayName || item.promptPreview || item.id)
+    ? (nicheLabel || item.fileName || item.displayName || item.promptPreview || item.id)
     : '—';
+  // Under-thumb / preview subtitle must stay the niche (never pipeline stems).
   const designLabel = showItem
-    ? (item.promptPreview || item.displayName || item.id)
+    ? (nicheLabel || item.promptPreview || item.displayName || item.id)
     : 'اختر تصميماً من المكتبة';
 
   if (els.previewFilename) els.previewFilename.textContent = fileName;
@@ -4648,7 +4715,7 @@ function canvaRenderPreview() {
   if (els.previewNameInput && showItem) {
     if (document.activeElement !== els.previewNameInput || els.previewNameInput.dataset.itemId !== item.id) {
       els.previewNameInput.dataset.itemId = item.id;
-      els.previewNameInput.value = item.displayName || item.fileName || '';
+      els.previewNameInput.value = nicheLabel || item.displayName || item.fileName || '';
     }
     els.previewNameInput.disabled = busy;
   } else if (els.previewNameInput) {

@@ -81,10 +81,11 @@ export function isPipelineTempFileStem(name) {
   if (/^retry(_opt|_\d+)*$/i.test(compact)) return true;
   if (/^reference_retry/i.test(compact)) return true;
   if (/^retry_opt/i.test(compact)) return true;
-  // File-like stems only (no spaces): design_1, split_2, nhp_ref, …
+  // File-like stems only (no spaces): design_1, split_2, nhp_ref, canva_*, gen_*
   if (!/\s/.test(stem) && /^(design|split|gallery|nhp|nhp_ref|nhp_result|nhp_grid|nhp_generate)(_?\d+)?$/i.test(compact)) {
     return true;
   }
+  if (!/\s/.test(stem) && /^(canva|gen)_[a-z0-9_]+(_d\d+)?$/i.test(compact)) return true;
   if (/^composite(_batch)?(_\d+)?$/i.test(compact)) return true;
   return false;
 }

@@ -759,12 +759,24 @@ async function studioProcessGenerateLibraryThroughPeel(data) {
         showToast?.('⚠️ صورة Generate بدون dataURL — لم تُضف للطابور');
         return;
     }
-    console.log('[Studio] Generate→Peel:', data.name || 'unnamed');
+    console.log('[Studio] Generate→Peel:', data.name || data.displayName || 'unnamed');
+    const nicheName = String(data.nicheName || data.niche || data.displayName || '').trim();
+    const nicheId = String(data.nicheId || '').trim();
     const item = {
         name: data.name || `generate_${Date.now()}.png`,
         dataURL: data.dataURL,
         status: '🍌 جاري إزالة العلامة...',
-        selectedForProof: false
+        selectedForProof: false,
+        displayName: data.displayName || nicheName || '',
+        libraryId: data.libraryId || null,
+        nicheName: nicheName || '',
+        niche: nicheName || '',
+        nicheId: nicheId || undefined,
+        meta: {
+            ...(data.meta && typeof data.meta === 'object' ? data.meta : {}),
+            ...(nicheName ? { nicheName, niche: nicheName } : {}),
+            ...(nicheId ? { nicheId } : {})
+        }
     };
     try {
         showToast?.('🍌 Generate → Peel Banana: جاري إزالة العلامة...');
@@ -784,9 +796,10 @@ async function studioProcessGenerateLibraryThroughPeel(data) {
         studioTeemasterRefreshQueue();
         studioUpdateCounts();
         studioGoToStep(2);
+        const label = finalItem.displayName || finalItem.nicheName || finalItem.name;
         showToast(result?.success
-            ? `✅ ${finalItem.name} → Peel Banana → TeeMaster`
-            : `⚠️ ${finalItem.name} أُضيفت لـ TeeMaster بدون تنظيف العلامة`);
+            ? `✅ ${label} → Peel Banana → TeeMaster`
+            : `⚠️ ${label} أُضيفت لـ TeeMaster بدون تنظيف العلامة`);
     } catch (error) {
         item.status = '⚠️ من Generate — بدون تنظيف';
         item.thumbnail = await studioCreateThumbnail(item.dataURL, isLowSpecModeEnabled() ? 120 : 160).catch(() => null);
@@ -801,19 +814,30 @@ async function studioProcessGenerateLibraryThroughPeel(data) {
 /** Generate Library → TeeMaster Pro 5K direct (skip Peel Banana). */
 async function studioProcessGenerateLibraryDirectToTeeMaster(data) {
     if (!data?.dataURL) {
-        const label = data?.displayName || data?.name || 'بدون اسم';
+        const label = data?.displayName || data?.nicheName || data?.name || 'بدون اسم';
         console.warn('[Studio] Generate→TeeMaster: missing dataURL', label);
         throw new Error(`بيانات الصورة ناقصة — ${label}`);
     }
-    const label = data.displayName || data.name || 'تصميم';
+    const nicheName = String(data.nicheName || data.niche || data.displayName || '').trim();
+    const nicheId = String(data.nicheId || '').trim();
+    const label = nicheName || data.displayName || data.name || 'تصميم';
     console.log('[Studio] Generate→TeeMaster:', data.name || label);
     const item = {
         name: data.name || `generate_${Date.now()}.png`,
         dataURL: data.dataURL,
         status: '✅ من المكتبة — مباشرة إلى TeeMaster',
         selectedForProof: false,
-        displayName: data.displayName || '',
+        displayName: data.displayName || nicheName || '',
         libraryId: data.libraryId || null,
+        // Niche is mandatory — preserve through TeeMaster send-only and later edited save.
+        nicheName: nicheName || '',
+        niche: nicheName || '',
+        nicheId: nicheId || undefined,
+        meta: {
+            ...(data.meta && typeof data.meta === 'object' ? data.meta : {}),
+            ...(nicheName ? { nicheName, niche: nicheName } : {}),
+            ...(nicheId ? { nicheId } : {})
+        },
         thumbnail: await studioCreateThumbnail(data.dataURL, isLowSpecModeEnabled() ? 120 : 160).catch(() => null)
     };
     STUDIO.step2Files.push(item);
@@ -849,8 +873,11 @@ function studioGoToStep(step) {
                 thumbnail: r.thumbnail || null,
                 status: '',
                 selected: true,
-                displayName: r.displayName || '',
+                displayName: r.displayName || r.nicheName || r.customName || '',
                 libraryId: r.libraryId || r.originalDesignId || null,
+                nicheName: r.nicheName || r.niche || r.meta?.nicheName || '',
+                niche: r.nicheName || r.niche || r.meta?.niche || '',
+                nicheId: r.nicheId || r.meta?.nicheId || undefined,
                 meta: r.meta ? { ...r.meta } : undefined
             }));
         } else if (STUDIO.step2Files.length > 0) {
@@ -3610,7 +3637,11 @@ async function studioStartTeeMasterEditedPipeline(options = {}) {
         const files = newFiles.map((file) => ({
             name: file.name,
             dataURL: file.dataURL,
-            displayName: file.displayName || file.customName || '',
+            displayName: file.displayName || file.customName || file.nicheName || '',
+            nicheName: file.nicheName || file.niche || file.meta?.nicheName || '',
+            niche: file.nicheName || file.niche || file.meta?.niche || '',
+            nicheId: file.nicheId || file.meta?.nicheId || undefined,
+            libraryId: file.libraryId || file.originalDesignId || null,
             meta: file.meta ? { ...file.meta } : {}
         }));
 
@@ -3982,8 +4013,11 @@ async function studioSendToEditedLibrary(sourceList = null) {
             }
             try {
                 const blob = studioDataURLtoBlob(f.dataURL);
+                const nicheName = String(
+                    f.nicheName || f.niche || f.meta?.nicheName || f.meta?.niche || f.displayName || f.customName || ''
+                ).trim();
                 const displayName = String(
-                    f.displayName || f.customName || f.name || `studio_${Date.now()}.png`
+                    nicheName || f.displayName || f.customName || f.name || `studio_${Date.now()}.png`
                 ).replace(/\.[^/.]+$/, '');
                 const fileName = `${displayName || 'studio_edited'}.png`;
                 const form = new FormData();
@@ -3991,6 +4025,12 @@ async function studioSendToEditedLibrary(sourceList = null) {
                 form.append('source', 'teemaster');
                 form.append('versionLabel', STUDIO_EDITED_LIBRARY_VERSION);
                 form.append('displayName', displayName || fileName);
+                if (nicheName) {
+                    form.append('nicheName', nicheName);
+                    form.append('niche', nicheName);
+                }
+                const nicheId = String(f.nicheId || f.meta?.nicheId || '').trim();
+                if (nicheId) form.append('nicheId', nicheId);
                 const originalId = String(
                     f.libraryId || f.originalDesignId || f.meta?.libraryId || f.meta?.originalDesignId || ''
                 ).trim();
@@ -5193,13 +5233,24 @@ async function studioTeemasterStartProcess() {
             const processedDataURL = await studioTeemasterPerformHeavyProcess(item, settings);
             const processedThumbnail = await studioCreateThumbnail(processedDataURL, 160);
             const outputName = item.name.replace(/\.[^/.]+$/, '') + '_POD_5K.png';
+            const nicheName = String(
+                item.nicheName || item.niche || item.meta?.nicheName || item.displayName || item.customName || ''
+            ).trim();
+            const nicheId = String(item.nicheId || item.meta?.nicheId || '').trim();
             const processedItem = {
                 name: outputName,
                 dataURL: processedDataURL,
                 thumbnail: processedThumbnail,
                 selected: true,
-                meta: item.meta ? { ...item.meta } : {},
-                displayName: item.displayName || item.customName || '',
+                meta: {
+                    ...(item.meta ? { ...item.meta } : {}),
+                    ...(nicheName ? { nicheName, niche: nicheName } : {}),
+                    ...(nicheId ? { nicheId } : {})
+                },
+                displayName: nicheName || item.displayName || item.customName || '',
+                nicheName: nicheName || '',
+                niche: nicheName || '',
+                nicheId: nicheId || undefined,
                 libraryId: item.libraryId || item.originalDesignId || null,
                 outputWidth: STUDIO_OUTPUT_WIDTH,
                 outputHeight: STUDIO_OUTPUT_HEIGHT

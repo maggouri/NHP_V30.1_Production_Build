@@ -34,7 +34,7 @@ function isTechnicalLibraryTitle(value = '') {
     const s = String(value || '').trim();
     if (!s) return true;
     if (/^dsg_[a-z0-9]+(_\d+)?$/i.test(s)) return true;
-    if (/^(lib_|canva_)[a-z0-9_]+(__d\d+)?$/i.test(s)) return true;
+    if (/^(lib_|canva_|gen_)[a-z0-9_]+(__d\d+|_d\d+)?$/i.test(s)) return true;
     if (/^(design|split|composite)(_\d+)?$/i.test(s)) return true;
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)) return true;
     if (/^live\s*sync$/i.test(s)) return true;
@@ -287,29 +287,88 @@ function parseDesignIdForResolve(rawId) {
     return { id, storageId: id, designIndex: 0, isDesign: false };
 }
 
+/** Resolve niche identity from library index/meta (follows originalDesignId one level). */
+function resolveLibraryNicheFromId(rawId, { readLibraryIndex, readLibraryMeta, libraryDir } = {}) {
+    const parsed = parseDesignIdForResolve(rawId);
+    const id = String(rawId || '').trim();
+    if (!id || typeof readLibraryIndex !== 'function') {
+        return { nicheName: '', nicheId: '' };
+    }
+
+    const index = readLibraryIndex();
+    const entry = index.find((e) => e.id === parsed.id || e.id === id);
+    const libDir = path.join(libraryDir || '', parsed.storageId);
+    const meta = typeof readLibraryMeta === 'function' ? readLibraryMeta(libDir) : null;
+
+    const nicheName = sanitizeLibraryTitleCandidate(
+        entry?.nicheName || entry?.niche || meta?.nicheName || meta?.niche || ''
+    ) || sanitizeDisplayName(
+        entry?.nicheName || entry?.niche || meta?.nicheName || meta?.niche || ''
+    );
+    const nicheId = String(entry?.nicheId || meta?.nicheId || '').trim();
+    if (nicheName || nicheId) {
+        return { nicheName: nicheName || '', nicheId };
+    }
+
+    // Fall back to human display title on the original (still better than canva_/timestamp stems).
+    const displayFallback = sanitizeLibraryTitleCandidate(
+        entry?.displayName || entry?.title || meta?.displayName || meta?.promptPreview || ''
+    );
+    if (displayFallback) {
+        return { nicheName: displayFallback, nicheId: '' };
+    }
+
+    const origId = String(entry?.originalDesignId || meta?.originalDesignId || '').trim();
+    if (origId && origId !== id && origId !== parsed.id) {
+        return resolveLibraryNicheFromId(origId, { readLibraryIndex, readLibraryMeta, libraryDir });
+    }
+    return { nicheName: '', nicheId: '' };
+}
+
 /** Resolve displayName from library index/meta (follows originalDesignId chain one level). */
 function resolveLibraryDisplayNameFromId(rawId, { readLibraryIndex, readLibraryMeta, libraryDir } = {}) {
+    const niche = resolveLibraryNicheFromId(rawId, { readLibraryIndex, readLibraryMeta, libraryDir });
+    if (niche.nicheName) return niche.nicheName;
+
     const parsed = parseDesignIdForResolve(rawId);
     const id = String(rawId || '').trim();
     if (!id || typeof readLibraryIndex !== 'function') return '';
 
     const index = readLibraryIndex();
     const entry = index.find((e) => e.id === parsed.id || e.id === id);
-    if (entry?.displayName) return sanitizeDisplayName(entry.displayName);
-    if (entry?.title) return sanitizeDisplayName(entry.title);
+    if (entry?.displayName) {
+        const dn = sanitizeLibraryTitleCandidate(entry.displayName) || sanitizeDisplayName(entry.displayName);
+        if (dn) return dn;
+    }
+    if (entry?.title) {
+        const t = sanitizeLibraryTitleCandidate(entry.title) || sanitizeDisplayName(entry.title);
+        if (t) return t;
+    }
 
     const libDir = path.join(libraryDir || '', parsed.storageId);
     const meta = typeof readLibraryMeta === 'function' ? readLibraryMeta(libDir) : null;
-    if (meta?.displayName) return sanitizeDisplayName(meta.displayName);
+    if (meta?.displayName) {
+        const dn = sanitizeLibraryTitleCandidate(meta.displayName) || sanitizeDisplayName(meta.displayName);
+        if (dn) return dn;
+    }
     if (parsed.isDesign && parsed.designIndex) {
         const di = parsed.designIndex - 1;
         if (Array.isArray(meta?.displayNames) && meta.displayNames[di]) {
-            return sanitizeDisplayName(meta.displayNames[di]);
+            const dn = sanitizeLibraryTitleCandidate(meta.displayNames[di])
+                || sanitizeDisplayName(meta.displayNames[di]);
+            if (dn) return dn;
         }
         const splits = listSplitFileEntries(meta);
-        if (splits[di]?.displayName) return sanitizeDisplayName(splits[di].displayName);
+        if (splits[di]?.displayName) {
+            const dn = sanitizeLibraryTitleCandidate(splits[di].displayName)
+                || sanitizeDisplayName(splits[di].displayName);
+            if (dn) return dn;
+        }
     }
-    if (meta?.promptPreview) return sanitizeDisplayName(meta.promptPreview);
+    if (meta?.promptPreview) {
+        const p = sanitizeLibraryTitleCandidate(meta.promptPreview) || sanitizeDisplayName(meta.promptPreview);
+        if (p) return p;
+    }
 
     const origId = String(entry?.originalDesignId || meta?.originalDesignId || '').trim();
     if (origId && origId !== id && origId !== parsed.id) {
@@ -671,6 +730,11 @@ function createLibrarySmartRename(deps) {
             readLibraryIndex,
             readLibraryMeta,
             libraryDir
+        }),
+        resolveLibraryNicheFromId: (rawId) => resolveLibraryNicheFromId(rawId, {
+            readLibraryIndex,
+            readLibraryMeta,
+            libraryDir
         })
     };
 }
@@ -683,5 +747,6 @@ module.exports = {
     isTechnicalLibraryTitle,
     sanitizeLibraryFileName,
     safeLibraryFileSegment,
-    resolveLibraryDisplayNameFromId
+    resolveLibraryDisplayNameFromId,
+    resolveLibraryNicheFromId
 };

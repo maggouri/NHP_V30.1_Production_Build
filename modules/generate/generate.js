@@ -3644,11 +3644,18 @@ async function generateSendOneDesignToStudioPeel(item) {
   if (!dataURL.startsWith('data:image/')) {
     throw new Error('تعذّر تحويل التصميم إلى PNG');
   }
+  const nicheName = String(item?.nicheName || item?.niche || item?.displayName || item?.title || '').trim();
+  const nicheId = String(item?.nicheId || '').trim();
   const imageData = {
     name: `gen_${storageId}_d${designIndex}.png`,
     dataURL,
     timestamp: Date.now(),
-    source: 'generate_library'
+    source: 'generate_library',
+    libraryId: item?.id || null,
+    displayName: nicheName || String(item?.displayName || item?.title || '').trim(),
+    nicheName: nicheName || undefined,
+    niche: nicheName || undefined,
+    nicheId: nicheId || undefined
   };
   return generateDispatchPeelStudioImage(imageData);
 }

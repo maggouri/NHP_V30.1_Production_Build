@@ -2479,9 +2479,19 @@ function registerGenerateApi(app, { rootDir: rootDirInput, logFn = console.log }
             : String(opts.originalDesignId || '').trim();
         const oracleObjectKey = String(opts.oracleObjectKey || '').trim();
         const versionLabel = String(opts.versionLabel || '').trim();
-        const nicheId = String(opts.nicheId || '').trim();
-        const nicheName = sanitizeLibraryTitleCandidate(opts.nicheName || opts.niche || '')
+        let nicheId = String(opts.nicheId || '').trim();
+        let nicheName = sanitizeLibraryTitleCandidate(opts.nicheName || opts.niche || '')
             || sanitizeDisplayName(opts.nicheName || opts.niche || '');
+
+        // Edited / TeeMaster uploads must inherit niche from the original when omitted.
+        // Niche is mandatory and must not be dropped by pipeline handoffs.
+        if (originalDesignId && (!nicheName || !nicheId)) {
+            try {
+                const inherited = librarySmartRename.resolveLibraryNicheFromId(originalDesignId);
+                if (!nicheName && inherited.nicheName) nicheName = inherited.nicheName;
+                if (!nicheId && inherited.nicheId) nicheId = inherited.nicheId;
+            } catch (_) { /* ignore inherit failures */ }
+        }
 
         let displayName = sanitizeLibraryTitleCandidate(opts.displayName || '');
         if (!displayName && nicheName) displayName = nicheName;
@@ -2493,8 +2503,8 @@ function registerGenerateApi(app, { rootDir: rootDirInput, logFn = console.log }
                 || nicheName
                 || (isLiveSync ? 'Live Sync' : 'رفع يدوي');
         }
-        // Prefer niche identity for Live Sync file/display names.
-        if (isLiveSync && nicheName) displayName = nicheName;
+        // Prefer niche identity for Live Sync and TeeMaster-edited file/display names.
+        if ((isLiveSync || originalDesignId) && nicheName) displayName = nicheName;
 
         // Dedupe Live Sync / site imports by site design id, oracle key, or content hash.
         const contentHashEarly = crypto.createHash('sha256').update(imageBuffer).digest('hex');
