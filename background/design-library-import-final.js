@@ -10,7 +10,8 @@
  */
 (function initDesignLibraryImportFinalReceiver(globalScope) {
   const CONTRACT_TYPE = 'design_library.import_final';
-  const CONTRACT_VERSION = '1.0.0';
+  const CONTRACT_VERSION = '1.0.1';
+  const CONTRACT_VERSIONS_ACCEPTED = ['1.0.0', '1.0.1'];
   const DEDUPE_STORAGE_KEY = 'nhp40_import_final_dedupe_v1';
   const GHOST_UPLOAD_URL = 'http://127.0.0.1:3019/api/library/upload';
   const BADGE_LABEL = 'From EmailCore';
@@ -99,7 +100,7 @@
       throw err;
     }
     const ver = safeStr(contract.version || contract.contractVersion);
-    if (ver && ver !== CONTRACT_VERSION) {
+    if (ver && !CONTRACT_VERSIONS_ACCEPTED.includes(ver)) {
       const err = new Error(`unsupported_contractVersion:${ver}`);
       err.code = 'UNSUPPORTED_CONTRACT_VERSION';
       throw err;
@@ -219,6 +220,8 @@
     if (contract.checksum) form.append('checksum', safeStr(contract.checksum));
     if (contract.editedObjectKey) form.append('oracleObjectKey', safeStr(contract.editedObjectKey));
     if (contract.nicheId) form.append('nicheId', safeStr(contract.nicheId));
+    if (contract.nicheName) form.append('nicheName', safeStr(contract.nicheName));
+    if (contract.nicheName) form.append('niche', safeStr(contract.nicheName));
     // originalDesignId marks local Edited Library (not Generated).
     form.append('originalDesignId', safeStr(contract.designId));
     form.append('siteDesignId', safeStr(contract.designId));
@@ -232,6 +235,8 @@
       editedVersion: contract.editedVersion,
       checksum: contract.checksum,
       editedObjectKey: contract.editedObjectKey,
+      nicheId: contract.nicheId || null,
+      nicheName: contract.nicheName || null,
       deleteLocalOnly: true,
       neverDeleteW6Original: true,
       width: contract.width,
