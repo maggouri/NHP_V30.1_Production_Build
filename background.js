@@ -171,6 +171,11 @@ try {
     console.error('Failed to import emailcore-teepublic-pipeline.js', e);
 }
 try {
+    importScripts('background/design-library-import-final.js');
+} catch (e) {
+    console.error('Failed to import background/design-library-import-final.js', e);
+}
+try {
     importScripts('emailcore-handlers.js');
 } catch (e) {
     console.error('Failed to import emailcore-handlers.js', e);

@@ -2001,6 +2001,40 @@
             return true;
         }
 
+        if (
+            action === 'EMAILCORE_DESIGN_LIBRARY_IMPORT_FINAL'
+            || action === 'design_library.import_final'
+        ) {
+            (async () => {
+                try {
+                    const importer = self.NHP40_IMPORT_FINAL;
+                    if (!importer?.importFinalContracts) {
+                        sendResponse({
+                            success: false,
+                            ok: false,
+                            status: 'failed',
+                            error: 'import_final_receiver_not_loaded',
+                        });
+                        return;
+                    }
+                    const result = await importer.importFinalContracts(request || {});
+                    sendResponse({
+                        success: !!result?.ok,
+                        ok: !!result?.ok,
+                        ...result,
+                    });
+                } catch (err) {
+                    sendResponse({
+                        success: false,
+                        ok: false,
+                        status: 'failed',
+                        error: err?.message || String(err),
+                    });
+                }
+            })();
+            return true;
+        }
+
         if (action === 'EMAILCORE_DELETE_SITE_DESIGNS') {
             const ids = (Array.isArray(request.ids) ? request.ids : [])
                 .map((id) => String(id || '').trim())
