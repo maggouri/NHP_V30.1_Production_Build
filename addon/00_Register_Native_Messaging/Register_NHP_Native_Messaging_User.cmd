@@ -23,9 +23,12 @@ echo.
 call "%NHP_ROOT%\NHP_Ensure_Node_In_Path.cmd"
 if errorlevel 1 (
   echo.
-  echo [ERROR] Node.js is not installed or not in PATH.
-  echo Install Node.js LTS from https://nodejs.org/
-  echo Then double-click this file again.
+  echo [ERROR] Node.js not found / Node.js introuvable.
+  echo EN: Install Node.js LTS from https://nodejs.org/
+  echo     Or drop portable node.exe into runtime\node\
+  echo FR: Installez Node.js LTS: https://nodejs.org/
+  echo     Ou placez node.exe dans runtime\node\
+  echo Then double-click this file again / Puis relancez.
   echo.
   pause
   exit /b 1

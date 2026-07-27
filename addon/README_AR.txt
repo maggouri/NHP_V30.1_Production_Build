@@ -67,3 +67,13 @@
   بعد نقل المجلد بالكامل: شغّل 00_Register_Native_Messaging مرة، أو Start All
   (Portable Init يعيد كتابة مسار Native Messaging للجهاز الحالي).
   cliproxy: auth-dir=./auths و tls.cert/key نسبية داخل cliproxyapi-local\
+
+--------------------------------------------------------------------------------
+Node.js requirement / exigence Node.js
+--------------------------------------------------------------------------------
+  EN: Install Node.js LTS from https://nodejs.org/  OR place portable:
+      runtime\node\node.exe
+  FR: Installez Node.js LTS https://nodejs.org/  OU placez un Node portable:
+      runtime\node\node.exe
+  Copy the FULL extension folder (not only addon\).
+  Data stays beside App Root in NHP_DATA\ (settings preserved across moves).

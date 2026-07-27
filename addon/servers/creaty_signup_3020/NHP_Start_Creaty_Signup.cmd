@@ -1,14 +1,35 @@
 @echo off
 setlocal EnableExtensions
-chcp 65001 >nul 2>&1
 title NHP - Start Creaty Signup (3020)
 call "%~dp0..\..\_shared\_NHP_Init.cmd"
+if errorlevel 1 (
+  echo ERROR: init failed.
+  pause
+  exit /b 1
+)
 call "%NHP_ROOT%\utils\_NHP_Set_Data_Env.cmd" "%NHP_ROOT%"
+if errorlevel 1 (
+  echo ERROR: data env failed.
+  pause
+  exit /b 1
+)
 call "%NHP_ROOT%\NHP_Ensure_Node_In_Path.cmd"
-if errorlevel 1 ( echo ERROR: Node.js غير متوفر في PATH. & pause & exit /b 1 )
-if not exist "%NHP_ROOT%\package.json" ( echo ERROR: package.json غير موجود. & pause & exit /b 1 )
+if errorlevel 1 (
+  echo.
+  echo ERROR: Node.js not found / Node.js introuvable.
+  echo Install LTS: https://nodejs.org/
+  echo Or place portable node at: runtime\node\node.exe
+  echo.
+  pause
+  exit /b 1
+)
+if not exist "%NHP_ROOT%\package.json" (
+  echo ERROR: package.json missing under "%NHP_ROOT%"
+  pause
+  exit /b 1
+)
 if not exist "%NHP_DATA_ROOT%\server_logs" mkdir "%NHP_DATA_ROOT%\server_logs"
-echo تشغيل Creaty Signup (3020)...
+echo Starting Creaty Signup (3020) ...
 call "%NHP_ROOT%\Start_Creaty_Server_Background.cmd" force
 powershell -NoProfile -ExecutionPolicy Bypass -File "%NHP_ROOT%\NHP_Check_Server_Ports.ps1"
 pause

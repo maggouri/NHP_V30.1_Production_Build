@@ -16,10 +16,28 @@ if not "%~1"=="" (
 if "%NHP_APP_ROOT:~-1%"=="\" set "NHP_APP_ROOT=%NHP_APP_ROOT:~0,-1%"
 for %%I in ("%NHP_APP_ROOT%") do set "NHP_APP_ROOT=%%~fI"
 
+if not defined NHP_APP_ROOT (
+  echo ERROR: NHP_APP_ROOT is empty.
+  exit /b 1
+)
+if "%NHP_APP_ROOT%"=="" (
+  echo ERROR: NHP_APP_ROOT is empty.
+  exit /b 1
+)
+
 if not defined NHP_DATA_ROOT (
   for %%I in ("%NHP_APP_ROOT%\..") do set "NHP_DATA_ROOT=%%~fI\NHP_DATA"
 ) else (
   for %%I in ("%NHP_DATA_ROOT%") do set "NHP_DATA_ROOT=%%~fI"
+)
+
+if not defined NHP_DATA_ROOT (
+  echo ERROR: NHP_DATA_ROOT is empty.
+  exit /b 1
+)
+if "%NHP_DATA_ROOT%"=="" (
+  echo ERROR: NHP_DATA_ROOT is empty.
+  exit /b 1
 )
 
 set "NHP_ROOT=%NHP_APP_ROOT%"
@@ -27,6 +45,11 @@ set "NHP_ROOT_DIR=%NHP_APP_ROOT%"
 set "NHP_LOG_DIR=%NHP_DATA_ROOT%\server_logs"
 
 if not exist "%NHP_DATA_ROOT%" mkdir "%NHP_DATA_ROOT%"
+if errorlevel 1 (
+  echo ERROR: cannot create "%NHP_DATA_ROOT%"
+  exit /b 1
+)
+
 for %%D in (
   generated_designs
   server_logs
