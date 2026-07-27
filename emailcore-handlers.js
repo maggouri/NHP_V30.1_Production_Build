@@ -2109,16 +2109,39 @@
                         });
                         return;
                     }
+                    const userId = String(data.userId || '').trim();
+                    const sessionToken = String(data.sessionToken || '').trim();
+                    // Issue per-user CREATY token so members match admin "connected" path
+                    // (admin often gets token via website sync; members only use Integrations login).
+                    let creatyToken = '';
+                    if (sessionToken && userId) {
+                        try {
+                            const tokenRes = await fetch(`${apiBase}/api/creaty/extension-token`, {
+                                method: 'POST',
+                                headers: {
+                                    'content-type': 'application/json',
+                                    'x-extension-session': sessionToken,
+                                },
+                                body: JSON.stringify({ userId }),
+                            });
+                            const tokenData = await tokenRes.json().catch(() => ({}));
+                            if (tokenRes.ok && tokenData?.token) {
+                                creatyToken = String(tokenData.token).trim();
+                            }
+                        } catch (_) {
+                            /* session alone remains valid for API calls */
+                        }
+                    }
                     await chrome.storage.local.set({
                         [CREATY_STORAGE_KEYS.apiBase]: apiBase,
-                        [EMAILCORE_SESSION_KEYS.sessionToken]: data.sessionToken,
-                        [EMAILCORE_SESSION_KEYS.userId]: String(data.userId || ''),
+                        [EMAILCORE_SESSION_KEYS.sessionToken]: sessionToken,
+                        [EMAILCORE_SESSION_KEYS.userId]: userId,
                         [EMAILCORE_SESSION_KEYS.username]: String(data.username || username),
                         [EMAILCORE_SESSION_KEYS.role]: String(data.role || 'member'),
                         [EMAILCORE_SESSION_KEYS.tier]: String(data.tier || 'bronze'),
                         [EMAILCORE_SESSION_KEYS.expiresAt]: String(data.expiresAt || ''),
-                        [CREATY_STORAGE_KEYS.token]: '',
-                        [CREATY_STORAGE_KEYS.userId]: String(data.userId || ''),
+                        [CREATY_STORAGE_KEYS.userId]: userId,
+                        ...(creatyToken ? { [CREATY_STORAGE_KEYS.token]: creatyToken } : {}),
                     });
                     sendResponse({
                         ok: true,
@@ -2128,6 +2151,7 @@
                         userId: data.userId,
                         isAdmin: data.isAdmin === true || data.role === 'admin',
                         expiresAt: data.expiresAt,
+                        creatyTokenSynced: !!creatyToken,
                     });
                 } catch (err) {
                     sendResponse({ ok: false, error: err.message || String(err) });

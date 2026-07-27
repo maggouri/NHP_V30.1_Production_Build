@@ -1479,6 +1479,13 @@ export async function initAdminModule(helpers) {
             if (emailcorePassInput) emailcorePassInput.value = '';
             showToast(`✅ تم الاتصال بـ EmailCore (${response.username})`);
             await updateEmailcoreSessionUi();
+            try {
+                const mod = await import('../creaty/emailcore-library.js');
+                await mod.refreshEmailCoreConnectionStatus?.();
+                if (response.creatyTokenSynced !== false) {
+                    await mod.refreshEmailCoreLibrary?.({ silent: true });
+                }
+            } catch (_) { /* CREATY panel may not be loaded yet */ }
         });
     });
 

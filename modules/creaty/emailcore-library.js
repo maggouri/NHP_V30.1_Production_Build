@@ -91,12 +91,17 @@ async function emailcoreFetchViaBackground({ apiBase, userId, token, sessionToke
 
 function configFromStorage(stored = {}) {
   const sessionToken = String(stored[KEYS.sessionToken] || '').trim();
-  const sessionUserId = String(stored[KEYS.sessionUserId] || '').trim();
-  if (sessionToken && sessionUserId) {
+  const sessionUserId = String(
+    stored[KEYS.sessionUserId] || stored[KEYS.userId] || ''
+  ).trim();
+  const creatyToken = String(stored[KEYS.token] || '').trim();
+  // Prefer extension session (Integrations login) for members + admin.
+  if (sessionToken) {
     return {
       apiBase: normalizeEmailCoreApiBase(stored[KEYS.apiBase]),
       userId: sessionUserId,
       sessionToken,
+      token: creatyToken,
       role: String(stored[KEYS.sessionRole] || 'member').trim(),
       username: String(stored[KEYS.sessionUsername] || '').trim(),
     };
@@ -104,8 +109,27 @@ function configFromStorage(stored = {}) {
   return {
     apiBase: normalizeEmailCoreApiBase(stored[KEYS.apiBase]),
     userId: String(stored[KEYS.userId] || '').trim(),
-    token: String(stored[KEYS.token] || '').trim(),
+    token: creatyToken,
   };
+}
+
+export async function refreshEmailCoreConnectionStatus() {
+  const stored = await chrome.storage.local.get(Object.values(KEYS));
+  const auth = configFromStorage(stored);
+  const statusEl = $('creaty-emailcore-status');
+  if (!statusEl) return auth;
+  const connected = !!(auth.sessionToken || auth.token);
+  if (connected) {
+    const roleLabel = auth.role === 'admin' ? 'مدير' : (auth.role ? 'مستخدم' : '');
+    statusEl.textContent = auth.username
+      ? `✅ متصل: ${auth.username}${roleLabel ? ` (${roleLabel})` : ''} — الربط من مركز الإدارة → التكاملات`
+      : '✅ متصل — الربط من مركز الإدارة → التكاملات';
+    statusEl.className = 'creaty-store-hint creaty-store-hint--ok';
+  } else {
+    statusEl.textContent = '⚠️ غير متصل — سجّل الدخول من مركز الإدارة → التكاملات';
+    statusEl.className = 'creaty-store-hint';
+  }
+  return auth;
 }
 
 export async function resolveEmailCoreAuth() {
@@ -583,18 +607,15 @@ async function handleAddAllAsCreaty() {
 }
 
 export async function initEmailCoreLibrary() {
-  const stored = await chrome.storage.local.get(Object.values(KEYS));
-  const auth = configFromStorage(stored);
-  const statusEl = $('creaty-emailcore-status');
-  if (statusEl) {
-    if (auth.sessionToken || auth.token) {
-      const roleLabel = auth.role === 'admin' ? 'مدير' : 'مستخدم';
-      statusEl.textContent = auth.username
-        ? `✅ متصل: ${auth.username} (${roleLabel}) — الربط من مركز الإدارة → التكاملات`
-        : '✅ متصل — الربط من مركز الإدارة → التكاملات';
-    } else {
-      statusEl.textContent = '⚠️ غير متصل — سجّل الدخول من مركز الإدارة → التكاملات';
-    }
+  await refreshEmailCoreConnectionStatus();
+  if (!window.__nhpEmailCoreAuthStatusBound) {
+    window.__nhpEmailCoreAuthStatusBound = true;
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area !== 'local') return;
+      const authKeys = Object.values(KEYS);
+      if (!authKeys.some((k) => Object.prototype.hasOwnProperty.call(changes, k))) return;
+      void refreshEmailCoreConnectionStatus();
+    });
   }
   $('creaty-emailcore-generate')?.addEventListener('click', (event) => withBusy(event.currentTarget, async () => {
     await request('/library/sessions/generate', { method: 'POST', body: { count: Number($('creaty-emailcore-count')?.value) || 1 } });

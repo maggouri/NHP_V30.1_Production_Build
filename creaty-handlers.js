@@ -344,26 +344,55 @@
 
     async function creatyFetch(path, options = {}) {
         const cfg = await readCreatyConfig();
+        const sessionStored = await new Promise((resolve) => {
+            chrome.storage.local.get(
+                ['emailcore_session_token', 'emailcore_session_user_id', 'emailcore_creaty_user_id'],
+                (items) => resolve(items || {})
+            );
+        });
         const apiBase = String(options.apiBase || creatyRunner.apiBase || cfg.apiBase || DEFAULT_API_BASE).replace(/\/+$/, '');
+        const sessionToken = String(
+            options.sessionToken
+            || sessionStored.emailcore_session_token
+            || ''
+        ).trim();
         const token = String(options.token || creatyRunner.token || cfg.token || '').trim();
-        const userId = String(options.userId || creatyRunner.userId || cfg.userId || '').trim();
-        if (!token || !userId) {
-            throw new Error('CREATY token missing — open admin #creaty and sync extension');
+        const userId = String(
+            options.userId
+            || creatyRunner.userId
+            || cfg.userId
+            || sessionStored.emailcore_session_user_id
+            || sessionStored.emailcore_creaty_user_id
+            || ''
+        ).trim();
+        if ((!sessionToken && !token) || !userId) {
+            throw new Error('CREATY token missing — سجّل الدخول من مركز الإدارة → التكاملات');
         }
         const method = options.method || 'GET';
         let fetchUrl = `${apiBase}${path}`;
         let body;
+        const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+        if (sessionToken) {
+            headers['x-extension-session'] = sessionToken;
+        }
         if (method === 'GET') {
             const url = new URL(fetchUrl);
-            url.searchParams.set('token', token);
+            if (!sessionToken) url.searchParams.set('token', token);
             url.searchParams.set('userId', userId);
             fetchUrl = url.toString();
         } else {
-            body = JSON.stringify({ ...(options.body || {}), token, userId });
+            body = JSON.stringify({
+                ...(options.body || {}),
+                ...(sessionToken ? { sessionToken } : { token }),
+                userId,
+            });
+        }
+        if (!sessionToken && token) {
+            headers['x-creaty-token'] = token;
         }
         const res = await fetch(fetchUrl, {
             method,
-            headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+            headers,
             body,
         });
         const data = await res.json().catch(() => ({}));

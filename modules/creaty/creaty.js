@@ -7,6 +7,7 @@ import { initStoreAssetsBinary } from './store.assets.binary.js';
 import {
   initEmailCoreLibrary,
   refreshEmailCoreLibrary,
+  refreshEmailCoreConnectionStatus,
   postCreatyHeartbeat,
   hasEmailCoreCredentials,
   validateEmailCoreHeartbeatAuth,
@@ -1600,6 +1601,7 @@ function switchCol2Tab(tabId) {
   }
   applyCreatyI18n();
   if (tab === 'store') {
+    void refreshEmailCoreConnectionStatus();
     void refreshEmailCoreLibrary();
   } else if (tab === 'design-library') {
     refreshDesignLibraryColumn();
@@ -1610,6 +1612,7 @@ function switchCol2Tab(tabId) {
     void refreshImportedSessionsPanel();
     stopCreatyDashboardPoll();
   } else if (tab === 'mailbox-setup') {
+    void refreshEmailCoreConnectionStatus();
     void refreshMailboxLifecycleUi();
     stopCreatyDashboardPoll();
   } else if (tab === 'domain-registry') {
