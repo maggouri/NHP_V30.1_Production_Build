@@ -3061,7 +3061,95 @@
             const claimData = await claimRes.json().catch(() => ({}));
             if (!claimRes.ok || !claimData?.job) continue;
 
+            const claimed = claimData.job;
+            const action = String(claimed.action || job.action || '').trim();
             const completeUrl = `${apiBase}/api/extension/design-jobs/${job.id}/complete`;
+            const failUrl = `${apiBase}/api/extension/design-jobs/${job.id}/fail`;
+
+            // Site Design Studio Library stage remote-control → Canva Bridge toolbar group.
+            if (action === 'library-stage') {
+                const stage = String(
+                    claimed.payload?.stage
+                    || claimed.payload?.ap_stage
+                    || job.payload?.stage
+                    || job.payload?.ap_stage
+                    || ''
+                ).trim().toLowerCase();
+                const allowed = new Set(['selection', 'naming', 'library', 'processing', 'publishing']);
+                try {
+                    if (!allowed.has(stage)) {
+                        await fetch(failUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'x-creaty-token': token,
+                                'x-extension-id': chrome.runtime.id,
+                            },
+                            body: JSON.stringify({
+                                userId,
+                                token,
+                                error: `unsupported library stage: ${stage || '(empty)'}`,
+                            }),
+                        }).catch(() => null);
+                        continue;
+                    }
+                    await chrome.storage.local.set({
+                        emailcore_library_stage_pending: {
+                            stage,
+                            ap_stage: stage,
+                            protocol: 'EMAILCORE_LIBRARY_STAGE',
+                            at: Date.now(),
+                            jobId: claimed.id || job.id,
+                        },
+                    });
+                    try {
+                        chrome.runtime.sendMessage({
+                            action: 'EMAILCORE_LIBRARY_STAGE',
+                            stage,
+                            ap_stage: stage,
+                            source: 'design-jobs',
+                            jobId: claimed.id || job.id,
+                        });
+                    } catch {
+                        /* UI may be closed — storage pending still applies on Canva Bridge init */
+                    }
+                    await fetch(completeUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-creaty-token': token,
+                            'x-extension-id': chrome.runtime.id,
+                        },
+                        body: JSON.stringify({
+                            userId,
+                            token,
+                            result: {
+                                applied: true,
+                                stage,
+                                ap_stage: stage,
+                                protocol: 'EMAILCORE_LIBRARY_STAGE',
+                                desk: 'studio',
+                            },
+                        }),
+                    }).catch(() => null);
+                } catch (err) {
+                    await fetch(failUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-creaty-token': token,
+                            'x-extension-id': chrome.runtime.id,
+                        },
+                        body: JSON.stringify({
+                            userId,
+                            token,
+                            error: String(err?.message || err || 'library-stage failed').slice(0, 500),
+                        }),
+                    }).catch(() => null);
+                }
+                continue;
+            }
+
             await fetch(completeUrl, {
                 method: 'POST',
                 headers: {
@@ -3075,7 +3163,7 @@
                     result: {
                         stub: true,
                         message: 'Extension bridge connected — use local Ghost Generate for file-path actions (Peel/Path).',
-                        action: job.action,
+                        action,
                     },
                 }),
             }).catch(() => null);
@@ -3506,6 +3594,14 @@
     chrome.alarms.create(EMAILCORE_PIPELINE_ALERT_ALARM, { periodInMinutes: 1 });
     chrome.alarms.create(EMAILCORE_DESIGN_JOBS_ALARM, { periodInMinutes: 1 });
     chrome.alarms.create(EMAILCORE_LIVE_SYNC_ALARM, { periodInMinutes: 1 });
+    // Faster pickup for UI remote-control (library-stage) while SW is awake.
+    if (!self.__nhpDesignJobsFastPoll) {
+        self.__nhpDesignJobsFastPoll = true;
+        setInterval(() => {
+            pollDesignJobsBridge().catch(() => {});
+        }, 8000);
+        pollDesignJobsBridge().catch(() => {});
+    }
     chrome.alarms.onAlarm.addListener((alarm) => {
         if (alarm.name === EMAILCORE_MAIL_ALARM) {
             pollEmailCoreMessages().catch((error) => {

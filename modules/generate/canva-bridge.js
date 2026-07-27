@@ -5944,11 +5944,69 @@ function canvaBindToolbarGroups() {
     const toggle = group.querySelector('.canva-bridge-toolbar-group-title');
     if (!toggle) return;
     toggle.setAttribute('aria-expanded', 'false');
-    group.addEventListener('mouseenter', () => toggle.setAttribute('aria-expanded', 'true'));
+    group.addEventListener('mouseenter', () => {
+      if (group.classList.contains('is-stage-open')) return;
+      toggle.setAttribute('aria-expanded', 'true');
+    });
     group.addEventListener('mouseleave', () => {
+      if (group.classList.contains('is-stage-open')) return;
       toggle.setAttribute('aria-expanded', 'false');
       if (group.contains(document.activeElement)) document.activeElement?.blur?.();
     });
+  });
+}
+
+const CANVA_LIBRARY_STAGE_PENDING_KEY = 'emailcore_library_stage_pending';
+const CANVA_LIBRARY_STAGES = new Set(['selection', 'naming', 'library', 'processing', 'publishing']);
+
+/** Open one Canva Bridge toolbar stage (remote control from EmailCore site). */
+export function canvaSetLibraryToolbarStage(rawStage) {
+  const stage = String(rawStage || '').trim().toLowerCase();
+  if (!CANVA_LIBRARY_STAGES.has(stage)) return { ok: false, reason: 'unsupported', stage };
+  const root = document.getElementById('canva-bridge-library-toolbar');
+  if (!root) return { ok: false, reason: 'toolbar_missing', stage };
+
+  root.querySelectorAll('.canva-bridge-toolbar-group[data-toolbar-group]').forEach((group) => {
+    const name = String(group.getAttribute('data-toolbar-group') || '').trim().toLowerCase();
+    const match = name === stage;
+    group.classList.toggle('is-stage-open', match);
+    const toggle = group.querySelector('.canva-bridge-toolbar-group-title');
+    if (toggle) toggle.setAttribute('aria-expanded', match ? 'true' : 'false');
+  });
+
+  try {
+    document.getElementById('canva-bridge-root')?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+  } catch {
+    /* ignore */
+  }
+  canvaSetMsg(`Remote stage: ${stage}`, '');
+  return { ok: true, stage };
+}
+
+function canvaApplyPendingLibraryStageFromStorage() {
+  if (typeof chrome === 'undefined' || !chrome.storage?.local?.get) return;
+  chrome.storage.local.get([CANVA_LIBRARY_STAGE_PENDING_KEY], (res) => {
+    const pending = res?.[CANVA_LIBRARY_STAGE_PENDING_KEY];
+    const stage = String(pending?.stage || pending?.ap_stage || '').trim().toLowerCase();
+    if (!CANVA_LIBRARY_STAGES.has(stage)) return;
+    canvaSetLibraryToolbarStage(stage);
+    try {
+      chrome.storage.local.remove(CANVA_LIBRARY_STAGE_PENDING_KEY);
+    } catch {
+      /* ignore */
+    }
+  });
+}
+
+function canvaListenLibraryStageRemote() {
+  if (typeof chrome === 'undefined' || !chrome.runtime?.onMessage?.addListener) return;
+  if (canvaListenLibraryStageRemote._bound) return;
+  canvaListenLibraryStageRemote._bound = true;
+  chrome.runtime.onMessage.addListener((req) => {
+    const action = String(req?.action || '').trim();
+    if (action !== 'EMAILCORE_LIBRARY_STAGE' && action !== 'ap_stage') return;
+    const stage = String(req?.stage || req?.ap_stage || '').trim().toLowerCase();
+    canvaSetLibraryToolbarStage(stage);
   });
 }
 
@@ -5959,6 +6017,7 @@ export function initCanvaBridge(helpers = {}) {
   canvaBindToolbarGroups();
   canvaBindEvents();
   canvaListenEditorImportEvents();
+  canvaListenLibraryStageRemote();
   canvaBindLibraryDragDrop();
   canvaBindPreviewToolbar();
   canvaBindKeyboardNav();
@@ -5968,10 +6027,12 @@ export function initCanvaBridge(helpers = {}) {
   canvaSetStep('idle');
   window.__canvaShowEditedLibrary = canvaShowEditedLibrary;
   window.canvaSetLibraryView = canvaSetLibraryView;
+  window.canvaSetLibraryToolbarStage = canvaSetLibraryToolbarStage;
   canvaLibraryGridActive = canvaIsBridgePanelActive();
   void canvaLoadAutoConnectPref().then(() => canvaRefreshStatusAndMaybeAutoConnect());
   canvaRenderLibrary();
   canvaRenderPreview();
+  canvaApplyPendingLibraryStageFromStorage();
   void canvaRunLibraryAudit({ silent: true });
   console.log('🎨 Canva Bridge: ready');
 }
