@@ -3106,6 +3106,19 @@
 
         const jobs = Array.isArray(data?.jobs) ? data.jobs : [];
         for (const job of jobs.slice(0, 1)) {
+            const actionPeek = String(job.action || '').trim().toLowerCase();
+            // PASTE_T / PASTE_Y desk pin: desktop Ext must NOT claim/stub TeeMaster jobs.
+            // Only Oracle W3 Studio Light Ext (:9341) executes teemaster-magic / peel.
+            if (
+                actionPeek === 'teemaster-magic'
+                || actionPeek === 'peel-banana'
+                || actionPeek === 'studio.processing.peel'
+                || actionPeek === 'studio.processing.remove_background'
+                || actionPeek === 'studio.processing.teemaster_pipeline'
+            ) {
+                continue;
+            }
+
             const claimUrl = `${apiBase}/api/extension/design-jobs/${job.id}/claim`;
             const claimRes = await fetch(claimUrl, {
                 method: 'POST',
