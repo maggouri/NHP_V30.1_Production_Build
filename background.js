@@ -12357,11 +12357,20 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                     tolerance: req.tolerance,
                     feather: req.feather,
                     mode: req.mode,
-                    manualColorHex: req.manualColorHex
+                    manualColorHex: req.manualColorHex,
+                    mimeHint: req.mimeHint,
+                    minConfidence: req.minConfidence,
+                    abortOnLowConfidence: req.abortOnLowConfidence,
+                    skipAdaptTolerance: req.skipAdaptTolerance
                 });
                 sendResponse(result);
             } catch (err) {
-                sendResponse({ success: false, error: err?.message || String(err) });
+                sendResponse({
+                    success: false,
+                    error: err?.message || String(err),
+                    code: err?.code || null,
+                    meta: err?.meta || null
+                });
             }
         })();
         return true;

@@ -2183,6 +2183,12 @@ async function studioAutoExtractCurrentComposite() {
     }
 }
 
+/**
+ * Comprehensive Magic (السحر الشامل): auto solid-background remover for the TeeMaster queue.
+ * Uses nhp-edge-v1 (SW OffscreenCanvas) — dominant border color + global color-key (not flood),
+ * soft alpha / despill, adaptive PNG vs JPEG tolerance, abort on low confidence.
+ * Preserves pre-magic dataURL for Undo on the active preview.
+ */
 async function studioApplyBulkGlobalMagicToQueue(options = {}) {
     const TM = window.STUDIO_TME;
     if (!TM || !Array.isArray(STUDIO.step2Files) || STUDIO.step2Files.length === 0) {
@@ -2195,30 +2201,61 @@ async function studioApplyBulkGlobalMagicToQueue(options = {}) {
     }
 
     studioTeemasterCommitCurrentImage();
-    const { r, g, b } = studioHexToRgb(STUDIO.manualColorHex || '#000000');
-    const tolerance = STUDIO.tolerance;
+    const tolerance = options.tolerance ?? STUDIO.tolerance;
+    const useManual = options.forceManual === true || (STUDIO.useManual && STUDIO.manualColorHex);
+    const manualColorHex = useManual ? (STUDIO.manualColorHex || '#000000') : undefined;
     const originalIndex = TM.currentIndex || 0;
     STUDIO.isProcessingTeemaster = true;
     studioTeemasterRefreshQueue();
-    studioUpdateAutoPipelineStatus('جاري تطبيق السحر الشامل على كل صور الطابور...');
+    studioUpdateAutoPipelineStatus('جاري تطبيق السحر الشامل (كشف تلقائي للخلفية الصلبة)...');
+
+    let okCount = 0;
+    let skippedLowConfidence = 0;
+    let lastMeta = null;
 
     try {
         for (let index = 0; index < STUDIO.step2Files.length; index++) {
             const item = STUDIO.step2Files[index];
-            const img = await studioLoadImageElement(item.dataURL);
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d', { willReadFrequently: true });
-            ctx.drawImage(img, 0, 0);
+            if (!item?.dataURL) continue;
 
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            studioTeemasterApplyGlobalRemoval(imageData, r, g, b, tolerance);
-            ctx.putImageData(imageData, 0, 0);
+            // Preserve original once so Undo / restore stays compatible
+            if (!item.preMagicDataURL) {
+                item.preMagicDataURL = item.dataURL;
+            }
 
-            item.dataURL = canvas.toDataURL('image/png');
-            item.thumbnail = studioCreateThumbnailFromCanvas(canvas, 120);
-            item.status = 'تم تنظيف الخلفية جماعيا';
+            const result = await chrome.runtime.sendMessage({
+                action: 'nhp_ai_rembg',
+                dataURL: item.dataURL,
+                tolerance,
+                feather: options.feather ?? 2,
+                mode: 'global',
+                manualColorHex,
+                mimeHint: item.mimeType || item.type || undefined,
+                minConfidence: options.minConfidence,
+                abortOnLowConfidence: options.abortOnLowConfidence !== false,
+                skipAdaptTolerance: options.skipAdaptTolerance === true
+            });
+
+            if (!result?.success || !result?.dataURL) {
+                const code = result?.code || result?.error || '';
+                if (code === 'LOW_BG_CONFIDENCE' || /low background confidence/i.test(String(result?.error || code))) {
+                    skippedLowConfidence += 1;
+                    item.status = '⏭️ خلفية غير مؤكدة — تُركت كما هي';
+                    console.warn('[TeeMaster] Comprehensive Magic aborted (low confidence):', item.name || index, result?.error || code);
+                    continue;
+                }
+                throw new Error(result?.error || code || `فشل السحر الشامل للصورة ${index + 1}`);
+            }
+
+            item.dataURL = result.dataURL; // always PNG with alpha from engine
+            item.thumbnail = await studioCreateThumbnail(result.dataURL, 120);
+            item.status = '🌈 سحر شامل (خلفية صلبة)';
+            item.meta = {
+                ...(item.meta || {}),
+                comprehensiveMagic: result.meta || { engine: result.engine || 'nhp-edge-v1' }
+            };
+            lastMeta = result.meta || null;
+            okCount += 1;
 
             if (index === originalIndex) {
                 TM.currentIndex = index;
@@ -2226,11 +2263,34 @@ async function studioApplyBulkGlobalMagicToQueue(options = {}) {
         }
 
         TM.currentIndex = studioClamp(originalIndex, 0, Math.max(0, STUDIO.step2Files.length - 1));
-        studioTeemasterRefreshQueue();
-        if (!options.fromAutoFlow) {
-            showToast(`✅ تم تطبيق السحر الشامل على ${STUDIO.step2Files.length} صورة`);
+
+        // Reload active preview with Undo stack: [pre-magic, post-magic]
+        const active = STUDIO.step2Files[TM.currentIndex];
+        if (active?.dataURL) {
+            await studioTeemasterLoadImageForMagicUndo(active);
         }
-        studioUpdateAutoPipelineStatus('اكتمل تنظيف الخلفية الجماعي على كامل الطابور.');
+
+        studioTeemasterRefreshQueue();
+        const confPct = lastMeta?.confidence != null
+            ? ` · ثقة ${(lastMeta.confidence * 100).toFixed(0)}%`
+            : '';
+        if (!options.fromAutoFlow) {
+            if (okCount === 0 && skippedLowConfidence > 0) {
+                showToast(`⚠️ لم يُطبَّق السحر: ثقة الخلفية منخفضة على ${skippedLowConfidence} صورة`);
+            } else if (skippedLowConfidence > 0) {
+                showToast(`✅ سحر شامل: ${okCount} صورة${confPct} · تخطي ${skippedLowConfidence} (ثقة منخفضة)`);
+            } else {
+                showToast(`✅ تم تطبيق السحر الشامل على ${okCount} صورة${confPct}`);
+            }
+        }
+        studioUpdateAutoPipelineStatus(
+            okCount
+                ? `اكتمل السحر الشامل (${okCount} صورة، كشف تلقائي للخلفية الصلبة).`
+                : 'لم تُعالَج صور — ثقة كشف الخلفية منخفضة.'
+        );
+        if (options.fromAutoFlow && okCount === 0 && skippedLowConfidence > 0) {
+            throw new Error('Comprehensive Magic: all images aborted (low background confidence)');
+        }
     } catch (error) {
         console.error('Bulk Global Magic Error:', error);
         if (!options.fromAutoFlow) showToast('❌ فشل تطبيق السحر الشامل على الطابور');
@@ -2240,6 +2300,60 @@ async function studioApplyBulkGlobalMagicToQueue(options = {}) {
         STUDIO.isProcessingTeemaster = false;
         studioTeemasterRefreshQueue();
     }
+}
+
+/**
+ * Load queue item into TeeMaster preview with Undo preserving pre-magic pixels.
+ */
+function studioTeemasterLoadImageForMagicUndo(item) {
+    return new Promise((resolve) => {
+        const TM = window.STUDIO_TME;
+        if (!TM || !item?.dataURL) {
+            resolve();
+            return;
+        }
+        const img = new Image();
+        img.onload = () => {
+            TM.originalImage = img;
+            TM.canvas.width = img.width;
+            TM.canvas.height = img.height;
+            if (TM.overlay) {
+                TM.overlay.width = img.width;
+                TM.overlay.height = img.height;
+                TM.overlay.style.display = 'block';
+            }
+            TM.ctx.drawImage(img, 0, 0);
+            const after = TM.ctx.getImageData(0, 0, img.width, img.height);
+            TM.undoStack = [after];
+            TM.isDirty = false;
+
+            const preUrl = item.preMagicDataURL;
+            if (preUrl && preUrl !== item.dataURL) {
+                const preImg = new Image();
+                preImg.onload = () => {
+                    try {
+                        const scratch = document.createElement('canvas');
+                        scratch.width = img.width;
+                        scratch.height = img.height;
+                        const sctx = scratch.getContext('2d', { willReadFrequently: true });
+                        // Match canvas size; draw pre-magic scaled if dimensions differ
+                        sctx.drawImage(preImg, 0, 0, img.width, img.height);
+                        const before = sctx.getImageData(0, 0, img.width, img.height);
+                        TM.undoStack = [before, after];
+                    } catch (e) {
+                        console.warn('[TeeMaster] Magic undo seed failed:', e);
+                    }
+                    resolve();
+                };
+                preImg.onerror = () => resolve();
+                preImg.src = preUrl;
+                return;
+            }
+            resolve();
+        };
+        img.onerror = () => resolve();
+        img.src = item.dataURL;
+    });
 }
 
 /**
@@ -5761,19 +5875,36 @@ function studioTeemasterApplyFloodFill(imgData, width, height, targetR, targetG,
 }
 
 /**
- * Global Removal for Background
+ * Global Removal for Background — soft color-key (not flood).
+ * Clears all matching pixels including enclosed letter interiors; partial alpha near tolerance edge.
  */
 function studioTeemasterApplyGlobalRemoval(imgData, targetR, targetG, targetB, tolerance) {
     const data = imgData.data;
-    const toleranceSq = tolerance * tolerance;
+    const hardTol = Math.max(2, tolerance * 0.72);
+    const softTol = Math.max(hardTol + 1, tolerance * 1.15);
+    const hardSq = hardTol * hardTol;
+    const softSq = softTol * softTol;
     for (let i = 0; i < data.length; i += 4) {
         if (data[i + 3] === 0) continue;
         const dr = data[i] - targetR;
         const dg = data[i + 1] - targetG;
         const db = data[i + 2] - targetB;
         const distSq = (dr * dr) + (dg * dg) + (db * db);
-        if (distSq <= toleranceSq) {
+        if (distSq <= hardSq) {
             data[i + 3] = 0;
+            continue;
+        }
+        if (distSq <= softSq) {
+            const dist = Math.sqrt(distSq);
+            const t = Math.min(1, Math.max(0, (dist - hardTol) / (softTol - hardTol + 0.001)));
+            data[i + 3] = Math.round(data[i + 3] * t);
+            // Mild despill on fringe
+            const s = (1 - t) * 0.45;
+            if (s > 0.02) {
+                data[i] = Math.min(255, Math.max(0, Math.round(data[i] + (data[i] - targetR) * s)));
+                data[i + 1] = Math.min(255, Math.max(0, Math.round(data[i + 1] + (data[i + 1] - targetG) * s)));
+                data[i + 2] = Math.min(255, Math.max(0, Math.round(data[i + 2] + (data[i + 2] - targetB) * s)));
+            }
         }
     }
 }
