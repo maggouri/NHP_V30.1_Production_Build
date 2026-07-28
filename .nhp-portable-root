@@ -1,0 +1,5 @@
+# NHP portable root marker
+# Sibling folders (relative to Extension app root):
+#   data   -> ../NHP_DATA
+#   source -> ../NHP_SOURCE
+# See nhp-portable.json for machine-readable relative names only.

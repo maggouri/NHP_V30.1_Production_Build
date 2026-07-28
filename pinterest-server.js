@@ -27,16 +27,21 @@ puppeteer.use(StealthPlugin());
 
 const app = express();
 const PORT = 3023;
-const ROOT_DIR = __dirname;
-const TEMP_DIR = path.join(ROOT_DIR, 'temp_uploads_pinterest');
-const LOG_DIR = path.join(ROOT_DIR, 'server_logs');
-const PROFILES_DIR = path.join(ROOT_DIR, 'server_profiles_pinterest');
-const BACKUPS_DIR = path.join(ROOT_DIR, 'profile_backups_pinterest');
+const { getPortablePaths } = require('./utils/nhp-portable-paths');
+const portable = getPortablePaths({ appRootHint: __dirname, ensure: true });
+const ROOT_DIR = portable.appRoot;
+const TEMP_DIR = portable.get('temp_uploads_pinterest');
+const LOG_DIR = portable.get('server_logs');
+const PROFILES_DIR = portable.get('server_profiles_pinterest');
+const BACKUPS_DIR = portable.get('profile_backups_pinterest');
 const LOG_FILE = path.join(LOG_DIR, 'pinterest-server.log');
 const PINTEREST_CREATION_URL = 'https://www.pinterest.com/pin-creation-tool/';
 const PINTEREST_CREATION_PATH_HINTS = ['/pin-creation-tool', '/pin-builder', '/pin-creation'];
 
+console.log(`[NHP Pinterest] APP_ROOT=${ROOT_DIR}`);
+console.log(`[NHP Pinterest] DATA_ROOT=${portable.dataRoot}`);
 [TEMP_DIR, LOG_DIR, PROFILES_DIR, BACKUPS_DIR].forEach((dir) => {
+    portable.assertNotExtensionWrite(dir);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 

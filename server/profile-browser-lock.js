@@ -125,7 +125,13 @@ async function launchWithProfileLockRetry(launchFn, userDataDir, options = {}) {
 }
 
 function getLocksDir(rootDir) {
-    return path.join(rootDir, 'profile_browser_locks');
+    try {
+        const { getPortablePaths } = require('../utils/nhp-portable-paths');
+        const portable = getPortablePaths({ appRootHint: rootDir });
+        return portable.get('profile_browser_locks');
+    } catch (_) {
+        return path.join(rootDir, 'profile_browser_locks');
+    }
 }
 
 function acquireCrossProcessLock(rootDir, email, timeoutMs = 180000) {

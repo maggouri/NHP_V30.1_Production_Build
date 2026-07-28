@@ -25,16 +25,21 @@ const {
 puppeteer.use(StealthPlugin());
 
 const app = express();
-const ROOT_DIR = __dirname;
+const { getPortablePaths } = require('./utils/nhp-portable-paths');
+const portable = getPortablePaths({ appRootHint: __dirname, ensure: true });
+const ROOT_DIR = portable.appRoot;
 const PORT = Number(process.env.NHP_AI_BRIDGE_PORT || 3031);
 const DEBUG_PORT = Number(process.env.NHP_AI_BRIDGE_DEBUG_PORT || 9331);
-const TEMP_DIR = path.join(ROOT_DIR, 'temp_uploads_ai_bridge');
-const LOG_DIR = path.join(ROOT_DIR, 'server_logs');
+const TEMP_DIR = portable.get('temp_uploads_ai_bridge');
+const LOG_DIR = portable.get('server_logs');
 const LOG_FILE = path.join(LOG_DIR, 'ai-bridge-server.log');
 const LISTEN_HOST = String(process.env.NHP_AI_BRIDGE_HOST || process.env.NHP_LISTEN_HOST || '127.0.0.1').trim() || '127.0.0.1';
 const REALESRGAN_TIMEOUT_MS = Number(process.env.NHP_REALESRGAN_TIMEOUT_MS || 10 * 60 * 1000);
 
+console.log(`[NHP AI-Bridge] APP_ROOT=${ROOT_DIR}`);
+console.log(`[NHP AI-Bridge] DATA_ROOT=${portable.dataRoot}`);
 [TEMP_DIR, LOG_DIR].forEach((dir) => {
+    portable.assertNotExtensionWrite(dir);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 

@@ -2217,7 +2217,7 @@ function registerGenerateApi(app, { rootDir: rootDirInput, logFn = console.log }
         rootDirInput,
         process.env.NHP_ROOT_DIR,
         process.env.NHP_ROOT,
-        process.cwd()
+        process.env.NHP_APP_ROOT
     );
     const log = (msg, level = 'INFO') => {
         if (typeof logFn === 'function') logFn(msg, level);
@@ -2234,17 +2234,15 @@ function registerGenerateApi(app, { rootDir: rootDirInput, logFn = console.log }
     let generateServerActiveJobs = 0;
     let GENERATED_DIR;
     let INPUT_DIR;
-    try {
-        const portable = require('../utils/nhp-portable-paths').getPortablePaths({
-            appRootHint: rootDir,
-            forceReload: true
-        });
-        GENERATED_DIR = portable.get('generated_designs');
-        INPUT_DIR = path.join(portable.get('temp_uploads'), 'generate_inputs');
-    } catch (_) {
-        GENERATED_DIR = path.join(rootDir, 'generated_designs');
-        INPUT_DIR = path.join(rootDir, 'temp_uploads', 'generate_inputs');
-    }
+    const portable = require('../utils/nhp-portable-paths').getPortablePaths({
+        appRootHint: rootDir,
+        forceReload: true,
+        ensure: true
+    });
+    GENERATED_DIR = portable.get('generated_designs');
+    INPUT_DIR = path.join(portable.get('temp_uploads'), 'generate_inputs');
+    portable.assertNotExtensionWrite(GENERATED_DIR);
+    portable.assertNotExtensionWrite(INPUT_DIR);
     const JOBS_DIR = path.join(GENERATED_DIR, 'jobs');
     const LIBRARY_DIR = path.join(GENERATED_DIR, 'library');
     const LIBRARY_INDEX = path.join(LIBRARY_DIR, 'index.json');

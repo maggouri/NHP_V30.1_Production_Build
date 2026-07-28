@@ -42,24 +42,40 @@ function resolveGhostHeadless(isVisual) {
     return process.platform === 'win32' ? false : 'new';
 }
 const { resolveNhpProjectRoot, countLibraryDesigns } = require('./server/library-fs');
+const { getPortablePaths } = require('./utils/nhp-portable-paths');
 function resolveNhpRootDir() {
     return resolveNhpProjectRoot(
         __dirname,
         process.env.NHP_ROOT_DIR,
         process.env.NHP_ROOT,
-        process.cwd()
+        process.env.NHP_APP_ROOT
     );
 }
 const ROOT_DIR = resolveNhpRootDir();
+const portable = getPortablePaths({ appRootHint: ROOT_DIR, ensure: true });
+const APP_ROOT = portable.appRoot;
+const DATA_ROOT = portable.dataRoot;
 if (ROOT_DIR !== __dirname) {
     console.warn(`[NHP] ROOT_DIR=${ROOT_DIR} (ghost-server.js dir=${__dirname})`);
 }
-const TEMP_DIR = path.join(ROOT_DIR, 'temp_uploads');
-const LOG_DIR = path.join(ROOT_DIR, 'server_logs');
-const PROFILES_DIR = path.join(ROOT_DIR, 'server_profiles');
-const BACKUPS_DIR = path.join(ROOT_DIR, 'profile_backups');
-const LEGACY_METADATA_DIR = path.join(ROOT_DIR, '_metadata');
-const METADATA_DIR = path.join(ROOT_DIR, 'metadata_store');
+console.log(`[NHP] APP_ROOT=${APP_ROOT}`);
+console.log(`[NHP] DATA_ROOT=${DATA_ROOT}`);
+try {
+    const { runDataCleanup } = require('./utils/nhp-data-cleanup');
+    const cleanupReport = runDataCleanup(portable, { dryRun: false });
+    const purged = (cleanupReport.temp || []).reduce((n, t) => n + (t.purged?.length || 0), 0);
+    if (purged || (cleanupReport.logs || []).length) {
+        console.log(`[NHP] Data cleanup: tempPurged=${purged} logsRotated=${(cleanupReport.logs || []).length}`);
+    }
+} catch (e) {
+    console.warn('[NHP] Data cleanup skipped:', e?.message || e);
+}
+const TEMP_DIR = portable.get('temp_uploads');
+const LOG_DIR = portable.get('server_logs');
+const PROFILES_DIR = portable.get('server_profiles');
+const BACKUPS_DIR = portable.get('profile_backups');
+const LEGACY_METADATA_DIR = path.join(APP_ROOT, '_metadata');
+const METADATA_DIR = portable.get('metadata_store');
 const NICHE_MEMORY_FILE = path.join(METADATA_DIR, 'niche-analysis-memory.json');
 const NICHE_MEMORY_BACKUP_FILE = path.join(METADATA_DIR, 'niche-analysis-memory.backup.json');
 const NICHE_ARCHIVE_DIR = path.join(METADATA_DIR, 'niche_archive');
@@ -67,7 +83,10 @@ const NICHE_ARCHIVE_INDEX_FILE = path.join(NICHE_ARCHIVE_DIR, 'niche-archive-ind
 const NICHE_ARCHIVE_INDEX_BACKUP_FILE = path.join(NICHE_ARCHIVE_DIR, 'niche-archive-index.backup.json');
 const NICHE_ARCHIVE_SNAPSHOTS_DIR = path.join(NICHE_ARCHIVE_DIR, 'trend_snapshots');
 
-[TEMP_DIR, LOG_DIR, PROFILES_DIR, BACKUPS_DIR, METADATA_DIR].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); });
+[TEMP_DIR, LOG_DIR, PROFILES_DIR, BACKUPS_DIR, METADATA_DIR].forEach(d => {
+    portable.assertNotExtensionWrite(d);
+    if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+});
 
 if (fs.existsSync(LEGACY_METADATA_DIR)) {
     const legacyEntries = fs.readdirSync(LEGACY_METADATA_DIR, { withFileTypes: true });
@@ -3788,8 +3807,8 @@ app.post('/upload', async (req, res) => {
         canvaApiRoutesVersion,
         port: PORT,
         rootDir: ROOT_DIR,
-        libraryDir: path.join(ROOT_DIR, 'generated_designs', 'library'),
-        libraryDesignCount: countLibraryDesigns(ROOT_DIR)
+        libraryDir: path.join(DATA_ROOT, 'generated_designs', 'library'),
+        libraryDesignCount: countLibraryDesigns(DATA_ROOT)
     }));
 
     app.get('/status', (req, res) => res.json({

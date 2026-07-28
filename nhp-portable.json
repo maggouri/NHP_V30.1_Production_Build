@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "description": "NHP portable layout marker — relative folder names only; no absolute paths",
+  "folders": {
+    "extension": ".",
+    "data": "../NHP_DATA",
+    "source": "../NHP_SOURCE"
+  }
+}

@@ -281,10 +281,15 @@
 /**
  * Node.js CommonJS API for local servers (ghost/creaty/pinterest/ai-bridge).
  * Browser/extension code uses global.NhpPortablePaths from the IIFE above.
+ * Never use process.cwd() as primary truth. Never persist absolute paths.
  */
 if (typeof module !== 'undefined' && module.exports && typeof process !== 'undefined' && process.versions && process.versions.node) {
     const fs = require('fs');
     const path = require('path');
+
+    const MARKER_JSON = 'nhp-portable.json';
+    const MARKER_DOT = '.nhp-portable-root';
+    const PORTABLE_CONFIG = 'portable.config.json';
 
     const DEFAULT_DATA_SUBDIRS = Object.freeze([
         'generated_designs',
@@ -302,8 +307,17 @@ if (typeof module !== 'undefined' && module.exports && typeof process !== 'undef
         'metadata_store',
         'backups',
         '.tmp',
-        'archive'
+        'archive',
+        'cache',
+        'downloads',
+        'databases'
     ]);
+
+    const DEFAULT_LAYOUT = Object.freeze({
+        extension: '.',
+        data: '../NHP_DATA',
+        source: '../NHP_SOURCE'
+    });
 
     let cachedPortable = null;
     let cachedKey = '';
@@ -312,59 +326,205 @@ if (typeof module !== 'undefined' && module.exports && typeof process !== 'undef
         return String(value || '').trim().replace(/\//g, path.sep).replace(/[\\/]+$/, '');
     }
 
-    function resolveAppRoot(options = {}) {
-        const envCandidates = [
-            process.env.NHP_APP_ROOT,
-            process.env.NHP_ROOT_DIR,
-            process.env.NHP_ROOT,
-            options.appRootHint,
-            options.appRoot
-        ];
-        for (const raw of envCandidates) {
-            const dir = normalizeNodePath(raw);
-            if (!dir) continue;
-            try {
-                if (fs.existsSync(path.join(dir, 'package.json')) || fs.existsSync(path.join(dir, 'manifest.json'))) {
-                    return path.resolve(dir);
-                }
-            } catch (_) { /* try next */ }
-        }
-        const hint = normalizeNodePath(options.appRootHint || __dirname);
-        return path.resolve(hint);
+    function isAbsolutePathLiteral(rel) {
+        const s = String(rel || '').trim();
+        return /^[a-zA-Z]:[\\/]/.test(s) || s.startsWith('\\\\') || s.startsWith('/');
     }
 
-    function readPortableConfig(appRoot) {
+    function assertRelativeName(rel, label) {
+        const s = String(rel || '').trim().replace(/\\/g, '/');
+        if (!s || isAbsolutePathLiteral(s) || s.split('/').includes('..') || path.isAbsolute(s)) {
+            throw new Error(`[NHP Portable] ${label} must be a relative path without '..': got "${rel}"`);
+        }
+        return s.replace(/\//g, path.sep);
+    }
+
+    function looksLikeExtensionRoot(dir) {
         try {
-            const configPath = path.join(appRoot, 'portable.config.json');
-            if (!fs.existsSync(configPath)) return null;
-            return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            return fs.existsSync(path.join(dir, 'manifest.json'))
+                || (fs.existsSync(path.join(dir, 'package.json')) && fs.existsSync(path.join(dir, 'ghost-server.js')));
+        } catch (_) {
+            return false;
+        }
+    }
+
+    function readJsonSafe(filePath) {
+        try {
+            if (!fs.existsSync(filePath)) return null;
+            return JSON.parse(fs.readFileSync(filePath, 'utf8'));
         } catch (_) {
             return null;
         }
     }
 
+    function findPortableRootFrom(startDir) {
+        let cur = path.resolve(normalizeNodePath(startDir) || __dirname);
+        for (let i = 0; i < 8; i += 1) {
+            if (fs.existsSync(path.join(cur, MARKER_JSON)) || fs.existsSync(path.join(cur, MARKER_DOT))) {
+                return cur;
+            }
+            // Sibling layout: Ext folder itself holds portable.config.json
+            if (looksLikeExtensionRoot(cur) && fs.existsSync(path.join(cur, PORTABLE_CONFIG))) {
+                return cur;
+            }
+            const parent = path.dirname(cur);
+            if (!parent || parent === cur) break;
+            cur = parent;
+        }
+        return null;
+    }
+
+    function readLayout(portableOrAppRoot) {
+        const marker = readJsonSafe(path.join(portableOrAppRoot, MARKER_JSON));
+        const cfg = readJsonSafe(path.join(portableOrAppRoot, PORTABLE_CONFIG));
+        const folders = Object.assign({}, DEFAULT_LAYOUT, marker?.folders || {});
+        // Legacy portable.config.json uses dataRoot relative to app root
+        if (cfg?.dataRoot && !marker?.folders?.data) {
+            folders.data = String(cfg.dataRoot).trim() || folders.data;
+        }
+        if (cfg?.appRoot && cfg.appRoot !== '.') {
+            folders.extension = String(cfg.appRoot).trim() || folders.extension;
+        }
+        // Enforce relative-only names in marker
+        for (const key of Object.keys(folders)) {
+            const val = String(folders[key] || '').trim();
+            if (!val) continue;
+            if (isAbsolutePathLiteral(val)) {
+                throw new Error(`[NHP Portable] nhp-portable.json folders.${key} must be relative, got absolute`);
+            }
+        }
+        return { folders, marker, config: cfg };
+    }
+
+    function resolveAppRoot(options = {}) {
+        // Explicit hint wins when it looks like the extension root (tests + servers).
+        for (const raw of [options.appRootHint, options.appRoot]) {
+            const dir = normalizeNodePath(raw);
+            if (!dir) continue;
+            try {
+                if (looksLikeExtensionRoot(dir)) return path.resolve(dir);
+            } catch (_) { /* try next */ }
+        }
+        const envCandidates = [
+            process.env.NHP_APP_ROOT,
+            process.env.NHP_ROOT_DIR,
+            process.env.NHP_ROOT
+        ];
+        for (const raw of envCandidates) {
+            const dir = normalizeNodePath(raw);
+            if (!dir) continue;
+            try {
+                if (looksLikeExtensionRoot(dir)) return path.resolve(dir);
+            } catch (_) { /* try next */ }
+        }
+        // Prefer Ext root when this file lives in utils/
+        const fromUtils = path.resolve(__dirname, '..');
+        if (looksLikeExtensionRoot(fromUtils)) return fromUtils;
+        const hint = normalizeNodePath(options.appRootHint || __dirname);
+        return path.resolve(hint);
+    }
+
+    function readPortableConfig(appRoot) {
+        return readJsonSafe(path.join(appRoot, PORTABLE_CONFIG));
+    }
+
     function resolveDataRoot(appRoot, config) {
         if (process.env.NHP_DATA_ROOT && String(process.env.NHP_DATA_ROOT).trim()) {
-            return path.resolve(String(process.env.NHP_DATA_ROOT).trim());
+            const envData = path.resolve(String(process.env.NHP_DATA_ROOT).trim());
+            const envApp = process.env.NHP_APP_ROOT
+                ? path.resolve(String(process.env.NHP_APP_ROOT).trim())
+                : '';
+            // Trust env only when it was set for this same App Root (portable launcher).
+            if (!envApp || samePath(envApp, appRoot)) {
+                return envData;
+            }
         }
-        const rel = String(config?.dataRoot || '../NHP_DATA').trim() || '../NHP_DATA';
+        const layout = readLayout(appRoot);
+        const rel = String(layout.folders.data || config?.dataRoot || '../NHP_DATA').trim() || '../NHP_DATA';
+        if (isAbsolutePathLiteral(rel)) {
+            throw new Error('[NHP Portable] data folder name must be relative');
+        }
         return path.resolve(appRoot, rel);
+    }
+
+    function resolveSourceRoot(appRoot) {
+        if (process.env.NHP_SOURCE_ROOT && String(process.env.NHP_SOURCE_ROOT).trim()) {
+            const envSource = path.resolve(String(process.env.NHP_SOURCE_ROOT).trim());
+            const envApp = process.env.NHP_APP_ROOT
+                ? path.resolve(String(process.env.NHP_APP_ROOT).trim())
+                : '';
+            if (!envApp || samePath(envApp, appRoot)) {
+                return envSource;
+            }
+        }
+        const layout = readLayout(appRoot);
+        const rel = String(layout.folders.source || '../NHP_SOURCE').trim() || '../NHP_SOURCE';
+        if (isAbsolutePathLiteral(rel)) {
+            throw new Error('[NHP Portable] source folder name must be relative');
+        }
+        return path.resolve(appRoot, rel);
+    }
+
+    function samePath(a, b) {
+        try {
+            return path.resolve(a).toLowerCase() === path.resolve(b).toLowerCase();
+        } catch (_) {
+            return false;
+        }
+    }
+
+    function isPathInside(child, parent) {
+        const rel = path.relative(path.resolve(parent), path.resolve(child));
+        return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
+    }
+
+    function assertWritableUnderData(targetPath, appRoot, dataRoot, sourceRoot) {
+        const resolved = path.resolve(targetPath);
+        if (!isPathInside(resolved, dataRoot)) {
+            throw new Error(`[NHP Portable] Refusing write outside Data root: ${resolved}`);
+        }
+        // Sibling layout: Data is outside Extension — never allow mutable writes under Ext/Source.
+        if (!isPathInside(dataRoot, appRoot) && isPathInside(resolved, appRoot)) {
+            throw new Error(`[NHP Portable] Refusing write into Extension root: ${resolved}`);
+        }
+        if (sourceRoot && !samePath(sourceRoot, dataRoot)
+            && !isPathInside(dataRoot, sourceRoot)
+            && isPathInside(resolved, sourceRoot)) {
+            throw new Error(`[NHP Portable] Refusing write into Source root: ${resolved}`);
+        }
+        return resolved;
+    }
+
+    function resolveWritableDataPath(relative, options = {}) {
+        const api = getPortablePaths(options);
+        const rel = assertRelativeName(relative, 'resolveWritableDataPath');
+        const target = path.resolve(api.dataRoot, rel);
+        return assertWritableUnderData(target, api.appRoot, api.dataRoot, api.sourceRoot);
     }
 
     function getPortablePaths(options = {}) {
         const appRoot = resolveAppRoot(options);
         const config = readPortableConfig(appRoot);
         const dataRoot = resolveDataRoot(appRoot, config);
-        const cacheKey = `${appRoot}||${dataRoot}`;
+        const sourceRoot = resolveSourceRoot(appRoot);
+        const portableRoot = findPortableRootFrom(appRoot) || appRoot;
+        const cacheKey = `${appRoot}||${dataRoot}||${sourceRoot}`;
         if (!options.forceReload && cachedPortable && cachedKey === cacheKey) {
             return cachedPortable;
         }
 
-        const pathMap = Object.assign({}, Object.fromEntries(DEFAULT_DATA_SUBDIRS.map((name) => [name === '.tmp' ? 'tmp' : name, name])), config?.paths || {});
+        const pathMap = Object.assign(
+            {},
+            Object.fromEntries(DEFAULT_DATA_SUBDIRS.map((name) => [name === '.tmp' ? 'tmp' : name, name])),
+            config?.paths || {}
+        );
 
         function get(name) {
             const key = String(name || '').trim();
             const rel = pathMap[key] || key;
+            if (isAbsolutePathLiteral(rel) || String(rel).split(/[/\\]/).includes('..')) {
+                throw new Error(`[NHP Portable] data subpath must be relative without '..': ${rel}`);
+            }
             return path.join(dataRoot, rel);
         }
 
@@ -381,19 +541,46 @@ if (typeof module !== 'undefined' && module.exports && typeof process !== 'undef
             return true;
         }
 
+        function assertNotExtensionWrite(targetPath) {
+            return assertWritableUnderData(targetPath, appRoot, dataRoot, sourceRoot);
+        }
+
         // Align process env for child tools / scripts.
         process.env.NHP_APP_ROOT = appRoot;
         process.env.NHP_ROOT = appRoot;
         process.env.NHP_ROOT_DIR = appRoot;
         process.env.NHP_DATA_ROOT = dataRoot;
+        process.env.NHP_SOURCE_ROOT = sourceRoot;
+        process.env.NHP_PORTABLE_ROOT = portableRoot;
         process.env.NHP_LOG_DIR = path.join(dataRoot, 'server_logs');
 
+        if (options.ensure === true) {
+            ensureDataDirs();
+        }
+
         const api = {
+            portableRoot,
             appRoot,
+            extensionRoot: appRoot,
             dataRoot,
+            sourceRoot,
             config,
             get,
             ensureDataDirs,
+            assertNotExtensionWrite,
+            resolveWritableDataPath: (relative) => resolveWritableDataPath(relative, { ...options, forceReload: true }),
+            getPortableRoot: () => portableRoot,
+            getExtensionRoot: () => appRoot,
+            getDataRoot: () => dataRoot,
+            getSourceRoot: () => sourceRoot,
+            getLogsDir: () => get('server_logs'),
+            getCacheDir: () => get('cache'),
+            getDownloadsDir: () => get('downloads'),
+            getProfilesDir: () => get('server_profiles'),
+            getDatabaseDir: () => get('databases'),
+            getGeneratedDir: () => get('generated_designs'),
+            getTempDir: () => get('tmp'),
+            getBackupsDir: () => get('backups'),
             join: (...parts) => path.join(dataRoot, ...parts.filter(Boolean))
         };
 
@@ -402,8 +589,59 @@ if (typeof module !== 'undefined' && module.exports && typeof process !== 'undef
         return api;
     }
 
+    function getPortableRoot(options = {}) {
+        return getPortablePaths(options).portableRoot;
+    }
+    function getExtensionRoot(options = {}) {
+        return getPortablePaths(options).extensionRoot;
+    }
+    function getDataRoot(options = {}) {
+        return getPortablePaths(options).dataRoot;
+    }
+    function getSourceRoot(options = {}) {
+        return getPortablePaths(options).sourceRoot;
+    }
+    function getLogsDir(options = {}) {
+        return getPortablePaths(options).getLogsDir();
+    }
+    function getCacheDir(options = {}) {
+        return getPortablePaths(options).getCacheDir();
+    }
+    function getDownloadsDir(options = {}) {
+        return getPortablePaths(options).getDownloadsDir();
+    }
+    function getProfilesDir(options = {}) {
+        return getPortablePaths(options).getProfilesDir();
+    }
+    function getDatabaseDir(options = {}) {
+        return getPortablePaths(options).getDatabaseDir();
+    }
+    function getGeneratedDir(options = {}) {
+        return getPortablePaths(options).getGeneratedDir();
+    }
+    function getTempDir(options = {}) {
+        return getPortablePaths(options).getTempDir();
+    }
+    function getBackupsDir(options = {}) {
+        return getPortablePaths(options).getBackupsDir();
+    }
+
     module.exports = {
         getPortablePaths,
+        getPortableRoot,
+        getExtensionRoot,
+        getDataRoot,
+        getSourceRoot,
+        getLogsDir,
+        getCacheDir,
+        getDownloadsDir,
+        getProfilesDir,
+        getDatabaseDir,
+        getGeneratedDir,
+        getTempDir,
+        getBackupsDir,
+        resolveWritableDataPath,
+        DEFAULT_DATA_SUBDIRS,
         DEFAULT_EXTENSION_ID: 'bhhahkcjolghbigcognobplmgdbkmekb',
         REGISTER_SCRIPT_NAME: 'addon\\00_Register_Native_Messaging\\Register_NHP_Native_Messaging_User.cmd'
     };

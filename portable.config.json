@@ -1,0 +1,22 @@
+{
+  "appRoot": ".",
+  "dataRoot": "../NHP_DATA",
+  "paths": {
+    "generated_designs": "generated_designs",
+    "server_logs": "server_logs",
+    "server_profiles": "server_profiles",
+    "server_profiles_creaty": "server_profiles_creaty",
+    "server_profiles_creaty_preview": "server_profiles_creaty_preview",
+    "server_profiles_pinterest": "server_profiles_pinterest",
+    "profile_backups": "profile_backups",
+    "profile_backups_pinterest": "profile_backups_pinterest",
+    "profile_browser_locks": "profile_browser_locks",
+    "temp_uploads": "temp_uploads",
+    "temp_uploads_ai_bridge": "temp_uploads_ai_bridge",
+    "temp_uploads_pinterest": "temp_uploads_pinterest",
+    "metadata_store": "metadata_store",
+    "backups": "backups",
+    "tmp": ".tmp",
+    "archive": "archive"
+  }
+}

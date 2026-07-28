@@ -10,7 +10,6 @@ const Module = require('module');
 
 const extraNodePaths = [
     path.join(__dirname, 'node_modules'),
-    path.join('C:', 'Users', 'maggouri', 'Desktop', '_ORGANIZED_NHP', 'Current', 'Niche Hunter Pro v9.0 Final 2026', 'node_modules'),
 ].filter((dir) => fs.existsSync(dir));
 
 if (extraNodePaths.length) {
@@ -49,11 +48,13 @@ const profileLock = require('./server/profile-browser-lock');
 const app = express();
 const PORT = Number(process.env.NHP_CREATY_PORT || process.env.PORT) || 3020;
 const GHOST_PORT = Number(process.env.NHP_GHOST_PORT) || 3019;
-const ROOT_DIR = __dirname;
-const LOG_DIR = path.join(ROOT_DIR, 'server_logs');
-const PROFILES_DIR = path.join(ROOT_DIR, 'server_profiles_creaty');
-const GHOST_PROFILES_DIR = path.join(ROOT_DIR, 'server_profiles');
-const PREVIEW_PROFILES_DIR = path.join(ROOT_DIR, 'server_profiles_creaty_preview');
+const { getPortablePaths } = require('./utils/nhp-portable-paths');
+const portable = getPortablePaths({ appRootHint: __dirname, ensure: true });
+const ROOT_DIR = portable.appRoot;
+const LOG_DIR = portable.get('server_logs');
+const PROFILES_DIR = portable.get('server_profiles_creaty');
+const GHOST_PROFILES_DIR = portable.get('server_profiles');
+const PREVIEW_PROFILES_DIR = portable.get('server_profiles_creaty_preview');
 const LOG_FILE = path.join(LOG_DIR, 'creaty-server.log');
 const SIGNUP_TRACE_BUFFER_MAX = 80;
 /** @type {Array<{ ts: string, stage: string, line: string }>} */
@@ -69,7 +70,10 @@ const ACTIVATION_NAV_TIMEOUT_MS = 60000;
 const ACTIVATION_NAV_RETRIES = 3;
 let referralUrlCursor = 0;
 
+console.log(`[NHP Creaty] APP_ROOT=${ROOT_DIR}`);
+console.log(`[NHP Creaty] DATA_ROOT=${portable.dataRoot}`);
 [LOG_DIR, PROFILES_DIR, GHOST_PROFILES_DIR, PREVIEW_PROFILES_DIR].forEach((dir) => {
+    portable.assertNotExtensionWrite(dir);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 

@@ -2,17 +2,13 @@
 
 This folder is the **Chrome extension App Root** (load unpacked from here).
 
-All heavy / mutable runtime data was moved to:
+All heavy / mutable runtime data lives in the adjacent portable Data folder:
 
 ```text
 ..\NHP_DATA
 ```
 
-Full path on this machine:
-
-```text
-C:\Users\MAGGOURIKHALID\Desktop\NHP_DATA
-```
+Resolved at runtime from `portable.config.json` / `nhp-portable.json` / `NHP_DATA_ROOT` — never hardcode a drive letter or user profile path.
 
 ## Do not recreate these under App Root
 
@@ -21,7 +17,7 @@ C:\Users\MAGGOURIKHALID\Desktop\NHP_DATA
 Servers resolve Data Root via:
 
 - Env: `NHP_DATA_ROOT` / `NHP_APP_ROOT`
-- Config: `portable.config.json`
+- Config: `portable.config.json`, `nhp-portable.json`
 - Helper: `utils/nhp-portable-paths.js`
 
 ## Start
