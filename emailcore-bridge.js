@@ -3,11 +3,28 @@
  * Relays window.postMessage from nocochat.com / emailcore.app admin to background.
  */
 (function initEmailcoreBridge() {
-    if (window.__emailcoreBridgeActive) return;
+    let runtimeId = null;
+    try {
+        runtimeId = chrome.runtime?.id || null;
+    } catch (_) {
+        runtimeId = null;
+    }
+
+    // Page-window flags survive Ext reload; old CS dies but __emailcoreBridgeActive
+    // stays true → new CS must re-bind when runtime id changed / previous owner gone.
+    const previousOwner = window.__emailcoreBridgeOwnerId || null;
+    if (
+        window.__emailcoreBridgeActive
+        && previousOwner
+        && runtimeId
+        && previousOwner === runtimeId
+    ) {
+        return;
+    }
 
     const ADMIN_SOURCE = 'emailcore-admin';
     const EXT_SOURCE = 'emailcore-extension';
-    const BRIDGE_VERSION = '1.3.0';
+    const BRIDGE_VERSION = '1.3.1';
 
     const ACTION_ALIASES = {
         NHP_SEND_TO_PROMPT_BAG: 'RADAR_SEND_TO_PROMPT_BAG',
@@ -33,6 +50,7 @@
 
     if (!isAdminHost() || !isAdminPath()) return;
 
+    window.__emailcoreBridgeOwnerId = runtimeId;
     window.__emailcoreBridgeActive = true;
     window.__emailcoreBridgeReady = true;
 
@@ -78,6 +96,7 @@
             window.__emailcoreExtensionReady = false;
             window.__emailcoreBridgeReady = false;
             window.__emailcoreBridgeActive = false;
+            window.__emailcoreBridgeOwnerId = null;
         } catch (_) { /* ignore */ }
         window.postMessage(
             {
