@@ -119,6 +119,36 @@
   }
 
   async function resolveAuth() {
+    if (typeof globalScope.getCurrentAuthenticatedAccount === 'function') {
+      const account = await globalScope.getCurrentAuthenticatedAccount({ service: 'design_library_import_final' });
+      if (!account?.authenticated || !account.userId) {
+        const err = new Error('missing_link_session');
+        err.code = 'LINK_SESSION_REQUIRED';
+        throw err;
+      }
+      if (typeof globalScope.EmailCoreAuthBridge?.ensureCreatyToken === 'function') {
+        await globalScope.EmailCoreAuthBridge.ensureCreatyToken({ account, service: 'design_library_import_final' });
+      }
+      const refreshed = await globalScope.getCurrentAuthenticatedAccount({ service: 'design_library_import_final' });
+      const headers = typeof globalScope.EmailCoreAuthBridge?.buildAuthHeaders === 'function'
+        ? {
+            ...globalScope.EmailCoreAuthBridge.buildAuthHeaders(refreshed),
+            'x-extension-id': chrome.runtime.id,
+          }
+        : {
+            ...(refreshed.sessionToken
+              ? { 'x-extension-session': refreshed.sessionToken }
+              : { 'x-creaty-token': refreshed.accessToken }),
+            'x-extension-id': chrome.runtime.id,
+          };
+      return {
+        apiBase: String(refreshed.apiBase || 'https://emailcore.app').replace(/\/$/, ''),
+        userId: String(refreshed.userId),
+        token: String(refreshed.accessToken || refreshed.sessionToken || ''),
+        sessionToken: String(refreshed.sessionToken || ''),
+        headers,
+      };
+    }
     const CREATY_STORAGE_KEYS = globalScope.CREATY_STORAGE_KEYS || {
       apiBase: 'emailcore_creaty_api_base',
       userId: 'emailcore_creaty_user_id',
@@ -128,6 +158,8 @@
       CREATY_STORAGE_KEYS.apiBase,
       CREATY_STORAGE_KEYS.userId,
       CREATY_STORAGE_KEYS.token,
+      'emailcore_session_token',
+      'emailcore_session_user_id',
     ]);
     const apiBase = safeStr(
       (typeof globalScope.normalizeEmailCoreApiBase === 'function'
@@ -135,14 +167,25 @@
         : stored[CREATY_STORAGE_KEYS.apiBase])
       || 'https://emailcore.app',
     ).replace(/\/$/, '');
-    const userId = safeStr(stored[CREATY_STORAGE_KEYS.userId]);
-    const token = safeStr(stored[CREATY_STORAGE_KEYS.token]);
+    const sessionToken = safeStr(stored.emailcore_session_token);
+    const sessionUserId = safeStr(stored.emailcore_session_user_id);
+    const userId = sessionUserId || safeStr(stored[CREATY_STORAGE_KEYS.userId]);
+    const token = sessionToken || safeStr(stored[CREATY_STORAGE_KEYS.token]);
     if (!userId || !token) {
       const err = new Error('missing_link_session');
       err.code = 'LINK_SESSION_REQUIRED';
       throw err;
     }
-    return { apiBase, userId, token };
+    return {
+      apiBase,
+      userId,
+      token,
+      sessionToken,
+      headers: {
+        ...(sessionToken ? { 'x-extension-session': sessionToken } : { 'x-creaty-token': token }),
+        'x-extension-id': chrome.runtime.id,
+      },
+    };
   }
 
   async function downloadFinalAsset(contract, auth) {
@@ -165,7 +208,7 @@
     if (!url.searchParams.get('userId')) url.searchParams.set('userId', auth.userId);
 
     const res = await fetch(url.toString(), {
-      headers: {
+      headers: auth.headers || {
         'x-creaty-token': auth.token,
         'x-extension-id': chrome.runtime.id,
       },

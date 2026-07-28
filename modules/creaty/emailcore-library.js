@@ -50,7 +50,7 @@ export function normalizeEmailCoreApiBase(value = DEFAULT_API_BASE) {
 function formatEmailCoreError(data = {}, status = 0) {
   const raw = String(data.error || data.message || '').trim();
   if (status === 401) {
-    return raw || 'جلسة EmailCore غير صالحة — سجّل الدخول من مركز الإدارة → التكاملات';
+    return raw || 'سجّل الدخول بنفس الحساب في الموقع والإضافة (مركز الإدارة → التكاملات)';
   }
   if (status === 404) {
     if (/cannot post/i.test(raw)) {
@@ -60,6 +60,7 @@ function formatEmailCoreError(data = {}, status = 0) {
   }
   if (status === 400) return raw || 'طلب غير صالح — تحقق من الحقول';
   if (status === 409) return raw || 'تعارض في البيانات';
+  if (status === 403) return raw || 'ليس لديك صلاحية لهذا الإجراء';
   if (status >= 500) return raw || `خطأ في الخادم (HTTP ${status})`;
   return raw || `خطأ EmailCore (HTTP ${status || 'unknown'})`;
 }
@@ -118,18 +119,49 @@ export async function refreshEmailCoreConnectionStatus() {
   const auth = configFromStorage(stored);
   const statusEl = $('creaty-emailcore-status');
   if (!statusEl) return auth;
-  const connected = !!(auth.sessionToken || auth.token);
+  const connected = !!(auth.userId && (auth.sessionToken || auth.token));
   if (connected) {
     const roleLabel = auth.role === 'admin' ? 'مدير' : (auth.role ? 'مستخدم' : '');
     statusEl.textContent = auth.username
-      ? `✅ متصل: ${auth.username}${roleLabel ? ` (${roleLabel})` : ''} — الربط من مركز الإدارة → التكاملات`
-      : '✅ متصل — الربط من مركز الإدارة → التكاملات';
+      ? `✅ متصل: ${auth.username}${roleLabel ? ` (${roleLabel})` : ''} — نفس حساب الموقع`
+      : '✅ متصل — نفس حساب الموقع';
     statusEl.className = 'creaty-store-hint creaty-store-hint--ok';
+    statusEl.dataset.connectionState = 'connected';
   } else {
-    statusEl.textContent = '⚠️ غير متصل — سجّل الدخول من مركز الإدارة → التكاملات';
+    statusEl.textContent = '⚠️ غير متصل — سجّل الدخول بنفس الحساب في الموقع والإضافة (مركز الإدارة → التكاملات)';
     statusEl.className = 'creaty-store-hint';
+    statusEl.dataset.connectionState = 'not_authenticated';
   }
   return auth;
+}
+
+export async function getCurrentAuthenticatedAccount() {
+  const auth = await resolveEmailCoreAuth();
+  const credential = authCredential(auth);
+  if (!auth.userId || !credential) {
+    return {
+      authenticated: false,
+      userId: '',
+      email: '',
+      role: 'member',
+      accountId: '',
+      authSource: 'none',
+      connectionState: 'not_authenticated',
+    };
+  }
+  return {
+    authenticated: true,
+    userId: auth.userId,
+    email: auth.email || '',
+    username: auth.username || '',
+    role: auth.role === 'admin' ? 'admin' : 'member',
+    accountId: auth.userId,
+    accessToken: auth.token || undefined,
+    sessionToken: auth.sessionToken || '',
+    apiBase: auth.apiBase,
+    authSource: auth.sessionToken ? 'extension_session' : 'creaty_token',
+    connectionState: 'connected',
+  };
 }
 
 export async function resolveEmailCoreAuth() {
@@ -258,7 +290,7 @@ function isLikelyLocalSessionId(sessionId, email = '') {
 export async function emailcoreApiRequest(path, options = {}) {
   const auth = await resolveEmailCoreAuth();
   const credential = authCredential(auth);
-  if (!auth.userId || !credential) throw new Error('سجّل الدخول من مركز الإدارة → التكاملات');
+  if (!auth.userId || !credential) throw new Error('سجّل الدخول بنفس الحساب في الموقع والإضافة (مركز الإدارة → التكاملات)');
   const method = String(options.method || 'GET').toUpperCase();
   const apiPath = String(path || '').startsWith('/') ? path : `/${path || ''}`;
 
@@ -302,7 +334,7 @@ export async function emailcoreApiRequest(path, options = {}) {
 export async function emailcoreCreatyGet(pathAndQuery) {
   const auth = await resolveEmailCoreAuth();
   const credential = authCredential(auth);
-  if (!auth.userId || !credential) throw new Error('سجّل الدخول من مركز الإدارة → التكاملات');
+  if (!auth.userId || !credential) throw new Error('سجّل الدخول بنفس الحساب في الموقع والإضافة (مركز الإدارة → التكاملات)');
   const path = String(pathAndQuery || '').startsWith('/') ? pathAndQuery : `/${pathAndQuery}`;
   const url = new URL(`${auth.apiBase}/api/creaty${path}`);
   url.searchParams.set('userId', auth.userId);

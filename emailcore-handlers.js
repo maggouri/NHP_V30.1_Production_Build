@@ -90,9 +90,14 @@
         tier: 'emailcore_session_tier',
         expiresAt: 'emailcore_session_expires_at',
     };
-    const DEFAULT_EMAILCORE_API_BASE = 'https://emailcore.app';
+    const AuthBridge = self.EmailCoreAuthBridge || null;
+    const DEFAULT_EMAILCORE_API_BASE = (AuthBridge && AuthBridge.DEFAULT_API_BASE) || 'https://emailcore.app';
+    // Forbidden: never hardcode admin userId/token. Binding is session SSOT only.
 
     function normalizeEmailCoreApiBase(value = DEFAULT_EMAILCORE_API_BASE) {
+        if (AuthBridge && typeof AuthBridge.normalizeApiBase === 'function') {
+            return AuthBridge.normalizeApiBase(value);
+        }
         let base = String(value || DEFAULT_EMAILCORE_API_BASE).trim().replace(/\/+$/, '');
         try {
             const url = new URL(base);
@@ -105,9 +110,15 @@
     }
 
     function formatCreatyApiError(data = {}, status = 0) {
+        if (AuthBridge && typeof AuthBridge.classifyHttpError === 'function') {
+            const classified = AuthBridge.classifyHttpError(status, data);
+            if (status === 401 || status === 403) return classified.error;
+            if (status >= 500) return classified.error;
+        }
         const raw = String(data.error || data.message || '').trim();
         if (status === 401) {
-            return raw || 'جلسة EmailCore غير صالحة — سجّل الدخول من مركز الإدارة → التكاملات';
+            return raw || (AuthBridge?.MSG_NOT_AUTHENTICATED_AR
+                || 'سجّل الدخول بنفس الحساب في الموقع والإضافة (مركز الإدارة → التكاملات)');
         }
         if (status === 404) {
             if (/cannot post/i.test(raw)) {
@@ -119,8 +130,6 @@
         if (status >= 500) return raw || `خطأ في الخادم (HTTP ${status})`;
         return raw || `خطأ EmailCore (HTTP ${status || 'unknown'})`;
     }
-    const DEFAULT_EMAILCORE_CREATY_USER_ID = '8';
-    const DEFAULT_EMAILCORE_CREATY_TOKEN = 'b39b3d326f5e7b4f9cfdaddea38b208bacafe27994470739';
     const EMAILCORE_GHOST_SERVERS_KEY = 'emailcore_ghost_servers';
     const EMAILCORE_GHOST_DEFAULTS_KEY = 'emailcore_ghost_defaults';
 
@@ -444,6 +453,9 @@
     }
 
     async function readEmailCoreAuth(options = {}) {
+        if (AuthBridge && typeof AuthBridge.readEmailCoreAuth === 'function') {
+            return AuthBridge.readEmailCoreAuth(options);
+        }
         const stored = await chrome.storage.local.get([
             CREATY_STORAGE_KEYS.apiBase,
             CREATY_STORAGE_KEYS.token,
@@ -462,17 +474,87 @@
                 apiBase,
                 userId: sessionUserId,
                 sessionToken,
+                token: String(stored[CREATY_STORAGE_KEYS.token] || '').trim(),
                 role: String(stored[EMAILCORE_SESSION_KEYS.role] || 'member').trim(),
                 tier: String(stored[EMAILCORE_SESSION_KEYS.tier] || 'bronze').trim(),
                 username: String(stored[EMAILCORE_SESSION_KEYS.username] || '').trim(),
+                accountId: sessionUserId,
+                authSource: 'extension_session',
             };
         }
         const token = String(stored[CREATY_STORAGE_KEYS.token] || '').trim();
         const userId = String(stored[CREATY_STORAGE_KEYS.userId] || '').trim();
         if (userId && token) {
-            return { apiBase, userId, token };
+            return { apiBase, userId, token, accountId: userId, authSource: 'creaty_token' };
         }
-        return { apiBase, userId: '', sessionToken: '', token: '' };
+        return { apiBase, userId: '', sessionToken: '', token: '', accountId: '', authSource: 'none' };
+    }
+
+    async function resolveBoundAuth(serviceName, options = {}) {
+        if (AuthBridge && typeof AuthBridge.resolveForService === 'function') {
+            return AuthBridge.resolveForService(serviceName, options);
+        }
+        const auth = await readEmailCoreAuth();
+        const credential = auth.sessionToken || auth.token;
+        if (!auth.userId || !credential) {
+            return {
+                ok: false,
+                error: 'سجّل الدخول بنفس الحساب في الموقع والإضافة (مركز الإدارة → التكاملات)',
+                errorCode: 'not_authenticated',
+                account: { authenticated: false, userId: '', accountId: '', role: 'member', authSource: 'none' },
+            };
+        }
+        return {
+            ok: true,
+            account: {
+                authenticated: true,
+                userId: auth.userId,
+                accountId: auth.accountId || auth.userId,
+                role: auth.role || 'member',
+                sessionToken: auth.sessionToken || '',
+                accessToken: auth.token || '',
+                apiBase: auth.apiBase,
+                authSource: auth.authSource || 'extension_session',
+            },
+            userId: auth.userId,
+            apiBase: auth.apiBase,
+            headers: auth.sessionToken
+                ? { 'x-extension-session': auth.sessionToken }
+                : { 'x-creaty-token': auth.token },
+        };
+    }
+
+    /** Bound creds for /api/extension/* and creaty HMAC routes — current user only, no admin defaults. */
+    async function resolveExtensionBoundCreds(serviceName) {
+        const bound = await resolveBoundAuth(serviceName, { ensureCreatyToken: true });
+        if (!bound.ok || !bound.account?.authenticated) {
+            if (AuthBridge) {
+                AuthBridge.logBindingDiag(serviceName, bound.account || { authenticated: false }, {
+                    errorCode: bound.errorCode || 'not_authenticated',
+                });
+            }
+            return null;
+        }
+        const account = bound.account;
+        const headers = {
+            'Content-Type': 'application/json',
+            'x-extension-id': chrome.runtime.id,
+            ...(bound.headers || {}),
+        };
+        // Prefer session; also attach creaty token when minted for dual-auth servers.
+        if (account.accessToken && !headers['x-creaty-token'] && !headers['x-extension-session']) {
+            headers['x-creaty-token'] = account.accessToken;
+        } else if (account.accessToken && headers['x-extension-session']) {
+            headers['x-creaty-token'] = account.accessToken;
+        }
+        return {
+            apiBase: account.apiBase,
+            userId: account.userId,
+            token: account.accessToken || account.sessionToken || '',
+            sessionToken: account.sessionToken || '',
+            headers,
+            account,
+        };
     }
 
     /** @deprecated use readEmailCoreAuth */
@@ -1921,24 +2003,13 @@
             chrome.storage.local.set({ [EMAILCORE_LIVE_SYNC_ENABLED_KEY]: enabled }, () => {
                 (async () => {
                     try {
-                        const stored = await chrome.storage.local.get([
-                            CREATY_STORAGE_KEYS.apiBase,
-                            CREATY_STORAGE_KEYS.userId,
-                            CREATY_STORAGE_KEYS.token,
-                        ]);
-                        const apiBase = normalizeEmailCoreApiBase(stored[CREATY_STORAGE_KEYS.apiBase]);
-                        const userId = String(stored[CREATY_STORAGE_KEYS.userId] || DEFAULT_EMAILCORE_CREATY_USER_ID).trim();
-                        const token = String(stored[CREATY_STORAGE_KEYS.token] || DEFAULT_EMAILCORE_CREATY_TOKEN).trim();
-                        if (userId && token) {
-                            const url = new URL(`${apiBase}/api/extension/live-sync/settings`);
-                            url.searchParams.set('userId', userId);
+                        const creds = await resolveExtensionBoundCreds('live_sync_set');
+                        if (creds) {
+                            const url = new URL(`${creds.apiBase}/api/extension/live-sync/settings`);
+                            url.searchParams.set('userId', creds.userId);
                             await fetch(url, {
                                 method: 'PUT',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'x-creaty-token': token,
-                                    'x-extension-id': chrome.runtime.id,
-                                },
+                                headers: creds.headers,
                                 body: JSON.stringify({ enabled }),
                             }).catch(() => null);
                         }
@@ -2041,27 +2112,21 @@
                 .filter(Boolean);
             (async () => {
                 try {
-                    const stored = await chrome.storage.local.get([
-                        CREATY_STORAGE_KEYS.apiBase,
-                        CREATY_STORAGE_KEYS.userId,
-                        CREATY_STORAGE_KEYS.token,
-                    ]);
-                    const apiBase = normalizeEmailCoreApiBase(stored[CREATY_STORAGE_KEYS.apiBase]);
-                    const userId = String(stored[CREATY_STORAGE_KEYS.userId] || DEFAULT_EMAILCORE_CREATY_USER_ID).trim();
-                    const token = String(stored[CREATY_STORAGE_KEYS.token] || DEFAULT_EMAILCORE_CREATY_TOKEN).trim();
-                    if (!userId || !token || !ids.length) {
-                        sendResponse({ success: false, error: 'missing_creaty_or_ids' });
+                    const creds = await resolveExtensionBoundCreds('delete_site_designs');
+                    if (!creds || !ids.length) {
+                        sendResponse({
+                            success: false,
+                            error: creds
+                                ? 'missing_ids'
+                                : 'سجّل الدخول بنفس الحساب في الموقع والإضافة (مركز الإدارة → التكاملات)',
+                        });
                         return;
                     }
-                    const url = new URL(`${apiBase}/api/extension/designs/generated`);
-                    url.searchParams.set('userId', userId);
+                    const url = new URL(`${creds.apiBase}/api/extension/designs/generated`);
+                    url.searchParams.set('userId', creds.userId);
                     const res = await fetch(url, {
                         method: 'DELETE',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'x-creaty-token': token,
-                            'x-extension-id': chrome.runtime.id,
-                        },
+                        headers: creds.headers,
                         body: JSON.stringify({ ids }),
                     });
                     const data = await res.json().catch(() => ({}));
@@ -2143,6 +2208,30 @@
                         [CREATY_STORAGE_KEYS.userId]: userId,
                         ...(creatyToken ? { [CREATY_STORAGE_KEYS.token]: creatyToken } : {}),
                     });
+                    if (AuthBridge && typeof AuthBridge.ensureCreatyToken === 'function' && !creatyToken) {
+                        const minted = await AuthBridge.ensureCreatyToken({
+                            service: 'extension_login',
+                            account: {
+                                authenticated: true,
+                                userId,
+                                sessionToken,
+                                apiBase,
+                                accessToken: '',
+                            },
+                        });
+                        creatyToken = minted.token || '';
+                    }
+                    if (AuthBridge) {
+                        AuthBridge.logBindingDiag('extension_login', {
+                            authenticated: true,
+                            userId,
+                            accountId: userId,
+                            role: String(data.role || 'member'),
+                            authSource: 'extension_session',
+                            sessionToken: true,
+                            accessToken: !!creatyToken,
+                        }, { requestStatus: 200 });
+                    }
                     sendResponse({
                         ok: true,
                         username: data.username,
@@ -2194,6 +2283,47 @@
                     }
                 })
                 .catch((err) => sendResponse({ ok: false, error: err.message || String(err) }));
+            return true;
+        }
+
+        if (action === 'EMAILCORE_GET_BOUND_ACCOUNT') {
+            (async () => {
+                try {
+                    const account = AuthBridge
+                        ? await AuthBridge.getCurrentAuthenticatedAccount({ service: request.service || 'status' })
+                        : null;
+                    if (!account) {
+                        const auth = await readEmailCoreAuth();
+                        sendResponse({
+                            ok: !!auth.userId,
+                            authenticated: !!(auth.userId && (auth.sessionToken || auth.token)),
+                            userId: auth.userId || '',
+                            accountId: auth.userId || '',
+                            role: auth.role || 'member',
+                            authSource: auth.authSource || 'none',
+                            hasCreatyToken: !!auth.token,
+                            hasSession: !!auth.sessionToken,
+                        });
+                        return;
+                    }
+                    sendResponse({
+                        ok: account.authenticated,
+                        authenticated: account.authenticated,
+                        userId: account.userId,
+                        accountId: account.accountId,
+                        role: account.role,
+                        username: account.username,
+                        authSource: account.authSource,
+                        connectionState: account.connectionState,
+                        hasCreatyToken: !!account.accessToken,
+                        hasSession: !!account.sessionToken,
+                        messageAr: account.messageAr,
+                        messageEn: account.messageEn,
+                    });
+                } catch (err) {
+                    sendResponse({ ok: false, error: err?.message || String(err) });
+                }
+            })();
             return true;
         }
 
@@ -2272,22 +2402,15 @@
     }
 
     async function pollEmailCoreMessages() {
-        const stored = await chrome.storage.local.get([
-            CREATY_STORAGE_KEYS.apiBase,
-            CREATY_STORAGE_KEYS.userId,
-            CREATY_STORAGE_KEYS.token,
-            EMAILCORE_LAST_POLL_KEY,
-        ]);
-        const apiBase = normalizeEmailCoreApiBase(stored[CREATY_STORAGE_KEYS.apiBase]);
-        const userId = String(stored[CREATY_STORAGE_KEYS.userId] || '').trim();
-        const token = String(stored[CREATY_STORAGE_KEYS.token] || '').trim();
-        if (!userId || !token) return;
+        const creds = await resolveExtensionBoundCreds('library_mail_poll');
+        if (!creds) return;
+        const stored = await chrome.storage.local.get([EMAILCORE_LAST_POLL_KEY]);
         const since = stored[EMAILCORE_LAST_POLL_KEY] || new Date(Date.now() - 65000).toISOString();
-        const url = new URL(`${apiBase}/api/creaty/library/messages`);
-        url.searchParams.set('userId', userId);
+        const url = new URL(`${creds.apiBase}/api/creaty/library/messages`);
+        url.searchParams.set('userId', creds.userId);
         url.searchParams.set('since', since);
         url.searchParams.set('limit', '25');
-        const response = await fetch(url, { headers: { 'x-creaty-token': token } });
+        const response = await fetch(url, { headers: creds.headers });
         if (!response.ok) throw new Error(`EmailCore mail poll HTTP ${response.status}`);
         const data = await response.json();
         await chrome.storage.local.set({ [EMAILCORE_LAST_POLL_KEY]: data.serverTime || new Date().toISOString() });
@@ -2561,15 +2684,9 @@
         const busy = await chrome.storage.local.get([EMAILCORE_TP_ASSIST_BUSY_KEY]);
         if (busy[EMAILCORE_TP_ASSIST_BUSY_KEY]) return;
 
-        const stored = await chrome.storage.local.get([
-            CREATY_STORAGE_KEYS.apiBase,
-            CREATY_STORAGE_KEYS.userId,
-            CREATY_STORAGE_KEYS.token,
-        ]);
-        const apiBase = normalizeEmailCoreApiBase(stored[CREATY_STORAGE_KEYS.apiBase]);
-        const userId = String(stored[CREATY_STORAGE_KEYS.userId] || DEFAULT_EMAILCORE_CREATY_USER_ID).trim();
-        const token = String(stored[CREATY_STORAGE_KEYS.token] || DEFAULT_EMAILCORE_CREATY_TOKEN).trim();
-        if (!userId || !token) return;
+        const creds = await resolveExtensionBoundCreds('early_radar_tp_assist');
+        if (!creds) return;
+        const { apiBase, userId, token, headers } = creds;
 
         await chrome.storage.local.set({ [EMAILCORE_TP_ASSIST_BUSY_KEY]: true });
         try {
@@ -2577,7 +2694,7 @@
             claimUrl.searchParams.set('userId', userId);
             claimUrl.searchParams.set('limit', '4');
             claimUrl.searchParams.set('claimer', `ext-${chrome.runtime.id || 'nhp'}`);
-            const claimRes = await fetch(claimUrl, { headers: { 'x-creaty-token': token } });
+            const claimRes = await fetch(claimUrl, { headers });
             if (!claimRes.ok) {
                 if (claimRes.status !== 401 && claimRes.status !== 404) {
                     console.warn('[EmailCore][TP-assist] claim HTTP', claimRes.status);
@@ -2605,10 +2722,7 @@
 
             const postRes = await fetch(`${apiBase}/api/creaty/nhp/early-radar/tp-assist?userId=${encodeURIComponent(userId)}`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-creaty-token': token,
-                },
+                headers,
                 body: JSON.stringify({
                     source: 'extension',
                     results: results.map((r) => ({
@@ -2771,8 +2885,14 @@
         const key = String(design?.oracleObjectKey || '').trim();
         const apiBase = auth?.apiBase || '';
         const userId = auth?.userId || '';
-        const token = auth?.token || '';
-        if (key && apiBase && userId && token) {
+        const token = auth?.token || auth?.sessionToken || '';
+        const headers = auth?.headers || {
+            ...(auth?.sessionToken
+                ? { 'x-extension-session': auth.sessionToken }
+                : (token ? { 'x-creaty-token': token } : {})),
+            'x-extension-id': chrome.runtime.id,
+        };
+        if (key && apiBase && userId && (token || auth?.sessionToken || headers['x-extension-session'] || headers['x-creaty-token'])) {
             const mediaUrl = new URL(
                 design.mediaUrl && String(design.mediaUrl).includes('/api/extension/designs/media')
                     ? (String(design.mediaUrl).startsWith('http')
@@ -2782,12 +2902,7 @@
             );
             if (!mediaUrl.searchParams.get('key')) mediaUrl.searchParams.set('key', key);
             mediaUrl.searchParams.set('userId', userId);
-            const mediaRes = await fetch(mediaUrl, {
-                headers: {
-                    'x-creaty-token': token,
-                    'x-extension-id': chrome.runtime.id,
-                },
-            });
+            const mediaRes = await fetch(mediaUrl, { headers });
             if (mediaRes.ok) {
                 const blob = await mediaRes.blob();
                 if (blob && blob.size) return blob;
@@ -2869,24 +2984,25 @@
             return { imported: 0, skipped: 0, failed: 0, listed: 0, reason: 'no_designs' };
         }
         const flags = await chrome.storage.local.get([
-            CREATY_STORAGE_KEYS.apiBase,
-            CREATY_STORAGE_KEYS.userId,
-            CREATY_STORAGE_KEYS.token,
             EMAILCORE_LIVE_SYNC_BUSY,
         ]);
         if (flags[EMAILCORE_LIVE_SYNC_BUSY] === true) {
             // Allow NHP40 to wait briefly then proceed — user-initiated push.
             await new Promise((r) => setTimeout(r, 800));
         }
-        const apiBase = normalizeEmailCoreApiBase(flags[CREATY_STORAGE_KEYS.apiBase]);
-        const userId = String(flags[CREATY_STORAGE_KEYS.userId] || DEFAULT_EMAILCORE_CREATY_USER_ID).trim();
-        const token = String(flags[CREATY_STORAGE_KEYS.token] || DEFAULT_EMAILCORE_CREATY_TOKEN).trim();
-        if (!userId || !token) {
-            throw new Error('missing_creaty');
+        const creds = await resolveExtensionBoundCreds('nhp40_push');
+        if (!creds) {
+            throw new Error('سجّل الدخول بنفس الحساب في الموقع والإضافة (مركز الإدارة → التكاملات)');
         }
         await chrome.storage.local.set({ [EMAILCORE_LIVE_SYNC_BUSY]: true });
         try {
-            const auth = { apiBase, userId, token };
+            const auth = {
+                apiBase: creds.apiBase,
+                userId: creds.userId,
+                token: creds.token,
+                sessionToken: creds.sessionToken,
+                headers: creds.headers,
+            };
             const stats = await importDesignsToGhostLibrary(list, auth);
             const meta = {
                 lastRunAt: new Date().toISOString(),
@@ -2911,36 +3027,33 @@
         const flags = await chrome.storage.local.get([
             EMAILCORE_LIVE_SYNC_ENABLED_KEY,
             EMAILCORE_LIVE_SYNC_BUSY,
-            CREATY_STORAGE_KEYS.apiBase,
-            CREATY_STORAGE_KEYS.userId,
-            CREATY_STORAGE_KEYS.token,
         ]);
         if (flags[EMAILCORE_LIVE_SYNC_BUSY] === true && !force) {
             return { skipped: true, reason: 'busy' };
         }
 
-        const apiBase = normalizeEmailCoreApiBase(flags[CREATY_STORAGE_KEYS.apiBase]);
-        const userId = String(flags[CREATY_STORAGE_KEYS.userId] || DEFAULT_EMAILCORE_CREATY_USER_ID).trim();
-        const token = String(flags[CREATY_STORAGE_KEYS.token] || DEFAULT_EMAILCORE_CREATY_TOKEN).trim();
-        if (!userId || !token) {
-            return { skipped: true, reason: 'missing_creaty' };
+        const creds = await resolveExtensionBoundCreds('live_sync_poll');
+        if (!creds) {
+            return { skipped: true, reason: 'not_authenticated' };
         }
+        const { apiBase, userId, token, headers } = creds;
 
         let localEnabled = flags[EMAILCORE_LIVE_SYNC_ENABLED_KEY] === true;
         // Always reconcile with site preference so Live Sync works without same-browser bridge.
         // force=true (bridge SET) still imports when local was just enabled even if server lags briefly.
         await chrome.storage.local.set({ [EMAILCORE_LIVE_SYNC_BUSY]: true });
-        const auth = { apiBase, userId, token };
+        const auth = {
+            apiBase,
+            userId,
+            token,
+            sessionToken: creds.sessionToken,
+            headers,
+        };
         try {
             const listUrl = new URL(`${apiBase}/api/extension/designs/generated`);
             listUrl.searchParams.set('userId', userId);
             listUrl.searchParams.set('limit', '200');
-            const listRes = await fetch(listUrl, {
-                headers: {
-                    'x-creaty-token': token,
-                    'x-extension-id': chrome.runtime.id,
-                },
-            });
+            const listRes = await fetch(listUrl, { headers });
             const listData = await listRes.json().catch(() => ({}));
             if (!listRes.ok) {
                 if (/404|not found/i.test(String(listData?.error || listRes.status))) {
@@ -2989,23 +3102,21 @@
                     /* ignore */
                 }
             }
-            return { ok: true, ...meta };
+            return { ok: true, ...stats, live_sync_enabled: meta.live_sync_enabled };
         } finally {
             await chrome.storage.local.set({ [EMAILCORE_LIVE_SYNC_BUSY]: false });
         }
     }
 
     async function pollPipelineAlerts() {
-        const storedAuth = await chrome.storage.local.get([
-            CREATY_STORAGE_KEYS.apiBase,
-            CREATY_STORAGE_KEYS.userId,
-            CREATY_STORAGE_KEYS.token,
-        ]);
-        const apiBase = normalizeEmailCoreApiBase(storedAuth[CREATY_STORAGE_KEYS.apiBase]);
-        const userId = String(storedAuth[CREATY_STORAGE_KEYS.userId] || DEFAULT_EMAILCORE_CREATY_USER_ID).trim();
-        const token = String(storedAuth[CREATY_STORAGE_KEYS.token] || DEFAULT_EMAILCORE_CREATY_TOKEN).trim();
-        if (!userId || !token) return { skipped: true, reason: 'missing_creaty' };
-        const auth = { apiBase, userId, token };
+        const creds = await resolveExtensionBoundCreds('pipeline_alerts');
+        if (!creds) return { skipped: true, reason: 'not_authenticated' };
+        const auth = {
+            apiBase: creds.apiBase,
+            userId: creds.userId,
+            token: creds.token,
+            sessionToken: creds.sessionToken,
+        };
 
         const stored = await chrome.storage.local.get([EMAILCORE_PIPELINE_ALERT_SEEN_KEY]);
         const seenId = Number(stored[EMAILCORE_PIPELINE_ALERT_SEEN_KEY] || 0) || 0;
@@ -3077,25 +3188,14 @@
     }
 
     async function pollDesignJobsBridge() {
-        const storedAuth = await chrome.storage.local.get([
-            CREATY_STORAGE_KEYS.apiBase,
-            CREATY_STORAGE_KEYS.userId,
-            CREATY_STORAGE_KEYS.token,
-        ]);
-        const apiBase = normalizeEmailCoreApiBase(storedAuth[CREATY_STORAGE_KEYS.apiBase]);
-        const userId = String(storedAuth[CREATY_STORAGE_KEYS.userId] || DEFAULT_EMAILCORE_CREATY_USER_ID).trim();
-        const token = String(storedAuth[CREATY_STORAGE_KEYS.token] || DEFAULT_EMAILCORE_CREATY_TOKEN).trim();
-        if (!userId || !token) return { skipped: true, reason: 'missing_creaty' };
+        const creds = await resolveExtensionBoundCreds('design_jobs_bridge');
+        if (!creds) return { skipped: true, reason: 'not_authenticated' };
+        const { apiBase, userId, token, headers } = creds;
 
         const url = new URL(`${apiBase}/api/extension/design-jobs/pending`);
         url.searchParams.set('userId', userId);
         url.searchParams.set('limit', '3');
-        const response = await fetch(url, {
-            headers: {
-                'x-creaty-token': token,
-                'x-extension-id': chrome.runtime.id,
-            },
-        });
+        const response = await fetch(url, { headers });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
             if (/404|not found/i.test(String(data?.error || response.status))) {
@@ -3122,11 +3222,7 @@
             const claimUrl = `${apiBase}/api/extension/design-jobs/${job.id}/claim`;
             const claimRes = await fetch(claimUrl, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-creaty-token': token,
-                    'x-extension-id': chrome.runtime.id,
-                },
+                headers: { ...headers, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId, token, claimedBy: chrome.runtime.id }),
             });
             const claimData = await claimRes.json().catch(() => ({}));
@@ -3151,11 +3247,7 @@
                     if (!allowed.has(stage)) {
                         await fetch(failUrl, {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'x-creaty-token': token,
-                                'x-extension-id': chrome.runtime.id,
-                            },
+                            headers: { ...headers, 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 userId,
                                 token,
@@ -3186,11 +3278,7 @@
                     }
                     await fetch(completeUrl, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'x-creaty-token': token,
-                            'x-extension-id': chrome.runtime.id,
-                        },
+                        headers: { ...headers, 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             userId,
                             token,
@@ -3206,11 +3294,7 @@
                 } catch (err) {
                     await fetch(failUrl, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'x-creaty-token': token,
-                            'x-extension-id': chrome.runtime.id,
-                        },
+                        headers: { ...headers, 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             userId,
                             token,
@@ -3223,11 +3307,7 @@
 
             await fetch(completeUrl, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-creaty-token': token,
-                    'x-extension-id': chrome.runtime.id,
-                },
+                headers: { ...headers, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     userId,
                     token,

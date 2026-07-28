@@ -171,6 +171,7 @@ try {
     console.error('Failed to import emailcore-teepublic-pipeline.js', e);
 }
 try {
+    importScripts('utils/emailcore-auth-bridge.js');
     importScripts('background/design-library-import-final.js');
 } catch (e) {
     console.error('Failed to import background/design-library-import-final.js', e);

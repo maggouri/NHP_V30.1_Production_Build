@@ -366,7 +366,7 @@
             || ''
         ).trim();
         if ((!sessionToken && !token) || !userId) {
-            throw new Error('CREATY token missing — سجّل الدخول من مركز الإدارة → التكاملات');
+            throw new Error('سجّل الدخول بنفس الحساب في الموقع والإضافة (مركز الإدارة → التكاملات)');
         }
         const method = options.method || 'GET';
         let fetchUrl = `${apiBase}${path}`;

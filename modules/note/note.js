@@ -182,8 +182,10 @@ async function NC_isCreatySearchToolsSyncEnabled() {
 async function NC_refreshDesignImagesFeed({ quiet = true } = {}) {
     if (!(await NC_isCreatySearchToolsSyncEnabled())) return { skipped: true, reason: 'sync_disabled' };
     if (!(await hasEmailCoreCredentials())) {
-        if (!quiet) showToastRef('⚠️ أدخل مفتاح CREATY لمزامنة صور التصاميم');
-        return { skipped: true, reason: 'missing_creaty' };
+        if (!quiet) {
+            showToastRef('⚠️ سجّل الدخول بنفس الحساب في الموقع والإضافة (مركز الإدارة → التكاملات)');
+        }
+        return { skipped: true, reason: 'not_authenticated' };
     }
     try {
         const data = await emailcoreApiRequest('/nhp/design-images');
@@ -2928,10 +2930,12 @@ export async function NC_fetchNichesFromSite(options = {}) {
 
     if (!(await hasEmailCoreCredentials())) {
         if (quietMissingCreds) {
-            if (statsEl) statsEl.title = 'أدخل مفتاح CREATY في لوحة الإدارة للمزامنة';
+            if (statsEl) {
+                statsEl.title = 'سجّل الدخول بنفس الحساب في الموقع والإضافة (مركز الإدارة → التكاملات)';
+            }
             return;
         }
-        showToastRef('⚠️ أدخل المفتاح (Access Token) و User ID في CREATY → EmailCore ثم احفظ');
+        showToastRef('⚠️ سجّل الدخول بنفس الحساب في الموقع والإضافة (مركز الإدارة → التكاملات)');
         return;
     }
 

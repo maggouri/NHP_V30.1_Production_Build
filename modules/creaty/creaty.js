@@ -953,8 +953,8 @@ function formatCreatyActionError(raw) {
   if (/creaty server offline|3020|econnrefused|failed to fetch.*3020|networkerror/i.test(text)) {
     return 'Creaty Server غير متصل على المنفذ 3020 — شغّله من AUT أو Start_Creaty_Server.cmd';
   }
-  if (/token missing|creaty token/i.test(text)) {
-    return 'توكن CREATY غير متزامن — افتح لوحة الموقع → CREATY → مزامنة الإضافة';
+  if (/token missing|creaty token|not_authenticated|سجّل الدخول بنفس الحساب/i.test(text)) {
+    return 'سجّل الدخول بنفس الحساب في الموقع والإضافة (مركز الإدارة → التكاملات)';
   }
   if (/no_response/i.test(text)) {
     return 'لا رد من الخلفية — انتظر ثانية ثم أعد المحاولة، أو أعد تحميل الإضافة';
