@@ -27,11 +27,56 @@
   }
 
   function dedupeKey(contract) {
+    const assetId = safeStr(contract.assetId);
+    const contentHash = safeStr(contract.contentHash || contract.checksum);
+    const variant = safeStr(contract.variantType || 'edited') || 'edited';
+    if (assetId) return `asset:${assetId}`;
+    if (contentHash) return `hash:${contentHash}:${variant}`;
     return [
       safeStr(contract.designId),
       safeStr(contract.editedVersion || contract.processingVersion || 'v1'),
       safeStr(contract.checksum || contract.editedObjectKey || ''),
     ].join('::');
+  }
+
+  async function loadReceivedAssets() {
+    try {
+      const stored = await chrome.storage.local.get(['nhp40_received_assets_v1']);
+      const map = stored.nhp40_received_assets_v1;
+      return map && typeof map === 'object' ? map : {};
+    } catch {
+      return {};
+    }
+  }
+
+  async function rememberReceivedAsset(contract, meta) {
+    const assetId = safeStr(contract.assetId);
+    const contentHash = safeStr(contract.contentHash || contract.checksum);
+    if (!assetId && !contentHash) return;
+    const map = await loadReceivedAssets();
+    const entry = {
+      asset_id: assetId || null,
+      workspace_id: safeStr(contract.workspaceId) || null,
+      content_hash: contentHash || null,
+      local_path: meta?.localLibraryId || null,
+      received_at: new Date().toISOString(),
+    };
+    if (assetId) map[`id:${assetId}`] = entry;
+    if (contentHash) map[`hash:${contentHash}`] = entry;
+    const keys = Object.keys(map);
+    if (keys.length > 4000) {
+      keys.slice(0, keys.length - 3000).forEach((k) => { delete map[k]; });
+    }
+    await chrome.storage.local.set({ nhp40_received_assets_v1: map });
+  }
+
+  async function findReceivedAsset(contract) {
+    const map = await loadReceivedAssets();
+    const assetId = safeStr(contract.assetId);
+    const contentHash = safeStr(contract.contentHash || contract.checksum);
+    if (assetId && map[`id:${assetId}`]) return map[`id:${assetId}`];
+    if (contentHash && map[`hash:${contentHash}`]) return map[`hash:${contentHash}`];
+    return null;
   }
 
   async function loadDedupeMap() {
@@ -315,6 +360,22 @@
 
     try {
       validateContractShape(rawContract);
+      const prior = await findReceivedAsset(rawContract);
+      if (prior) {
+        return {
+          ok: true,
+          status: 'duplicate',
+          designId: rawContract.designId,
+          assetId: rawContract.assetId || prior.asset_id || null,
+          contentHash: rawContract.contentHash || prior.content_hash || null,
+          editedVersion: rawContract.editedVersion,
+          checksum: rawContract.checksum,
+          localLibraryId: prior.local_path || null,
+          stages: [...stages, 'duplicate'],
+          outboxId,
+          reason: 'received_assets_identity',
+        };
+      }
       const key = dedupeKey(rawContract);
       const dedupe = await loadDedupeMap();
       if (dedupe[key]) {
@@ -322,6 +383,8 @@
           ok: true,
           status: 'duplicate',
           designId: rawContract.designId,
+          assetId: rawContract.assetId || null,
+          contentHash: rawContract.contentHash || null,
           editedVersion: rawContract.editedVersion,
           checksum: rawContract.checksum,
           localLibraryId: dedupe[key].localLibraryId || null,
@@ -342,6 +405,9 @@
           localLibraryId: saved.localLibraryId,
           designId: rawContract.designId,
         });
+        await rememberReceivedAsset(rawContract, {
+          localLibraryId: saved.localLibraryId,
+        });
       }
       try {
         chrome.runtime.sendMessage({
@@ -354,6 +420,8 @@
         ok: true,
         status: saved.status,
         designId: rawContract.designId,
+        assetId: rawContract.assetId || null,
+        contentHash: rawContract.contentHash || null,
         editedVersion: rawContract.editedVersion,
         checksum: rawContract.checksum,
         localLibraryId: saved.localLibraryId,
