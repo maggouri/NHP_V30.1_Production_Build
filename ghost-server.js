@@ -2766,10 +2766,14 @@ app.post('/upload', async (req, res) => {
             await ensureQuickCreateReady(page, account, 'initial-setup', null, supervisorCtx);
 
             // --- Phase 3: Supreme SEO DNA (Direct Graft) ---
+            const designList = Array.isArray(designs) ? designs : [];
+            if (!designList.length) {
+                throw new Error('No designs payload for upload — refusing empty account session');
+            }
             const results = [];
             try {
-                for (let i = 0; i < designs.length; i++) {
-                    const des = designs[i]; const m = des.meta || {};
+                for (let i = 0; i < designList.length; i++) {
+                    const des = designList[i]; const m = des.meta || {};
                     const jobId = buildServerUploadJobId(account, des, i);
                     currentJobId = jobId;
                     updateActiveUploadJob(jobId, 'preparing', { title: m.title || '', index: i + 1 });
@@ -2818,7 +2822,7 @@ app.post('/upload', async (req, res) => {
                         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
                             finalAttemptNumber = attempt;
                             try {
-                                logToFile(`📦 Design [${i + 1}/${designs.length}] | Email: ${account.email} | Attempt: ${attempt}/${maxAttempts} | URL Before: ${urlBeforeUpload}`);
+                                logToFile(`📦 Design [${i + 1}/${designList.length}] | Email: ${account.email} | Attempt: ${attempt}/${maxAttempts} | URL Before: ${urlBeforeUpload}`);
                                 
                                 const currentUploadSurface = await inspectTeePublicQuickCreate(page).catch(() => null);
                                 const canReuseCurrentPageForFirstDesign =
@@ -3227,6 +3231,71 @@ app.post('/upload', async (req, res) => {
                                             return { applied, bagOn: !!bagOn, toteOn: !!toteOn };
                                         }
 
+                                        function productHasSelectedColor(root) {
+                                            if (!root) return false;
+                                            const selectedSwatch = root.querySelector(
+                                                '.swatch.selected, .swatch.active, .color-swatch.selected, .color-spot.selected, [aria-checked="true"], [aria-selected="true"], .dd-selected-text, .dd-selected'
+                                            );
+                                            if (selectedSwatch) {
+                                                const t = (selectedSwatch.textContent || selectedSwatch.title || '').trim();
+                                                if (t && !/select|choose|primary|default|—|-/i.test(t)) return true;
+                                                if (selectedSwatch.classList?.contains('selected') || selectedSwatch.classList?.contains('active')) return true;
+                                            }
+                                            const select = root.querySelector('select.js-uploader-color-select, select[name*="color"], select');
+                                            if (select && select.value && select.selectedIndex > 0) return true;
+                                            const radio = root.querySelector('input[type="radio"][name*="color"]:checked');
+                                            if (radio) return true;
+                                            const hidden = root.querySelector('input[type="hidden"][name*="color"], input.hex-input');
+                                            if (hidden && String(hidden.value || '').trim()) return true;
+                                            const ddText = root.querySelector('.dd-selected-text, .dd-selected');
+                                            if (ddText) {
+                                                const t = (ddText.textContent || '').trim();
+                                                if (t && !/select|choose|primary|default|—|-/i.test(t)) return true;
+                                            }
+                                            return false;
+                                        }
+
+                                        function listEnabledProductRoots() {
+                                            const roots = Array.from(document.querySelectorAll(
+                                                '.m-uploader-product, .canvas[data-canvas], .canvas[data-product-name], tr[data-canvas], .js-product-row'
+                                            ));
+                                            const enabled = roots.filter((root) => {
+                                                if (!(root.offsetWidth > 0 || root.offsetHeight > 0)) return false;
+                                                return isProductEnabled(root) || !!root.querySelector('.dd-select, select[name*="color"], .swatch, .color-swatch');
+                                            });
+                                            return enabled.length ? enabled : roots.filter((r) => r.offsetWidth > 0 || r.offsetHeight > 0);
+                                        }
+
+                                        function enabledProductsMissingColors() {
+                                            const enabled = listEnabledProductRoots();
+                                            if (!enabled.length) return [];
+                                            return enabled.filter((root) => !productHasSelectedColor(root));
+                                        }
+
+                                        async function waitUntilAllProductColorsReady(maxWaitMs = 90000) {
+                                            const started = Date.now();
+                                            let missing = enabledProductsMissingColors();
+                                            let pass = 0;
+                                            while (missing.length > 0 && (Date.now() - started) < maxWaitMs) {
+                                                pass += 1;
+                                                log(`Waiting for product colors (${missing.length} missing) pass=${pass}`);
+                                                await applyColorCandidate(appliedColor || preferredColor);
+                                                await ensureBagsTotesPrimaryColor();
+                                                for (const key of ['tshirt', 'hoodie', 'tank', 'crewneck', 'longsleeve', 'kids', 'bag', 'tote']) {
+                                                    if (document.querySelector(`#primary_color_${key}, .canvas.${key}`)) {
+                                                        await setPrimaryColorDropdown(key, appliedColor || preferredColor);
+                                                    }
+                                                }
+                                                await delay(1200);
+                                                missing = enabledProductsMissingColors();
+                                            }
+                                            return {
+                                                ready: missing.length === 0,
+                                                missingCount: missing.length,
+                                                enabledCount: listEnabledProductRoots().length
+                                            };
+                                        }
+
                                         let colorConfirmed = false;
                                         let appliedColor = preferredColor;
                                         let colorsStatus = 'failed';
@@ -3246,6 +3315,30 @@ app.post('/upload', async (req, res) => {
                                             log(`Bags/totes primary color ensured (bagOn=${!!bagsFix.bagOn}, toteOn=${!!bagsFix.toteOn})`);
                                         }
 
+                                        // Gate: every enabled product must have a color before Publish.
+                                        const allColorsGate = await waitUntilAllProductColorsReady(90000);
+                                        if (!allColorsGate.ready) {
+                                            log(`Product colors still incomplete after wait (${allColorsGate.missingCount}/${allColorsGate.enabledCount}) — retry once`);
+                                            await applyColorCandidate(appliedColor || preferredColor);
+                                            await ensureBagsTotesPrimaryColor();
+                                            await delay(2000);
+                                            const retryGate = await waitUntilAllProductColorsReady(45000);
+                                            if (!retryGate.ready) {
+                                                return {
+                                                    status: 'colors_failed',
+                                                    colorsStatus: 'failed',
+                                                    appliedColor: appliedColor || preferredColor,
+                                                    bagsPrimaryEnsured: !!bagsFix?.applied,
+                                                    msg: `Colors not ready for all products (${retryGate.missingCount} missing of ${retryGate.enabledCount})`
+                                                };
+                                            }
+                                            colorsStatus = colorsStatus === 'ok' ? 'corrected' : colorsStatus;
+                                        } else if (allColorsGate.enabledCount > 0) {
+                                            colorConfirmed = true;
+                                            if (colorsStatus === 'failed') colorsStatus = 'ok';
+                                            log(`All product colors ready (${allColorsGate.enabledCount} products)`);
+                                        }
+
                                         if (!submitReady) return { status: 'submit_not_found', colorsStatus, appliedColor, bagsPrimaryEnsured: !!bagsFix?.applied };
                                         if (!colorControlsReady) return { status: 'colors_not_ready', colorsStatus, appliedColor, bagsPrimaryEnsured: !!bagsFix?.applied };
                                         if (!colorConfirmed) {
@@ -3258,7 +3351,13 @@ app.post('/upload', async (req, res) => {
                                                 msg: `Color selection failed after trying: ${colorCandidates.join(', ')}`
                                             };
                                         }
-                                        return { status: 'success', colorsStatus, appliedColor, bagsPrimaryEnsured: !!bagsFix?.applied };
+                                        return {
+                                            status: 'success',
+                                            colorsStatus,
+                                            appliedColor,
+                                            bagsPrimaryEnsured: !!bagsFix?.applied,
+                                            productsColored: allColorsGate.enabledCount || 0
+                                        };
                                     } catch (e) { return { status: 'error', msg: e.message }; }
                                 }, {
                                     title: m.title,
@@ -3408,8 +3507,55 @@ app.post('/upload', async (req, res) => {
                                         }, defaultColor || 'Black');
                                     };
 
-                                    logToFile(`🚀 Clicking Publish...`);
-                                    await new Promise(r => setTimeout(r, 4000));
+                                    logToFile(`🚀 Clicking Publish (colors gated)...`);
+                                    // Final gate: never publish until enabled products still show colors.
+                                    const prePublishColorGate = await page.evaluate(async (preferred) => {
+                                        const delay = ms => new Promise(res => setTimeout(res, ms));
+                                        function isEnabled(root) {
+                                            if (!root) return false;
+                                            const hidden = root.querySelector('.on-off.canvas-enable input[type="hidden"], input[type="hidden"][name*="enabled"]');
+                                            if (hidden && /^(true|1|on)$/i.test(String(hidden.value || '').trim())) return true;
+                                            const span = root.querySelector('.on-off span, .on-off.canvas-enable span');
+                                            if (span && (span.classList.contains('enabled') || span.classList.contains('on') || /^\s*on\s*$/i.test(span.textContent || ''))) return true;
+                                            return root.classList.contains('enabled') || root.classList.contains('selected');
+                                        }
+                                        function hasColor(root) {
+                                            const selected = root.querySelector('.swatch.selected, .swatch.active, .color-swatch.selected, [aria-checked="true"], .dd-selected-text, .dd-selected');
+                                            if (selected) {
+                                                const t = (selected.textContent || selected.title || '').trim();
+                                                if (t && !/select|choose|primary|default/i.test(t)) return true;
+                                                if (selected.classList?.contains('selected') || selected.classList?.contains('active')) return true;
+                                            }
+                                            const select = root.querySelector('select[name*="color"], select.js-uploader-color-select');
+                                            if (select && select.value && select.selectedIndex > 0) return true;
+                                            const hidden = root.querySelector('input[type="hidden"][name*="color"], input.hex-input');
+                                            return !!(hidden && String(hidden.value || '').trim());
+                                        }
+                                        const roots = Array.from(document.querySelectorAll('.m-uploader-product, .canvas[data-canvas], tr[data-canvas]'))
+                                            .filter((r) => (r.offsetWidth > 0 || r.offsetHeight > 0) && (isEnabled(r) || r.querySelector('.dd-select, .swatch')));
+                                        let missing = roots.filter((r) => !hasColor(r));
+                                        for (let n = 0; n < 8 && missing.length; n++) {
+                                            for (const dd of document.querySelectorAll('.dd-select')) {
+                                                try {
+                                                    dd.click();
+                                                    await delay(250);
+                                                    const opt = Array.from((dd.closest('.dd-container') || document).querySelectorAll('.dd-option'))
+                                                        .find((o) => (o.textContent || '').toLowerCase().includes(String(preferred || 'black').toLowerCase()))
+                                                        || Array.from((dd.closest('.dd-container') || document).querySelectorAll('.dd-option'))[0];
+                                                    if (opt) opt.click();
+                                                    await delay(200);
+                                                } catch (_) {}
+                                            }
+                                            await delay(800);
+                                            missing = roots.filter((r) => !hasColor(r));
+                                        }
+                                        return { ready: missing.length === 0, missing: missing.length, total: roots.length };
+                                    }, defaultColor || 'Black');
+                                    logToFile(`[ColorGate] pre-publish ready=${prePublishColorGate?.ready} missing=${prePublishColorGate?.missing}/${prePublishColorGate?.total}`);
+                                    if (!prePublishColorGate?.ready) {
+                                        throw new Error(`Publish blocked: colors still missing on ${prePublishColorGate?.missing || '?'} products`);
+                                    }
+                                    await new Promise(r => setTimeout(r, 2500));
                                     pendingBagsPrimaryAlert = false;
 
                                     let clickResult = await clickPublish();
@@ -3473,7 +3619,7 @@ app.post('/upload', async (req, res) => {
                                 };
                                 break; // Success, break out of attempt loop
                             } catch (attemptErr) {
-                                logToFile(`⚠️ Design [${i + 1}/${designs.length}] | Attempt ${attempt} failed (will retry or skip — fail-soft): ${attemptErr.message}`, 'WARN');
+                                logToFile(`⚠️ Design [${i + 1}/${designList.length}] | Attempt ${attempt} failed (will retry or skip — fail-soft): ${attemptErr.message}`, 'WARN');
                                 const recoverable = isRecoverableUploadNavigationError(attemptErr, browser);
                                 if (!recoverable || attempt === maxAttempts) {
                                     throw attemptErr; // Caught by per-design try/catch — does NOT abort remaining designs
@@ -3515,7 +3661,7 @@ app.post('/upload', async (req, res) => {
                     } finally {
                         try { if (tP && fs.existsSync(tP)) fs.unlinkSync(tP); } catch { }
                         clearActiveUploadJob(jobId);
-                        logToFile(`📊 Design Summary [${i + 1}/${designs.length}] | Account: ${account.email} | Attempt: ${finalAttemptNumber} | URL Before: ${urlBeforeUpload} | URL After: ${urlAfterPublish} | Status: ${publishResult.status} | colors=${publishResult.colorsStatus || 'n/a'} | Error: ${publishResult.error || 'None'}`);
+                        logToFile(`📊 Design Summary [${i + 1}/${designList.length}] | Account: ${account.email} | Attempt: ${finalAttemptNumber} | URL Before: ${urlBeforeUpload} | URL After: ${urlAfterPublish} | Status: ${publishResult.status} | colors=${publishResult.colorsStatus || 'n/a'} | Error: ${publishResult.error || 'None'}`);
                     }
                     
                     results.push({
@@ -3532,8 +3678,8 @@ app.post('/upload', async (req, res) => {
             } catch (loopErr) {
                 // Outer safety net only — per-design errors must not reach here.
                 logToFile(`❌ Ghost Loop Error (unexpected): ${loopErr.message} — marking remaining as skipped_failed and continuing response`, 'ERROR');
-                for (let i = results.length; i < designs.length; i++) {
-                    const des = designs[i];
+                for (let i = results.length; i < designList.length; i++) {
+                    const des = designList[i];
                     results.push({
                         queueItemId: des.queueItemId || des.id,
                         status: 'failed',

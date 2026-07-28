@@ -88,6 +88,8 @@ function formatApCapacityLabel(capacity) {
 function getApUploadConfirmRemainingForRow(state, index) {
     if (!state || !Array.isArray(state.rows)) return 0;
     const total = Math.max(0, Number(state.totalDesigns) || 0);
+    // Replicate mode: each account can take the full pool independently.
+    if (state.isFairMode !== true) return total;
     let others = 0;
     state.rows.forEach((row, i) => {
         if (i === index || !row?.included) return;
@@ -1017,18 +1019,23 @@ function ensureApUploadUiRefs() {
 
 /**
  * Fair distribution resolution priority:
- * 1) Multi-account + multi-design → always on (unless retry)
- * 2) User explicitly unchecked this session → off (single-account only)
- * 3) Storage / checkbox (default on when missing)
+ * 1) User explicitly unchecked this session → off (replicate full queue to each account)
+ * 2) Multi-account + multi-design → on (exclusive partition) unless explicitly off
+ * 3) Multi-account + single design → off (replicate same design to every account)
+ * 4) Storage / checkbox (default on when missing for single-account prefs)
  */
 function resolveIsFairDistribution(accountCount = 0, options = {}) {
     ensureApUploadUiRefs();
     const designCount = Math.max(0, Number(options.designCount) || 0);
-    if (accountCount > 1 && designCount > 1) {
-        return true;
-    }
     if (apFairDistributionSessionExplicitOff === true) {
         return false;
+    }
+    // One design → every selected store should receive it (not exclusive [1,0] partition).
+    if (accountCount > 1 && designCount <= 1) {
+        return false;
+    }
+    if (accountCount > 1 && designCount > 1) {
+        return true;
     }
     const checkbox = options.checkbox ?? AP.fairDistrib;
     let fromPreference = true;
@@ -1036,9 +1043,6 @@ function resolveIsFairDistribution(accountCount = 0, options = {}) {
         fromPreference = checkbox.checked !== false;
     } else if (options.storageValue !== undefined) {
         fromPreference = options.storageValue !== false;
-    }
-    if (accountCount > 1) {
-        return true;
     }
     return fromPreference;
 }
@@ -3161,28 +3165,35 @@ function bindApStartButton() {
 let _apUploadConfirmResolver = null;
 let _apUploadConfirmState = null;
 
-function previewSequentialUploadAssignment(designCount, accounts, effectiveCountPer) {
-    const assigned = [];
-    let remaining = Math.max(0, Number(designCount) || 0);
+/**
+ * Non-fair multi-account: each account uploads up to min(cap, pool) from the SAME design pool
+ * (replicate), so account 2+ still get image/fill/colors/publish work.
+ */
+function previewReplicateUploadAssignment(designCount, accounts, effectiveCountPer) {
+    const total = Math.max(0, Number(designCount) || 0);
     const list = Array.isArray(accounts) ? accounts : [];
-    for (const acc of list) {
+    const assigned = list.map((acc) => {
         const cap = computeApAccountUploadLimit(acc, effectiveCountPer);
-        const count = Math.min(Math.max(0, cap), remaining);
-        assigned.push(count);
-        remaining -= count;
-    }
-    while (assigned.length < list.length) assigned.push(0);
-    return { assigned, unassigned: remaining };
+        if (!hasApUploadCapacity(cap)) return 0;
+        if (isApUnlimitedCapacity(cap)) return total;
+        return Math.min(total, Math.max(0, Number(cap) || 0));
+    });
+    return { assigned, unassigned: 0 };
+}
+
+/** @deprecated name kept — sequential-fill-all-to-first was the account-2 empty-close bug. */
+function previewSequentialUploadAssignment(designCount, accounts, effectiveCountPer) {
+    return previewReplicateUploadAssignment(designCount, accounts, effectiveCountPer);
 }
 
 function buildApUploadStartPreview(uploadAccounts, designCount, effectiveCountPer, options = {}) {
     const accounts = Array.isArray(uploadAccounts) ? uploadAccounts : [];
     const totalDesigns = Math.max(0, Number(designCount) || 0);
     const forceFairRun = options.forceFairRun === true;
-    const useFair = forceFairRun ? true : (options.isFairDistribution !== false);
+    const useFair = forceFairRun ? true : (options.isFairDistribution === true);
     let assigned = [];
     let unassigned = 0;
-    let modeLabel = 'تسلسلي';
+    let modeLabel = 'تكرار لكل حساب';
 
     if (useFair && accounts.length > 1) {
         const fair = previewFairDistributionCapacity(totalDesigns, accounts, effectiveCountPer);
@@ -3190,9 +3201,10 @@ function buildApUploadStartPreview(uploadAccounts, designCount, effectiveCountPe
         unassigned = fair.unassigned;
         modeLabel = 'توزيع عادل';
     } else {
-        const seq = previewSequentialUploadAssignment(totalDesigns, accounts, effectiveCountPer);
+        const seq = previewReplicateUploadAssignment(totalDesigns, accounts, effectiveCountPer);
         assigned = seq.assigned;
         unassigned = seq.unassigned;
+        modeLabel = accounts.length > 1 ? 'تكرار لكل حساب' : 'تسلسلي';
     }
 
     const rows = accounts.map((acc, index) => {
@@ -3220,6 +3232,7 @@ function buildApUploadConfirmEditableState(uploadAccounts, designCount, effectiv
     const countPerForLimit = parsedCountPer.auto ? null : parsedCountPer.countPer;
     const preview = buildApUploadStartPreview(accounts, designCount, countPerForLimit, options);
     const limits = accounts.map((acc) => computeApAccountUploadLimit(acc, countPerForLimit));
+    const isFairMode = options.forceFairRun === true || options.isFairDistribution === true;
     const rows = accounts.map((acc, index) => {
         const email = String(acc?.email || '').trim();
         const label = acc?.displayName || email.split('@')[0] || email || 'حساب';
@@ -3245,6 +3258,7 @@ function buildApUploadConfirmEditableState(uploadAccounts, designCount, effectiv
         totalDesigns: preview.totalDesigns,
         modeLabel: preview.modeLabel,
         unassigned: preview.unassigned,
+        isFairMode,
         previewOptions: { ...options },
         rows
     };
@@ -3337,6 +3351,9 @@ function validateApUploadConfirmState(state) {
     });
 
     const unassigned = Math.max(0, totalDesigns - totalAssigned);
+    const isFairMode = state.isFairMode === true;
+    // Replicate mode: each account may claim the full pool → sum can exceed totalDesigns.
+    const replicateOverPool = !isFairMode && totalAssigned > totalDesigns && totalDesigns > 0;
     let message = '';
     let level = 'ok';
 
@@ -3346,13 +3363,16 @@ function validateApUploadConfirmState(state) {
     } else if (totalAssigned <= 0) {
         message = 'عيّن تصميماً واحداً على الأقل';
         level = 'error';
-    } else if (totalAssigned > totalDesigns) {
+    } else if (isFairMode && totalAssigned > totalDesigns) {
         message = `المجموع (${totalAssigned}) يتجاوز التصاميم المتاحة (${totalDesigns})`;
         level = 'error';
     } else if (overCapacity) {
         message = 'تم ضبط بعض الحسابات إلى الحد الأقصى المسموح';
         level = 'warn';
-    } else if (unassigned > 0) {
+    } else if (replicateOverPool) {
+        message = `تكرار: كل حساب يرفع من نفس القائمة (${totalDesigns} تصميم) — إجمالي الرفعات ${totalAssigned}`;
+        level = 'ok';
+    } else if (isFairMode && unassigned > 0) {
         message = `${unassigned} تصميم لن يُرفع — وزّعها على الحسابات أو أعد التوزيع`;
         level = 'warn';
     } else {
@@ -3360,7 +3380,7 @@ function validateApUploadConfirmState(state) {
         level = 'ok';
     }
 
-    return { valid: level !== 'error', totalAssigned, activeCount, unassigned, message, level };
+    return { valid: level !== 'error', totalAssigned, activeCount, unassigned: isFairMode ? unassigned : 0, message, level };
 }
 
 function buildApUploadConfirmApproveResult(state) {

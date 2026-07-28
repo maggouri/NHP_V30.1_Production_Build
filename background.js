@@ -13667,7 +13667,28 @@ function shouldForceApFairDistribution(accountCount, designCount, config = {}) {
     const designs = Math.max(0, Number(designCount) || 0);
     if (accounts <= 1 || designs <= 1) return false;
     if (config?.isRetryFailedOnly || Array.isArray(config?.retryPlan) && config.retryPlan.length > 0) return false;
+    if (config?.explicitFairDistributionOff === true) return false;
+    if (config?.isFairDistribution === false) return false;
     return true;
+}
+
+/** Build per-account design lists: exclusive partition (fair) or replicate from pool head. */
+function buildApAccountDesignSlices(allDesigns, assignmentCounts, { replicate = false } = {}) {
+    const designs = Array.isArray(allDesigns) ? allDesigns : [];
+    const counts = Array.isArray(assignmentCounts) ? assignmentCounts : [];
+    if (replicate) {
+        return counts.map((raw) => {
+            const planned = Math.max(0, Math.floor(Number(raw) || 0));
+            return designs.slice(0, Math.min(planned, designs.length));
+        });
+    }
+    let sliceOffset = 0;
+    return counts.map((raw) => {
+        const planned = Math.max(0, Math.floor(Number(raw) || 0));
+        const slice = designs.slice(sliceOffset, sliceOffset + planned);
+        sliceOffset += planned;
+        return slice;
+    });
 }
 
 /** Resolve upload account IDs ÔÇö never fall back to the full account list order. */
@@ -14139,10 +14160,15 @@ async function startAPProcess(config) {
         isFairDistribution = true;
         config.isFairDistribution = true;
         config.explicitFairDistributionOff = false;
+    } else if (accounts.length > 1 && allDesigns.length <= 1) {
+        // Single design → replicate to every selected account (never exclusive [1,0]).
+        isFairDistribution = false;
+        config.isFairDistribution = false;
     } else if (accounts.length > 1 && allDesigns.length > 1 && config.explicitFairDistributionOff !== true) {
         isFairDistribution = true;
         config.isFairDistribution = true;
     }
+    const replicateDesignsToAccounts = !isFairDistribution && accounts.length > 1;
     console.log('[AP] startAPProcess distribution decision:', {
         accountsLength: accounts.length,
         accountEmails: accounts.map((a) => a?.email).filter(Boolean),
@@ -14245,14 +14271,10 @@ async function startAPProcess(config) {
         const confirmedLimits = accounts.map((acc) =>
             computeAccountUploadLimit(acc, countPerForRuntimeCap, todayDateForFair)
         );
-        // Respect exactly what the user approved in ┬½Ï¬Ïú┘â┘èÏ» Ï¿Ï»Ïí Ïº┘äÏ▒┘üÏ╣┬╗ ÔÇö no re-clamp.
+        // Respect exactly what the user approved in confirm modal — no re-clamp.
         fairAssignmentCounts = confirmedAssigned.map((count) => Math.max(0, Math.floor(Number(count) || 0)));
-        let sliceOffset = 0;
-        fairDesignSlices = accounts.map((acc, index) => {
-            const planned = fairAssignmentCounts[index] || 0;
-            const slice = allDesigns.slice(sliceOffset, sliceOffset + planned);
-            sliceOffset += planned;
-            return slice;
+        fairDesignSlices = buildApAccountDesignSlices(allDesigns, fairAssignmentCounts, {
+            replicate: replicateDesignsToAccounts
         });
         const confirmedTotal = fairAssignmentCounts.reduce((sum, count) => sum + count, 0);
         fairAssignmentCounts.forEach((count, index) => {
@@ -14323,13 +14345,7 @@ async function startAPProcess(config) {
             return;
         } else {
             fairAssignmentCounts = fairPlan.assigned;
-            let sliceOffset = 0;
-            fairDesignSlices = accounts.map((acc, index) => {
-                const planned = fairAssignmentCounts[index] || 0;
-                const slice = allDesigns.slice(sliceOffset, sliceOffset + planned);
-                sliceOffset += planned;
-                return slice;
-            });
+            fairDesignSlices = buildApAccountDesignSlices(allDesigns, fairAssignmentCounts, { replicate: false });
             console.log('[AP] fairDesignSlices precomputed:', fairDesignSlices.map((slice, index) => ({
                 index,
                 email: accounts[index]?.email || '',
@@ -14364,22 +14380,43 @@ async function startAPProcess(config) {
             const fairDistribution = buildFairDistributionPlan(allDesigns.length, accounts, effectiveCountPer, todayDateForFair);
             fairAssignmentCounts = fairDistribution.assigned;
             isFairDistribution = true;
-            let sliceOffset = 0;
-            fairDesignSlices = accounts.map((acc, index) => {
-                const planned = fairAssignmentCounts[index] || 0;
-                const slice = allDesigns.slice(sliceOffset, sliceOffset + planned);
-                sliceOffset += planned;
-                return slice;
-            });
+            fairDesignSlices = buildApAccountDesignSlices(allDesigns, fairAssignmentCounts, { replicate: false });
             fairAssignmentCounts.forEach((count, index) => {
                 if (perAccountState[index]) perAccountState[index].plannedCount = count;
             });
             await publishApQueueState({ perAccount: perAccountState });
+        } else if (replicateDesignsToAccounts) {
+            // Replicate: each account gets min(runtimeCap, pool) from the shared design list.
+            fairAssignmentCounts = accounts.map((acc) => {
+                const runtimeCap = computeAccountUploadLimit(acc, countPerForRuntimeCap, todayDateForFair);
+                if (runtimeCap === Infinity || runtimeCap === Number.POSITIVE_INFINITY) {
+                    return allDesigns.length;
+                }
+                return Math.max(0, Math.min(allDesigns.length, Math.floor(Number(runtimeCap) || 0)));
+            });
+            fairDesignSlices = buildApAccountDesignSlices(allDesigns, fairAssignmentCounts, { replicate: true });
+            fairAssignmentCounts.forEach((count, index) => {
+                if (perAccountState[index]) perAccountState[index].plannedCount = count;
+            });
+            console.log('[AP] replicate distribution:', {
+                assigned: fairAssignmentCounts,
+                designs: allDesigns.length,
+                accounts: accounts.map((a) => a?.email)
+            });
+            await publishApQueueState({
+                perAccount: perAccountState,
+                totalPlannedUploads: fairAssignmentCounts.reduce((sum, count) => sum + (Number(count) || 0), 0)
+            });
+            chrome.runtime.sendMessage({
+                action: 'ap_update',
+                log: `🔁 تكرار لكل حساب | ${accounts.map((acc, index) => `${acc.displayName || acc.email?.split?.('@')?.[0] || acc.email}:${fairAssignmentCounts[index]}`).join(' | ')}`,
+                type: 'info'
+            });
         } else {
         console.log('[AP] fair distribution:', {
             enabled: false,
             mode: 'sequential-fill',
-            note: 'Ïº┘äÏ¡Ï│ÏºÏ¿ Ïº┘äÏú┘ê┘ä ┘èÏúÏ«Ï░ Ï¡Ï¬┘ë countPer Ï¬ÏÁÏº┘à┘è┘àÏî Ï½┘à Ïº┘äÏ¬Ïº┘ä┘è ÔÇö ┘üÏ╣┘æ┘ä ┬½Ï¬┘êÏ▓┘èÏ╣ Ï╣ÏºÏ»┘ä┬╗ ┘äÏ¬┘éÏ│┘è┘à ┘àÏ¬┘êÏºÏ▓┘å',
+            note: 'single-account or legacy sequential',
             designs: allDesigns.length,
             accountCount: accounts.length,
             countPer: effectiveCountPer
@@ -14564,12 +14601,47 @@ async function startAPProcess(config) {
             accountState.plannedCount = actualCount;
         }
         const plannedDesignIds = new Set(designsForAcc.map((design) => String(design?.id || '')).filter(Boolean));
-        const claimedDesignStates = perDesignState.filter((item) => plannedDesignIds.has(String(item.queueItemId || '')) && item.status === 'ready').slice(0, actualCount);
-        claimedDesignStates.forEach((item) => {
-            item.accountId = accountId;
-            item.accountLabel = alias;
-            item.status = 'waiting';
-        });
+        // Replicate mode: same queueItemId may already be uploaded by a prior account — clone a row per account.
+        const claimedDesignStates = [];
+        for (const design of designsForAcc) {
+            const designId = String(design?.id || '');
+            if (!designId) continue;
+            let item = perDesignState.find((row) =>
+                String(row.queueItemId || '') === designId && String(row.accountId || '') === accountId
+            );
+            if (!item) {
+                const template = perDesignState.find((row) => String(row.queueItemId || '') === designId);
+                if (template && template.accountId && String(template.accountId) !== accountId) {
+                    item = {
+                        queueItemId: designId,
+                        accountId,
+                        accountLabel: alias,
+                        status: 'waiting',
+                        title: template.title || design?.meta?.title || design?.file?.name || designId
+                    };
+                    perDesignState.push(item);
+                } else if (template) {
+                    item = template;
+                    item.accountId = accountId;
+                    item.accountLabel = alias;
+                    item.status = 'waiting';
+                } else {
+                    item = {
+                        queueItemId: designId,
+                        accountId,
+                        accountLabel: alias,
+                        status: 'waiting',
+                        title: design?.meta?.title || design?.file?.name || designId
+                    };
+                    perDesignState.push(item);
+                }
+            } else {
+                item.accountLabel = alias;
+                item.status = 'waiting';
+            }
+            claimedDesignStates.push(item);
+            if (claimedDesignStates.length >= actualCount) break;
+        }
         await publishApQueueState({
             perAccount: perAccountState,
             perDesign: perDesignState,
@@ -14680,9 +14752,19 @@ async function startAPProcess(config) {
             if (uploadChunks.length === 0) {
                 chrome.runtime.sendMessage({
                     action: 'ap_update',
-                    log: `ÔÜá´©Å ${alias} | ┘äÏº Ï¬┘êÏ¼Ï» Ï¬ÏÁÏº┘à┘è┘à ÏÁÏº┘äÏ¡Ï® ┘ä┘äÏ▒┘üÏ╣ ÔÇö SEO Ï¼Ïº┘çÏ▓ ┘ä┘â┘å ┘à┘ä┘üÏºÏ¬ Ïº┘äÏÁ┘êÏ▒ ┘à┘ü┘é┘êÏ»Ï® Ïú┘ê Ï║┘èÏ▒ ┘éÏºÏ¿┘äÏ® ┘ä┘äÏ¼┘äÏ¿ ┘à┘å Ghost`,
-                    toast: 'ÔÜá´©Å Ïº┘äÏ¬ÏÁÏº┘à┘è┘à ┘äÏ»┘è┘çÏº SEO ┘ä┘â┘å Ïº┘äÏÁ┘êÏ▒ ┘à┘ü┘é┘êÏ»Ï® ÔÇö Ï┤Ï║┘æ┘ä Ghost Server Ïú┘ê ÏúÏ╣Ï» ÏÑÏÂÏº┘üÏ® Ïº┘äÏ¬ÏÁÏº┘à┘è┘à',
+                    log: `⚠️ ${alias} | no uploadable designs (missing image / SEO payload) — skip account`,
+                    toast: '⚠️ No uploadable designs for this account — check Ghost / design images',
                     type: 'warning'
+                });
+                if (accountState) {
+                    accountState.status = 'failed';
+                    accountState.finishedAt = new Date().toISOString();
+                }
+                await publishApQueueState({
+                    perAccount: perAccountState,
+                    perDesign: perDesignState,
+                    failedAccounts: perAccountState.filter((item) => item.status === 'failed').length,
+                    monitorCounts: apUploadMonitorRun?.counts || null
                 });
                 continue;
             }
@@ -14963,6 +15045,9 @@ async function startAPProcess(config) {
                 await setStorage({ [platformKey]: apAccounts });
             }
 
+            if (uploadedForAccount <= 0 && actualCount > 0) {
+                accountFailed = true;
+            }
             if (!accountFailed) {
                 if (accountState) {
                     accountState.status = 'uploaded';
@@ -14975,8 +15060,21 @@ async function startAPProcess(config) {
                 });
                 chrome.runtime.sendMessage({
                     action: 'ap_update',
-                    log: `Ô£à Ïº┘âÏ¬┘à┘ä Ïº┘äÏ¡Ï│ÏºÏ¿: ${alias} | Ïº┘ä┘ê┘éÏ¬: ${durationSeconds}Ï½ | Ï¬┘à Ï▒┘üÏ╣: ${uploadedForAccount}`,
+                    log: `✅ account done: ${alias} | ${durationSeconds}s | uploaded: ${uploadedForAccount}`,
                     type: 'success'
+                });
+            } else if (uploadedForAccount <= 0 && accountState) {
+                accountState.status = 'failed';
+                accountState.finishedAt = new Date().toISOString();
+                await publishApQueueState({
+                    perAccount: perAccountState,
+                    failedAccounts: perAccountState.filter((item) => item.status === 'failed').length,
+                    monitorCounts: apUploadMonitorRun?.counts || null
+                });
+                chrome.runtime.sendMessage({
+                    action: 'ap_update',
+                    log: `❌ account failed (0 uploads): ${alias}`,
+                    type: 'error'
                 });
             } else if (uploadedForAccount > 0 && accountState) {
                 // Partial success ÔÇö keep fail-soft recovery for remaining failed designs.
@@ -15038,26 +15136,44 @@ async function startAPProcess(config) {
             // Intentionally no rethrow ÔÇö account loop continues to next account.
         }
 
-        // Delay with Countdown ÔÇö advance to next account after current finishes or fails
+        // Delay with Countdown — advance to next account after current finishes or fails
         if (i < totalAccounts - 1 && !apStopped) {
             const nextAcc = accounts[i + 1];
-            const nextAlias = nextAcc?.displayName || nextAcc?.email?.split?.('@')?.[0] || nextAcc?.email || 'Ïº┘äÏ¬Ïº┘ä┘è';
+            const nextAlias = nextAcc?.displayName || nextAcc?.email?.split?.('@')?.[0] || nextAcc?.email || 'next';
+            const handoffDelaySec = Math.max(8, Number(delaySec) || 30);
             chrome.runtime.sendMessage({
                 action: 'ap_update',
-                log: `ÔÅ¡´©Å Ïº┘äÏº┘åÏ¬┘éÏº┘ä ┘ä┘äÏ¡Ï│ÏºÏ¿ Ïº┘äÏ¬Ïº┘ä┘è: ${nextAlias}`,
+                log: `➡️ account handoff → ${nextAlias} (settle ${handoffDelaySec}s, replicate=${!!replicateDesignsToAccounts})`,
                 type: 'info'
             });
-            let remaining = delaySec;
+            let remaining = handoffDelaySec;
             while (remaining > 0 && !apStopped) {
                 chrome.runtime.sendMessage({
                     action: 'ap_update',
                     countdown: remaining,
-                    log: `ÔÅ▒´©Å Ïº┘åÏ¬Ï©ÏºÏ▒ ${remaining} Ï½Ïº┘å┘èÏ® ┘éÏ¿┘ä Ïº┘äÏ¡Ï│ÏºÏ¿ Ïº┘äÏ¬Ïº┘ä┘è...`
+                    log: `⏳ ${remaining}s before next account (${nextAlias})...`
                 });
                 await delay(1000);
                 remaining--;
             }
             chrome.runtime.sendMessage({ action: 'ap_update', countdown: 0 });
+            // Re-wake Ghost between accounts so account 2+ never opens an empty dead session.
+            try {
+                const handoffPort = Number(config.port) || GHOST_SERVER_PORT;
+                const ghostOk = await ensureGhostServerReady({ port: handoffPort, forUpload: true });
+                console.log('[AP] account handoff ghost ready:', { next: nextAcc?.email, ghostOk, port: handoffPort });
+                if (!ghostOk) {
+                    chrome.runtime.sendMessage({
+                        action: 'ap_update',
+                        log: `⚠️ Ghost not ready before ${nextAlias} — retrying wake once`,
+                        type: 'warning'
+                    });
+                    await delay(3000);
+                    await ensureGhostServerReady({ port: handoffPort, forUpload: true });
+                }
+            } catch (handoffErr) {
+                console.warn('[AP] account handoff ghost wake failed:', handoffErr?.message || handoffErr);
+            }
         }
     }
 

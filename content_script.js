@@ -847,12 +847,60 @@
 
         await delay(2000);
 
-        sendProgress('يتم الآن الانتظار قليلاً لاستقرار تفاعلات الألوان... 90% ⏱️');
-        await delay(5000); // 5 Seconds extra wait so TeePublic registers the colors
+        sendProgress('يتم الآن الانتظار حتى اكتمال ألوان كل المنتجات... 90% ⏱️');
+
+        function productRootHasColor(root) {
+            if (!root) return false;
+            const selected = root.querySelector('.swatch.selected, .swatch.active, .color-swatch.selected, [aria-checked="true"], .dd-selected-text, .dd-selected');
+            if (selected) {
+                const t = (selected.textContent || selected.title || '').trim();
+                if (t && !/select|choose|primary|default/i.test(t)) return true;
+                if (selected.classList?.contains('selected') || selected.classList?.contains('active')) return true;
+            }
+            const select = root.querySelector('select[name*="color"], select.js-uploader-color-select');
+            if (select && select.value && select.selectedIndex > 0) return true;
+            const hidden = root.querySelector('input[type="hidden"][name*="color"], input.hex-input');
+            return !!(hidden && String(hidden.value || '').trim());
+        }
+
+        async function waitAllProductColorsBeforePublish(maxMs = 60000) {
+            const started = Date.now();
+            while ((Date.now() - started) < maxMs) {
+                const roots = Array.from(document.querySelectorAll('.m-uploader-product, .canvas[data-canvas], tr[data-canvas]'))
+                    .filter((r) => (r.offsetWidth > 0 || r.offsetHeight > 0) && (isProductEnabled(r) || r.querySelector('.dd-select, .swatch')));
+                const missing = roots.filter((r) => !productRootHasColor(r));
+                if (!missing.length) return true;
+                console.log('[Niche Hunter] Colors incomplete — waiting/retrying:', missing.length);
+                await ensureBagsTotesPrimaryColor();
+                for (const key of apparelPrimaryKeys) {
+                    if (document.querySelector(`#primary_color_${key}, .canvas.${key}`)) {
+                        await setPrimaryColorDropdown(key);
+                        await delay(SEQ_GAP_MS);
+                    }
+                }
+                await delay(1500);
+            }
+            return false;
+        }
+
+        const colorsReadyForPublish = await waitAllProductColorsBeforePublish(60000);
+        if (!colorsReadyForPublish) {
+            console.warn('[Niche Hunter] Publish gated — colors still incomplete after wait; one more bags/apparel pass');
+            await ensureBagsTotesPrimaryColor();
+            await ensureAllProductsEnabled();
+            await delay(2000);
+            const ready2 = await waitAllProductColorsBeforePublish(30000);
+            if (!ready2) {
+                sendProgress('تعذر اكتمال ألوان كل المنتجات — لن يتم النشر الآن ❌');
+                markUploadPhase('colors_failed');
+                throw new Error('Publish blocked: colors not selected for all products');
+            }
+        }
+        await delay(2000);
 
         // 4. Auto Publish
         if (data.submit || data.actionType === 'publish') {
-            console.log("[Niche Hunter] Auto-submitting...");
+            console.log("[Niche Hunter] Auto-submitting (colors verified)...");
             markUploadPhase('submitting', 'submitting');
             sendProgress('جاري النقر على زر النشر... 95% 🔥');
 
