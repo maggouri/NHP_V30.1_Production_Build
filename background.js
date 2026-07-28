@@ -191,6 +191,11 @@ try {
     console.error('Failed to import teepublic-extract-shared.js', e);
 }
 try {
+    importScripts('modules/radar/teepublic-triple-sort-rank.js');
+} catch (e) {
+    console.error('Failed to import teepublic-triple-sort-rank.js', e);
+}
+try {
     importScripts('background/seo-gemini-helpers.js');
 } catch (e) {
     console.error('Failed to import background/seo-gemini-helpers.js', e);
@@ -1661,9 +1666,11 @@ const RADAR_GOOGLE_IMAGES_FETCH_LIMIT = 40;
 const RADAR_PINTEREST_FETCH_LIMIT = 28;
 const RADAR_PINTEREST_MIN_HYDRATED_THUMB_CHARS = 1800;
 const PINIMG_URL_RE = /https?:\/\/i\.pinimg\.com\/[^"'<>\s\\]+\.(?:jpg|jpeg|png|webp)(?:\?[^"'<>\s\\]*)?/i;
-/** ÏÁ┘èÏ» Ïº┘äÏÁ┘êÏ▒: ┘àÏ╣Ïº┘è┘åÏºÏ¬ ┘à┘å t-shirts?query= (ÏÁ┘üÏ¡ÏºÏ¬ ┘àÏ¬Ï╣Ï»Ï»Ï®) ÔÇö ┘äÏº sort ┘ê┘äÏº lab_perform_scan. */
+/** Image hunt: Relevance + Popular + Newest consensus (triple-sort), then fill. */
 const RADAR_TEEPUBLIC_IMAGE_TARGET = 80;
 const RADAR_TEEPUBLIC_MAX_LISTING_PAGES = 8;
+const RADAR_TEEPUBLIC_TRIPLE_SORTS = ['relevance', 'popular', 'newest'];
+const RADAR_TEEPUBLIC_TRIPLE_TOP_N = 36;
 /** Marketplace HTML pagination (Amazon / Redbubble / Etsy). */
 const RADAR_AMAZON_MAX_LISTING_PAGES = 3;
 const RADAR_REDBUBBLE_MAX_LISTING_PAGES = 3;
@@ -1772,12 +1779,15 @@ function normalizeRadarNicheQuery(raw) {
     return q.trim();
 }
 
-function buildRadarTeepublicSearchUrl(niche, page = 1) {
-    const enc = encodeURIComponent(normalizeRadarNicheQuery(niche));
-    const base = `https://www.teepublic.com/t-shirts?query=${enc}`;
+function buildRadarTeepublicSearchUrl(niche, page = 1, sort = 'relevance') {
+    const q = normalizeRadarNicheQuery(niche);
+    const params = new URLSearchParams();
+    params.set('query', q);
+    const sortKey = String(sort || 'relevance').trim().toLowerCase();
+    if (sortKey && sortKey !== 'relevance') params.set('sort', sortKey);
     const pageNum = Math.max(1, parseInt(String(page), 10) || 1);
-    if (pageNum <= 1) return base;
-    return `${base}&page=${pageNum}`;
+    if (pageNum > 1) params.set('page', String(pageNum));
+    return `https://www.teepublic.com/t-shirts?${params.toString()}`;
 }
 
 function buildRadarAmazonSearchUrl(niche, page = 1) {
@@ -2750,67 +2760,149 @@ function extractTeepublicImagesFromHtml(html, pageUrl, limit = RADAR_TEEPUBLIC_I
     return bucket.slice(0, limit);
 }
 
-async function fetchRadarTeepublicListingHtml(niche, pageNum = 1) {
-    const pageUrl = buildRadarTeepublicSearchUrl(niche, pageNum);
+async function fetchRadarTeepublicListingHtml(niche, pageNum = 1, sort = 'relevance') {
+    const pageUrl = buildRadarTeepublicSearchUrl(niche, pageNum, sort);
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), RADAR_TEEPUBLIC_FETCH_TIMEOUT_MS);
     try {
         const response = await fetch(pageUrl, { headers: RADAR_FETCH_HTML_HEADERS, signal: controller.signal });
         const html = await response.text();
-        return { pageUrl, html, blocked: isRadarBlockedFetchHtml(html) };
+        return { pageUrl, html, blocked: isRadarBlockedFetchHtml(html), sort };
     } catch (error) {
-        return { pageUrl, html: '', blocked: true, error: error?.message || 'fetch failed' };
+        return { pageUrl, html: '', blocked: true, error: error?.message || 'fetch failed', sort };
     } finally {
         clearTimeout(timeoutId);
     }
 }
 
-/**
- * TeePublic image hunt only: https://www.teepublic.com/t-shirts?query={niche}[&page=N].
- * Not used by lab_perform_scan (newest/popular comparison).
- */
-async function fetchRadarTeepublicImages(niche, target = RADAR_TEEPUBLIC_IMAGE_TARGET) {
-    const query = normalizeRadarNicheQuery(niche);
-    const valid = [];
-    const seenUrls = new Set();
-    const seenDesignIds = new Set();
-    const errors = [];
-    const hydrateBuffer = [];
+function teepublicHuntDesignMatchKey(item) {
+    const designId = extractTeepublicDesignIdFromUrl(item?.url || item?.img || '');
+    return designId ? `n:${designId}` : '';
+}
 
-    const mergeValid = (batch) => {
+/**
+ * TeePublic image hunt: Relevance + Popular + Newest (page 1 each), consensus-ranked first.
+ * Extends Radar New×Popular rising-stars logic to three sorts for Design Images / Trends Images.
+ * Not used by lab_perform_scan (still newest/popular niche comparison).
+ */
+async function fetchRadarTeepublicTripleSortImages(niche, target = RADAR_TEEPUBLIC_IMAGE_TARGET, options = {}) {
+    const query = normalizeRadarNicheQuery(niche);
+    if (!query) {
+        return { images: [], errors: [], teepublicSearchUrl: '', tripleSort: true };
+    }
+    const RankApi = globalThis.NHP_TeepublicTripleSortRank || null;
+    const sorts = RankApi?.SORTS || RADAR_TEEPUBLIC_TRIPLE_SORTS;
+    const topN = Math.max(8, Number(options.topN) || RankApi?.TOP_N || RADAR_TEEPUBLIC_TRIPLE_TOP_N);
+    const urlOnly = options.urlOnly === true || options.hydrateThumbs === false;
+    const errors = [];
+
+    const fetched = await Promise.all(sorts.map(async (sort) => {
+        const result = await fetchRadarTeepublicListingHtml(query, 1, sort);
+        if (result.blocked || !result.html) {
+            errors.push({
+                source: 'teepublic',
+                sort,
+                page: 1,
+                error: result.error || 'blocked or empty page'
+            });
+            return { sort, items: [], pageUrl: result.pageUrl || '' };
+        }
+        const items = extractTeepublicImagesFromHtml(result.html, result.pageUrl, topN + 12).slice(0, topN);
+        return { sort, items, pageUrl: result.pageUrl || '' };
+    }));
+
+    const buckets = {};
+    let primaryUrl = '';
+    for (const row of fetched) {
+        buckets[row.sort] = row.items;
+        if (row.sort === 'relevance' && row.pageUrl) primaryUrl = row.pageUrl;
+        else if (!primaryUrl && row.pageUrl) primaryUrl = row.pageUrl;
+    }
+
+    let ranked = RankApi
+        ? RankApi.rankTeepublicTripleSortConsensus(buckets, {
+            getKey: teepublicHuntDesignMatchKey,
+            topN,
+            sorts: [...sorts]
+        })
+        : [];
+
+    if (!ranked.length) {
+        const seen = new Set();
+        ranked = [];
+        for (const sort of sorts) {
+            for (const item of buckets[sort] || []) {
+                const key = teepublicHuntDesignMatchKey(item);
+                if (!key || seen.has(key)) continue;
+                seen.add(key);
+                ranked.push({
+                    ...item,
+                    matchKey: key,
+                    sortHits: 1,
+                    sortRanks: { [sort]: ranked.length + 1 },
+                    consensusScore: 50,
+                    topAcrossSorts: false
+                });
+            }
+        }
+    }
+
+    // Fill remaining slots from Relevance pages 2+ when consensus pack is thin.
+    const seenUrls = new Set(ranked.map((i) => String(i.url || '').trim()).filter(Boolean));
+    const seenDesignIds = new Set(
+        ranked.map((i) => extractTeepublicDesignIdFromUrl(i.url)).filter(Boolean)
+    );
+    for (let pageNum = 2; pageNum <= RADAR_TEEPUBLIC_MAX_LISTING_PAGES && ranked.length < target; pageNum += 1) {
+        const fetchedPage = await fetchRadarTeepublicListingHtml(query, pageNum, 'relevance');
+        if (fetchedPage.blocked || !fetchedPage.html) {
+            errors.push({
+                source: 'teepublic',
+                sort: 'relevance',
+                page: pageNum,
+                error: fetchedPage.error || 'blocked or empty page'
+            });
+            break;
+        }
+        const need = Math.max(1, target - ranked.length);
+        const batch = extractTeepublicImagesFromHtml(fetchedPage.html, fetchedPage.pageUrl, need + 20);
         for (const item of batch) {
             const designId = extractTeepublicDesignIdFromUrl(item.url);
             if (!designId || seenDesignIds.has(designId) || seenUrls.has(item.url)) continue;
             seenDesignIds.add(designId);
             seenUrls.add(item.url);
-            valid.push(item);
-            if (valid.length >= target) break;
+            ranked.push({
+                ...item,
+                matchKey: `n:${designId}`,
+                sortHits: 1,
+                sortRanks: { relevance: ranked.length + 1 },
+                consensusScore: 40,
+                topAcrossSorts: false
+            });
+            if (ranked.length >= target) break;
         }
-    };
-
-    for (let pageNum = 1; pageNum <= RADAR_TEEPUBLIC_MAX_LISTING_PAGES; pageNum += 1) {
-        if (valid.length >= target) break;
-        const fetched = await fetchRadarTeepublicListingHtml(query, pageNum);
-        if (fetched.blocked || !fetched.html) {
-            errors.push({ source: 'teepublic', page: pageNum, error: fetched.error || 'blocked or empty page' });
-            break;
-        }
-        const need = Math.max(1, target - valid.length);
-        const batch = extractTeepublicImagesFromHtml(fetched.html, fetched.pageUrl, need + 20);
-        hydrateBuffer.length = 0;
-        hydrateBuffer.push(...batch);
-        await hydrateRadarImageHuntThumbnails(hydrateBuffer);
-        mergeValid(hydrateBuffer.filter(passesTeepublicRadarImageQuality));
-        if (valid.length >= target) break;
-        if (pageNum >= RADAR_TEEPUBLIC_MAX_LISTING_PAGES) break;
         await delay(150);
     }
 
+    if (!urlOnly) {
+        const hydrateBuffer = ranked.slice(0, target);
+        await hydrateRadarImageHuntThumbnails(hydrateBuffer);
+        ranked = hydrateBuffer.filter(passesTeepublicRadarImageQuality);
+    }
+
     return {
-        images: valid.slice(0, target),
+        images: ranked.slice(0, target),
         errors,
-        teepublicSearchUrl: query ? buildRadarTeepublicSearchUrl(query, 1) : ''
+        teepublicSearchUrl: primaryUrl || buildRadarTeepublicSearchUrl(query, 1, 'relevance'),
+        tripleSort: true
     };
+}
+
+/**
+ * TeePublic image hunt — triple-sort consensus pack (Relevance / Popular / Newest).
+ * Not used by lab_perform_scan (newest/popular comparison).
+ */
+async function fetchRadarTeepublicImages(niche, target = RADAR_TEEPUBLIC_IMAGE_TARGET, options = {}) {
+    return fetchRadarTeepublicTripleSortImages(niche, target, options);
 }
 
 function radarImageHuntMaxPagesForSource(sourceKey) {
@@ -2827,7 +2919,7 @@ function radarImageHuntMaxPagesForSource(sourceKey) {
 function createEmptyRadarImageHuntCursor() {
     return {
         pinterest: { page: 1, offset: 0, done: false },
-        teepublic: { page: 1, offset: 0, done: false },
+        teepublic: { page: 1, offset: 0, done: false, tripleSortDone: false },
         google_images: { page: 0, start: 0, offset: 0, done: false },
         google_ai: { page: 0, start: 0, offset: 0, done: false },
         amazon: { page: 1, offset: 0, done: false },
@@ -2869,6 +2961,7 @@ function normalizeRadarImageHuntCursor(raw) {
         base.teepublic.page = Math.max(1, Number(tpIn.page) || 1);
         base.teepublic.offset = Math.max(0, Number(tpIn.offset) || 0);
         base.teepublic.done = !!tpIn.done;
+        base.teepublic.tripleSortDone = !!tpIn.tripleSortDone;
     } else {
         const tpPage = Math.max(1, Number(raw.teepublicPage) || 1);
         base.teepublic.page = tpPage;
@@ -3019,11 +3112,78 @@ async function radarFetchSourceImagesBatch(niche, mode = 'aggregator', options =
         }
 
         if (sourceKey === 'teepublic') {
-            // Parallel: local TeePublic HTML + Oracle RADAR_CONTROL (backup/accelerator).
+            // First wave: Relevance + Popular + Newest consensus pack (Design Images / Trends Images).
             // Skip Oracle when this request already came from Oracle (__oracleInternal) to avoid recursion.
             const allowOracle = options.skipOracle !== true;
+            const pageOffset = Math.max(0, Number(sc.offset) || 0);
+            const isFirstWave = pageNum <= 1 && pageOffset === 0 && !sc.tripleSortDone;
+
+            if (isFirstWave) {
+                const [localSettled, oracleSettled] = await Promise.allSettled([
+                    fetchRadarTeepublicTripleSortImages(query, Math.max(perSourceSlice * 4, RADAR_TEEPUBLIC_TRIPLE_TOP_N), {
+                        urlOnly: options.urlOnly === true || options.hydrateThumbs === false,
+                        hydrateThumbs: options.hydrateThumbs,
+                        topN: RADAR_TEEPUBLIC_TRIPLE_TOP_N
+                    }),
+                    (allowOracle && typeof fetchTeePublicHuntImagesViaOracle === 'function'
+                        ? fetchTeePublicHuntImagesViaOracle(query, {
+                            batchLimit: perSourceSlice + 8,
+                            seenUrls: [...seenIncoming],
+                            requestId,
+                            cursor: { teepublic: { ...sc } }
+                        })
+                        : Promise.resolve(null))
+                ]);
+
+                const local = localSettled.status === 'fulfilled'
+                    ? localSettled.value
+                    : { images: [], errors: [{ error: localSettled.reason?.message || 'triple-sort failed' }], teepublicSearchUrl: '' };
+                const oracle = oracleSettled.status === 'fulfilled' ? oracleSettled.value : null;
+                if (local.teepublicSearchUrl) teepublicSearchUrl = local.teepublicSearchUrl;
+                if (oracle?.teepublicSearchUrl) teepublicSearchUrl = oracle.teepublicSearchUrl;
+                if (Array.isArray(local.errors) && local.errors.length) {
+                    for (const err of local.errors) {
+                        errors.push(err);
+                    }
+                }
+
+                let rawBatch = Array.isArray(local.images) ? local.images.slice() : [];
+                if (oracle?.images?.length) {
+                    // Consensus-ranked local pack first; Oracle extras only fill gaps.
+                    rawBatch = rawBatch.concat(oracle.images);
+                }
+                sc.tripleSortDone = true;
+
+                if (!rawBatch.length) {
+                    const errMsg = local.errors?.[0]?.error || oracle?.error || 'blocked or empty page';
+                    return {
+                        sourceKey,
+                        rawBatch: [],
+                        pageNum,
+                        pageOffset: 0,
+                        error: errMsg,
+                        teepublicSearchUrl: local.teepublicSearchUrl || oracle?.teepublicSearchUrl || '',
+                        fromOracle: false,
+                        forceDone: true
+                    };
+                }
+
+                return {
+                    sourceKey,
+                    rawBatch,
+                    pageNum,
+                    pageOffset: 0,
+                    error: null,
+                    teepublicSearchUrl: local.teepublicSearchUrl || oracle?.teepublicSearchUrl || '',
+                    fromOracle: false,
+                    // One-shot consensus pack — further TeePublic pages not needed for inspiration ranking.
+                    forceDone: true
+                };
+            }
+
+            // Legacy single-page relevance path (only if cursor advanced without triple-sort).
             const [localSettled, oracleSettled] = await Promise.allSettled([
-                fetchRadarTeepublicListingHtml(query, pageNum),
+                fetchRadarTeepublicListingHtml(query, pageNum, 'relevance'),
                 (allowOracle && typeof fetchTeePublicHuntImagesViaOracle === 'function'
                     ? fetchTeePublicHuntImagesViaOracle(query, {
                         batchLimit: perSourceSlice + 8,
@@ -3041,7 +3201,6 @@ async function radarFetchSourceImagesBatch(niche, mode = 'aggregator', options =
             if (local.pageUrl) teepublicSearchUrl = local.pageUrl;
             if (oracle?.teepublicSearchUrl) teepublicSearchUrl = oracle.teepublicSearchUrl;
 
-            const pageOffset = Math.max(0, Number(sc.offset) || 0);
             let rawBatch = [];
             let fromOracle = false;
             let forceDone = false;
@@ -3049,7 +3208,6 @@ async function radarFetchSourceImagesBatch(niche, mode = 'aggregator', options =
             if (!local.blocked && local.html) {
                 const extractCap = pageOffset + perSourceSlice + 24;
                 rawBatch = extractTeepublicImagesFromHtml(local.html, local.pageUrl, extractCap);
-                // Merge any Oracle extras into the same slice (dedupe later via tryAddItem).
                 if (oracle?.images?.length) {
                     rawBatch = rawBatch.concat(oracle.images);
                 }
@@ -3122,7 +3280,7 @@ async function radarFetchSourceImagesBatch(niche, mode = 'aggregator', options =
     if (activeSources.length && needMore()) {
         const slices = await Promise.all(activeSources.map((sk) => fetchSourcePageSlice(sk)));
 
-        // Fair merge across sources until batchLimit.
+        // TeePublic consensus pack first (triple-sort inspiration), then fair round-robin for other sources.
         const queues = slices.map((slice) => {
             const sc = cursor[slice.sourceKey];
             if (!sc) return { slice, items: [], idx: 0 };
@@ -3139,10 +3297,22 @@ async function radarFetchSourceImagesBatch(niche, mode = 'aggregator', options =
             return { slice, items, idx: 0, pageOffset, consumed: 0 };
         });
 
+        const teepublicQueue = queues.find((q) => q.slice?.sourceKey === 'teepublic');
+        if (teepublicQueue?.items?.length) {
+            while (needMore() && teepublicQueue.idx < teepublicQueue.items.length) {
+                if (tryAddItem(teepublicQueue.items[teepublicQueue.idx])) {
+                    /* keep draining consensus pack */
+                }
+                teepublicQueue.idx += 1;
+                teepublicQueue.consumed += 1;
+            }
+        }
+
         let progressed = true;
         while (needMore() && progressed) {
             progressed = false;
             for (const q of queues) {
+                if (q === teepublicQueue) continue;
                 if (!needMore() || q.idx >= q.items.length) continue;
                 if (tryAddItem(q.items[q.idx])) progressed = true;
                 q.idx += 1;

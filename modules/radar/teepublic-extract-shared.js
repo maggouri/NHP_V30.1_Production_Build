@@ -2,7 +2,7 @@
 
  * Shared TeePublic listing HTML → design records (DOM tiles + raw HTML).
 
- * Extraction shared by scan + hunt; fetch URLs differ — hunt: ?query= pages 1–3; scan: sort=newest+popular.
+ * Extraction shared by scan + hunt; fetch URLs differ — hunt: Relevance+Popular+Newest consensus; scan: sort=newest+popular.
 
  */
 

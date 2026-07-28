@@ -63,13 +63,25 @@ export function normalizeRadarNicheQuery(raw) {
     return q.trim();
 }
 
-/** Image hunt TeePublic URL template (no sort=). Page 1 omits &page=. */
-export function buildTeepublicSearchUrl(nicheText, page = 1) {
-    const q = encodeURIComponent(normalizeRadarNicheQuery(nicheText));
-    const base = `https://www.teepublic.com/t-shirts?query=${q}`;
+/** Image hunt TeePublic URL template. Default sort=relevance (omit param). */
+export function buildTeepublicSearchUrl(nicheText, page = 1, sort = 'relevance') {
+    const q = normalizeRadarNicheQuery(nicheText);
+    const params = new URLSearchParams();
+    params.set('query', q);
+    const sortKey = String(sort || 'relevance').trim().toLowerCase();
+    if (sortKey && sortKey !== 'relevance') params.set('sort', sortKey);
     const pageNum = Math.max(1, parseInt(String(page), 10) || 1);
-    if (pageNum <= 1) return base;
-    return `${base}&page=${pageNum}`;
+    if (pageNum > 1) params.set('page', String(pageNum));
+    return `https://www.teepublic.com/t-shirts?${params.toString()}`;
+}
+
+/** Relevance + Popular + Newest listing URLs for consensus ranking. */
+export function buildTeepublicTripleSortUrls(nicheText, page = 1) {
+    return {
+        relevance: buildTeepublicSearchUrl(nicheText, page, 'relevance'),
+        popular: buildTeepublicSearchUrl(nicheText, page, 'popular'),
+        newest: buildTeepublicSearchUrl(nicheText, page, 'newest')
+    };
 }
 
 /** Amazon apparel search (t-shirt query bias for design discovery). */
