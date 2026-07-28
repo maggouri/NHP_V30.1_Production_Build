@@ -873,29 +873,58 @@ async function publishApQueueState(nextState, options = {}) {
 }
 
 /** Service worker restart kills in-flight uploads ÔÇö clear stale isRunning queue snapshots. */
+/** Preserve completed/failed designs when aborting a stale isRunning snapshot (SW restart / orphan). */
+function markInterruptedApQueueItemsAsFailed(state, reason = 'interrupted') {
+    const perDesign = (Array.isArray(state?.perDesign) ? state.perDesign : []).map((item) => {
+        const status = normalizeApQueueStatus(item?.status);
+        if (status === 'uploading' || status === 'ready' || status === 'waiting') {
+            return {
+                ...item,
+                status: 'failed',
+                error: item?.error || reason
+            };
+        }
+        return item;
+    });
+    const perAccount = (Array.isArray(state?.perAccount) ? state.perAccount : []).map((item) => {
+        const status = normalizeApQueueStatus(item?.status);
+        if (status === 'uploading' || status === 'ready' || status === 'waiting') {
+            return { ...item, status: 'failed' };
+        }
+        return item;
+    });
+    const completedUploads = perDesign.filter((item) => {
+        const status = normalizeApQueueStatus(item?.status);
+        return status === 'uploaded' || status === 'published';
+    }).length;
+    const failedAccounts = perAccount.filter((item) => normalizeApQueueStatus(item?.status) === 'failed').length;
+    const next = {
+        ...(state && typeof state === 'object' ? state : {}),
+        isRunning: false,
+        stopped: true,
+        finishedAt: new Date().toISOString(),
+        perDesign,
+        perAccount,
+        completedUploads,
+        failedAccounts,
+        completedAccountCount: perAccount.filter((item) => normalizeApQueueStatus(item?.status) === 'uploaded').length,
+        totalPlannedUploads: Math.max(0, Number(state?.totalPlannedUploads) || perDesign.length),
+        ...clearApCurrentAccountFields()
+    };
+    next.overallStatus = getApQueueStatusLabel(next);
+    next.overallProgressPercent = getApQueuePercent(next.completedUploads, next.totalPlannedUploads);
+    return next;
+}
+
 void (async function resetStaleApUploadQueueOnServiceWorkerBoot() {
     try {
         const res = await new Promise((resolve) => chrome.storage.local.get([AP_UPLOAD_QUEUE_STATE_KEY], resolve));
         const state = res?.[AP_UPLOAD_QUEUE_STATE_KEY];
         if (!state?.isRunning) return;
         apProcessRunning = false;
-        await publishApQueueState({
-            __replace: true,
-            isRunning: false,
-            stopped: false,
-            overallStatus: 'waiting',
-            finishedAt: new Date().toISOString(),
-            selectedAccountIds: [],
-            selectedAccountCount: 0,
-            completedAccountCount: 0,
-            completedUploads: 0,
-            totalPlannedUploads: 0,
-            overallProgressPercent: 0,
-            perAccount: [],
-            perDesign: [],
-            ...clearApCurrentAccountFields()
-        }, { replace: true });
-        console.warn('[AP] Cleared stale upload queue after service worker restart');
+        const preserved = markInterruptedApQueueItemsAsFailed(state, 'interrupted_by_service_worker_restart');
+        await publishApQueueState({ __replace: true, ...preserved }, { replace: true });
+        console.warn('[AP] Idled stale upload queue after service worker restart (preserved failures)');
     } catch (error) {
         console.warn('[AP] stale upload queue reset failed:', error?.message || error);
     }
@@ -11585,28 +11614,8 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
     if (req.action === 'ap_get_queue_state') {
         const live = apQueueStateCache || null;
         if (live?.isRunning && !apProcessRunning) {
-            const cleared = sanitizeIdleApQueueState({
-                ...live,
-                isRunning: false,
-                stopped: false,
-                overallStatus: 'waiting',
-                finishedAt: new Date().toISOString(),
-                selectedAccountIds: [],
-                selectedAccountCount: 0,
-                completedAccountCount: 0,
-                completedUploads: 0,
-                totalPlannedUploads: 0,
-                overallProgressPercent: 0,
-                perAccount: [],
-                perDesign: [],
-                ...clearApCurrentAccountFields()
-            }) || {
-                isRunning: false,
-                overallStatus: 'waiting',
-                perAccount: [],
-                perDesign: [],
-                ...clearApCurrentAccountFields()
-            };
+            const preserved = markInterruptedApQueueItemsAsFailed(live, 'interrupted_orphan_process');
+            const cleared = sanitizeIdleApQueueState(preserved) || preserved;
             void publishApQueueState({ __replace: true, ...cleared }, { replace: true }).then((published) => {
                 sendResponse({ success: true, data: published || cleared });
             });
@@ -11615,14 +11624,8 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
         chrome.storage.local.get([AP_UPLOAD_QUEUE_STATE_KEY], (res) => {
             let stored = res?.[AP_UPLOAD_QUEUE_STATE_KEY] || live || null;
             if (stored?.isRunning && !apProcessRunning) {
-                const cleared = sanitizeIdleApQueueState({
-                    ...stored,
-                    isRunning: false,
-                    stopped: false,
-                    overallStatus: 'waiting',
-                    finishedAt: new Date().toISOString(),
-                    ...clearApCurrentAccountFields()
-                }) || { ...stored, isRunning: false, overallStatus: 'waiting', ...clearApCurrentAccountFields() };
+                const preserved = markInterruptedApQueueItemsAsFailed(stored, 'interrupted_orphan_process');
+                const cleared = sanitizeIdleApQueueState(preserved) || preserved;
                 void publishApQueueState({ __replace: true, ...cleared }, { replace: true });
                 sendResponse({ success: true, data: cleared });
                 return;

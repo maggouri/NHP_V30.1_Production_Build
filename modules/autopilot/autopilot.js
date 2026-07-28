@@ -1089,6 +1089,39 @@ function hasRetryableApFailures(state) {
     return perDesign.some((item) => normalizeQueueStatus(item?.status) === 'failed' && item?.accountId);
 }
 
+/** True when queue monitor has durable upload results that must survive remount/refresh. */
+function hasPersistedApUploadResults(state) {
+    if (!state || typeof state !== 'object') return false;
+    if (state.isRunning) return true;
+    if (hasRetryableApFailures(state)) return true;
+    const perDesign = Array.isArray(state.perDesign) ? state.perDesign : [];
+    return perDesign.some((item) => {
+        const status = normalizeQueueStatus(item?.status);
+        return ['failed', 'uploaded', 'published', 'stopped', 'skipped'].includes(status);
+    });
+}
+
+function syncApRetryFailedButton(state) {
+    AP.retryFailedBtn = document.getElementById('ap-retry-failed-btn') || AP.retryFailedBtn;
+    if (!AP.retryFailedBtn) return;
+    AP.retryFailedBtn.classList.toggle('hidden', !hasRetryableApFailures(state));
+    AP.retryFailedBtn.disabled = !!state?.isRunning;
+}
+
+/**
+ * Rebuild monitor from design-queue fallback only when there is no persisted run result.
+ * Failed uploads (and Retry Failed) must remain until explicit Reset or successful clear.
+ */
+function renderFallbackQueueMonitorUnlessPersisted() {
+    if (hasPersistedApUploadResults(apQueueMonitorState)) {
+        syncApRetryFailedButton(apQueueMonitorState);
+        updateApUploadMonitorStrip(apQueueMonitorState);
+        return false;
+    }
+    renderQueueMonitorState(buildFallbackQueueMonitorState());
+    return true;
+}
+
 function formatApMonitorCounts(counts) {
     const c = counts || {};
     return `✓ ${Number(c.ok) || 0} | ✎ ${Number(c.corrected) || 0} | ⏭ ${Number(c.skipped_failed) || 0}`;
@@ -1155,10 +1188,7 @@ function renderQueueMonitorState(nextState) {
     const fp = buildQueueMonitorFingerprint(state);
     const fpChanged = fp !== apQueueMonitorFp;
     if (fpChanged) apQueueMonitorFp = fp;
-    if (AP.retryFailedBtn) {
-        AP.retryFailedBtn.classList.toggle('hidden', !hasRetryableApFailures(state));
-        AP.retryFailedBtn.disabled = !!state.isRunning;
-    }
+    syncApRetryFailedButton(state);
     updateApUploadMonitorStrip(state);
     if (uploadBusy || fpChanged) {
         applyApActiveUploadVisuals(state, {
@@ -1249,21 +1279,12 @@ function loadQueueMonitorState() {
     return new Promise((resolve) => {
         chrome.runtime.sendMessage({ action: 'ap_get_queue_state' }, (res) => {
             const raw = res?.success ? res.data : null;
-            if (raw?.isRunning) {
-                renderQueueMonitorState(raw);
-                resolve(apQueueMonitorState);
-                return;
-            }
-            const state = sanitizeApQueueMonitorState(raw) || buildFallbackQueueMonitorState();
-            const hadStaleMarkers = apQueueStateHasStaleUploadMarkers(raw);
-            apQueueMonitorState = state;
+            const state = raw?.isRunning
+                ? raw
+                : (sanitizeApQueueMonitorState(raw) || buildFallbackQueueMonitorState());
+            // Always paint monitor UI so Retry Failed restores after popup refresh/remount.
             apQueueMonitorFp = '';
-            syncApUploadControlButtons(state);
-            applyApActiveUploadVisuals(state);
-            if (hadStaleMarkers || isAutopilotPanelActive()) {
-                apAccountsRenderFp = '';
-                renderAPAccounts();
-            }
+            renderQueueMonitorState(state);
             resolve(apQueueMonitorState);
         });
     });
@@ -1966,7 +1987,7 @@ function renderAPAccounts() {
     if (accountsFp === apAccountsRenderFp && editingId == null) return;
     apAccountsRenderFp = accountsFp;
     if (!apQueueMonitorState || !apQueueMonitorState.isRunning) {
-        renderQueueMonitorState(buildFallbackQueueMonitorState());
+        renderFallbackQueueMonitorUnlessPersisted();
     }
     if (autopilotAccounts.length === 0) {
         AP.list.innerHTML = `<div class="text-center py-6 text-xs text-slate-500">
@@ -3650,9 +3671,9 @@ async function executeApGhostUploadStart(ctx) {
             const msg = chrome.runtime.lastError.message || 'فشل بدء الرفع';
             showToast(`❌ ${msg}`);
             apLog(`❌ ap_start: ${msg}`, 'error');
-            renderQueueMonitorState(buildFallbackQueueMonitorState());
+            void loadQueueMonitorState();
         } else if (response?.success === false) {
-            renderQueueMonitorState(buildFallbackQueueMonitorState());
+            void loadQueueMonitorState();
         }
     });
     showToast(`🚀 ${startEmails} — ${plannedTotal} تصميم`);
@@ -3929,7 +3950,7 @@ function setupEventListeners() {
         if (!isAutopilotPanelActive() && !isAutopilotUploadBusy(apQueueMonitorState)) return;
         if (!apQueueMonitorState || !apQueueMonitorState.isRunning) {
             apQueueMonitorFp = '';
-            renderQueueMonitorState(buildFallbackQueueMonitorState());
+            renderFallbackQueueMonitorUnlessPersisted();
         }
     });
     // ربط أزرار المنصات
@@ -4761,7 +4782,7 @@ function syncAPtoQueue() {
     item.status = 'done';
     saveQueueToStorage();
     if (!apQueueMonitorState || !apQueueMonitorState.isRunning) {
-        renderQueueMonitorState(buildFallbackQueueMonitorState());
+        renderFallbackQueueMonitorUnlessPersisted();
     }
 }
 
@@ -4780,7 +4801,7 @@ function applyToAll() {
     renderQueue();
     saveQueueToStorage();
     if (!apQueueMonitorState || !apQueueMonitorState.isRunning) {
-        renderQueueMonitorState(buildFallbackQueueMonitorState());
+        renderFallbackQueueMonitorUnlessPersisted();
     }
     showToast('✅ تم الاستنساخ للكل في Autopilot');
 }
@@ -4802,14 +4823,31 @@ if (typeof chrome !== 'undefined' && chrome.storage) {
     chrome.storage.onChanged.addListener((changes, area) => {
         if (area === 'local' && changes[AP_UPLOAD_QUEUE_STATE_KEY]) {
             const raw = changes[AP_UPLOAD_QUEUE_STATE_KEY].newValue;
+            // Cleared only by explicit Reset (remove key) — do not invent empty fallback over failures.
+            if (raw == null) {
+                apQueueMonitorState = null;
+                apQueueMonitorFp = '';
+                syncApRetryFailedButton(null);
+                if (isAutopilotPanelActive()) {
+                    renderQueueMonitorState(buildFallbackQueueMonitorState());
+                }
+                return;
+            }
             const nextState = sanitizeApQueueMonitorState(raw) || buildFallbackQueueMonitorState();
             if (!nextState?.isRunning) {
-                apQueueMonitorState = nextState;
-                syncApUploadControlButtons(nextState);
-                applyApActiveUploadVisuals(nextState);
-                if (isAutopilotPanelActive() || apQueueStateHasStaleUploadMarkers(raw)) {
-                    apAccountsRenderFp = '';
-                    renderAPAccounts();
+                apQueueMonitorFp = '';
+                // Restore Retry Failed + monitor after storage writes even when idle.
+                if (isAutopilotPanelActive() || hasPersistedApUploadResults(nextState) || apQueueStateHasStaleUploadMarkers(raw)) {
+                    renderQueueMonitorState(nextState);
+                    if (isAutopilotPanelActive() || apQueueStateHasStaleUploadMarkers(raw)) {
+                        apAccountsRenderFp = '';
+                        renderAPAccounts();
+                    }
+                } else {
+                    apQueueMonitorState = nextState;
+                    syncApUploadControlButtons(nextState);
+                    applyApActiveUploadVisuals(nextState);
+                    syncApRetryFailedButton(nextState);
                 }
                 return;
             }
