@@ -24,7 +24,7 @@
 
     const ADMIN_SOURCE = 'emailcore-admin';
     const EXT_SOURCE = 'emailcore-extension';
-    const BRIDGE_VERSION = '1.3.4';
+    const BRIDGE_VERSION = '1.3.5';
 
     const ACTION_ALIASES = {
         NHP_SEND_TO_PROMPT_BAG: 'RADAR_SEND_TO_PROMPT_BAG',

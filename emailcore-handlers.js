@@ -1465,7 +1465,7 @@
                         success: true,
                         extensionId: chrome.runtime.id,
                         version: chrome.runtime.getManifest().version,
-                        bridgeVersion: '1.3.4',
+                        bridgeVersion: '1.3.5',
                         automationActive: !!emailcoreAutomationState.active,
                         nativeHost: { ...nativeHostStatus },
                         projectDir: storedDir,
