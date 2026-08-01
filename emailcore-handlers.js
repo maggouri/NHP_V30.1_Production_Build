@@ -506,6 +506,82 @@
         return { apiBase, userId: '', sessionToken: '', token: '', accountId: '', authSource: 'none' };
     }
 
+    /** Persist extension session + mint CREATY token (password + Google login). */
+    async function persistExtensionAuthSession({
+        apiBase,
+        data,
+        fallbackUsername = '',
+        authSource = 'extension_session',
+        diagLabel = 'extension_login',
+    } = {}) {
+        const userId = String(data.userId || '').trim();
+        const sessionToken = String(data.sessionToken || '').trim();
+        let creatyToken = '';
+        if (sessionToken && userId) {
+            try {
+                const tokenRes = await fetch(`${apiBase}/api/creaty/extension-token`, {
+                    method: 'POST',
+                    headers: {
+                        'content-type': 'application/json',
+                        'x-extension-session': sessionToken,
+                    },
+                    body: JSON.stringify({ userId }),
+                });
+                const tokenData = await tokenRes.json().catch(() => ({}));
+                if (tokenRes.ok && tokenData?.token) {
+                    creatyToken = String(tokenData.token).trim();
+                }
+            } catch (_) {
+                /* session alone remains valid for API calls */
+            }
+        }
+        await chrome.storage.local.set({
+            [CREATY_STORAGE_KEYS.apiBase]: apiBase,
+            [EMAILCORE_SESSION_KEYS.sessionToken]: sessionToken,
+            [EMAILCORE_SESSION_KEYS.userId]: userId,
+            [EMAILCORE_SESSION_KEYS.username]: String(data.username || fallbackUsername),
+            [EMAILCORE_SESSION_KEYS.role]: String(data.role || 'member'),
+            [EMAILCORE_SESSION_KEYS.tier]: String(data.tier || 'bronze'),
+            [EMAILCORE_SESSION_KEYS.expiresAt]: String(data.expiresAt || ''),
+            [CREATY_STORAGE_KEYS.userId]: userId,
+            ...(creatyToken ? { [CREATY_STORAGE_KEYS.token]: creatyToken } : {}),
+        });
+        if (AuthBridge && typeof AuthBridge.ensureCreatyToken === 'function' && !creatyToken) {
+            const minted = await AuthBridge.ensureCreatyToken({
+                service: diagLabel,
+                account: {
+                    authenticated: true,
+                    userId,
+                    sessionToken,
+                    apiBase,
+                    accessToken: '',
+                },
+            });
+            creatyToken = minted.token || '';
+        }
+        if (AuthBridge) {
+            AuthBridge.logBindingDiag(diagLabel, {
+                authenticated: true,
+                userId,
+                accountId: userId,
+                role: String(data.role || 'member'),
+                authSource,
+                sessionToken: true,
+                accessToken: !!creatyToken,
+            }, { requestStatus: 200 });
+        }
+        return {
+            ok: true,
+            username: data.username || fallbackUsername,
+            role: data.role,
+            tier: data.tier || 'bronze',
+            userId: data.userId,
+            isAdmin: data.isAdmin === true || data.role === 'admin',
+            expiresAt: data.expiresAt,
+            creatyTokenSynced: !!creatyToken,
+        };
+    }
+
     async function resolveBoundAuth(serviceName, options = {}) {
         if (AuthBridge && typeof AuthBridge.resolveForService === 'function') {
             return AuthBridge.resolveForService(serviceName, options);
@@ -2323,76 +2399,135 @@
                         });
                         return;
                     }
-                    const userId = String(data.userId || '').trim();
-                    const sessionToken = String(data.sessionToken || '').trim();
-                    // Issue per-user CREATY token so members match admin "connected" path
-                    // (admin often gets token via website sync; members only use Integrations login).
-                    let creatyToken = '';
-                    if (sessionToken && userId) {
-                        try {
-                            const tokenRes = await fetch(`${apiBase}/api/creaty/extension-token`, {
-                                method: 'POST',
-                                headers: {
-                                    'content-type': 'application/json',
-                                    'x-extension-session': sessionToken,
-                                },
-                                body: JSON.stringify({ userId }),
-                            });
-                            const tokenData = await tokenRes.json().catch(() => ({}));
-                            if (tokenRes.ok && tokenData?.token) {
-                                creatyToken = String(tokenData.token).trim();
-                            }
-                        } catch (_) {
-                            /* session alone remains valid for API calls */
-                        }
-                    }
-                    await chrome.storage.local.set({
-                        [CREATY_STORAGE_KEYS.apiBase]: apiBase,
-                        [EMAILCORE_SESSION_KEYS.sessionToken]: sessionToken,
-                        [EMAILCORE_SESSION_KEYS.userId]: userId,
-                        [EMAILCORE_SESSION_KEYS.username]: String(data.username || username),
-                        [EMAILCORE_SESSION_KEYS.role]: String(data.role || 'member'),
-                        [EMAILCORE_SESSION_KEYS.tier]: String(data.tier || 'bronze'),
-                        [EMAILCORE_SESSION_KEYS.expiresAt]: String(data.expiresAt || ''),
-                        [CREATY_STORAGE_KEYS.userId]: userId,
-                        ...(creatyToken ? { [CREATY_STORAGE_KEYS.token]: creatyToken } : {}),
+                    const stored = await persistExtensionAuthSession({
+                        apiBase,
+                        data,
+                        fallbackUsername: username,
+                        authSource: 'extension_session',
+                        diagLabel: 'extension_login',
                     });
-                    if (AuthBridge && typeof AuthBridge.ensureCreatyToken === 'function' && !creatyToken) {
-                        const minted = await AuthBridge.ensureCreatyToken({
-                            service: 'extension_login',
-                            account: {
-                                authenticated: true,
-                                userId,
-                                sessionToken,
-                                apiBase,
-                                accessToken: '',
-                            },
-                        });
-                        creatyToken = minted.token || '';
-                    }
-                    if (AuthBridge) {
-                        AuthBridge.logBindingDiag('extension_login', {
-                            authenticated: true,
-                            userId,
-                            accountId: userId,
-                            role: String(data.role || 'member'),
-                            authSource: 'extension_session',
-                            sessionToken: true,
-                            accessToken: !!creatyToken,
-                        }, { requestStatus: 200 });
-                    }
-                    sendResponse({
-                        ok: true,
-                        username: data.username,
-                        role: data.role,
-                        tier: data.tier || 'bronze',
-                        userId: data.userId,
-                        isAdmin: data.isAdmin === true || data.role === 'admin',
-                        expiresAt: data.expiresAt,
-                        creatyTokenSynced: !!creatyToken,
-                    });
+                    sendResponse(stored);
                 } catch (err) {
                     sendResponse({ ok: false, error: err.message || String(err) });
+                }
+            })();
+            return true;
+        }
+
+        if (action === 'EMAILCORE_GOOGLE_AUTH_STATUS') {
+            (async () => {
+                try {
+                    const apiBase = normalizeEmailCoreApiBase(request.apiBase);
+                    const res = await fetch(`${apiBase}/api/auth/firebase-config`, {
+                        method: 'GET',
+                        headers: { accept: 'application/json' },
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    const enabled = !!(res.ok && data.enabled && data.config?.apiKey);
+                    sendResponse({
+                        ok: true,
+                        enabled,
+                        code: enabled ? null : (data.validationCode || 'firebase_not_configured'),
+                        message: enabled
+                            ? null
+                            : (data.validationError || 'Google sign-in is not configured on the server'),
+                    });
+                } catch (err) {
+                    sendResponse({
+                        ok: false,
+                        enabled: false,
+                        code: 'firebase_not_configured',
+                        message: err.message || String(err),
+                    });
+                }
+            })();
+            return true;
+        }
+
+        if (action === 'EMAILCORE_EXTENSION_GOOGLE_LOGIN') {
+            (async () => {
+                try {
+                    const apiBase = normalizeEmailCoreApiBase(request.apiBase);
+
+                    const cfgRes = await fetch(`${apiBase}/api/auth/firebase-config`, {
+                        method: 'GET',
+                        headers: { accept: 'application/json' },
+                    });
+                    const cfg = await cfgRes.json().catch(() => ({}));
+                    if (!cfgRes.ok || !cfg.enabled || !cfg.config?.apiKey) {
+                        sendResponse({
+                            ok: false,
+                            code: 'firebase_not_configured',
+                            error: cfg.validationError
+                                || 'Google sign-in is not configured on the server (FIREBASE_*)',
+                        });
+                        return;
+                    }
+
+                    if (!chrome.identity || typeof chrome.identity.getAuthToken !== 'function') {
+                        sendResponse({
+                            ok: false,
+                            code: 'identity_unavailable',
+                            error: 'chrome.identity is unavailable in this browser',
+                        });
+                        return;
+                    }
+
+                    const googleAccessToken = await new Promise((resolve, reject) => {
+                        chrome.identity.getAuthToken({ interactive: true }, (token) => {
+                            if (chrome.runtime.lastError) {
+                                reject(new Error(chrome.runtime.lastError.message));
+                                return;
+                            }
+                            const t = String(token || '').trim();
+                            if (!t) {
+                                reject(new Error('Google sign-in cancelled or no token'));
+                                return;
+                            }
+                            resolve(t);
+                        });
+                    });
+
+                    const res = await fetch(`${apiBase}/api/auth/extension-google`, {
+                        method: 'POST',
+                        headers: { 'content-type': 'application/json' },
+                        body: JSON.stringify({ googleAccessToken }),
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || !data.ok) {
+                        // Drop cached Chrome token so the next attempt can re-consent.
+                        try {
+                            chrome.identity.removeCachedAuthToken({ token: googleAccessToken }, () => {
+                                void chrome.runtime.lastError;
+                            });
+                        } catch (_) { /* ignore */ }
+                        sendResponse({
+                            ok: false,
+                            status: res.status,
+                            code: data.code || (res.status === 503 ? 'firebase_not_configured' : 'google_failed'),
+                            error: data.error || formatCreatyApiError(data, res.status),
+                        });
+                        return;
+                    }
+
+                    const stored = await persistExtensionAuthSession({
+                        apiBase,
+                        data,
+                        fallbackUsername: data.username || data.email || '',
+                        authSource: 'google_extension',
+                        diagLabel: 'extension_google_login',
+                    });
+                    sendResponse({
+                        ...stored,
+                        email: data.email || '',
+                        provider: 'google',
+                    });
+                } catch (err) {
+                    sendResponse({
+                        ok: false,
+                        code: 'google_failed',
+                        error: err.message || String(err),
+                    });
                 }
             })();
             return true;

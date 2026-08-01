@@ -89,7 +89,27 @@ const ADMIN_I18N = {
     promptBagOverlayDesc: {
         ar: 'إظهار أو إخفاء أيقونة الحقيبة العائمة (Notes / Images / Prompts / GEM / GPT) على الصفحات',
         en: 'Show or hide the floating bag icon (Notes / Images / Prompts / GEM / GPT) on pages'
-    }
+    },
+    btnContinueGoogle: { ar: 'المتابعة بحساب Google', en: 'Continue with Google' },
+    authOrDivider: { ar: 'أو', en: 'or' },
+    googleNotConfigured: {
+        ar: 'تسجيل Google غير مهيأ على الخادم بعد. استخدم الاسم المستعار أو اضبط FIREBASE_* على EmailCore.',
+        en: 'Google sign-in is not configured on the server yet. Use nickname login or set FIREBASE_* on EmailCore.'
+    },
+    googleSigningIn: { ar: 'جاري المتابعة بحساب Google…', en: 'Continuing with Google…' },
+    googleSignInFailed: { ar: 'فشل تسجيل الدخول عبر Google', en: 'Google sign-in failed' },
+    googlePending: {
+        ar: 'تم تسجيل حساب Google — بانتظار موافقة المدير قبل الدخول.',
+        en: 'Google account registered — awaiting admin approval before you can sign in.'
+    },
+    accountLoginTitle: { ar: 'تسجيل الدخول', en: 'Sign in' },
+    accountSecurityBadge: { ar: 'الحساب والحماية', en: 'Account & Security' },
+    btnLogin: { ar: 'تسجيل الدخول / إنشاء حساب', en: 'Sign in / Create account' },
+    forgotPassword: { ar: 'نسيت كلمة السر؟', en: 'Forgot password?' },
+    phNickname: { ar: 'الاسم المستعار', en: 'Nickname' },
+    phPassword: { ar: 'كلمة المرور', en: 'Password' },
+    btnLogout: { ar: 'تسجيل الخروج', en: 'Sign out' },
+    activeAccount: { ar: 'الحساب النشط', en: 'Active account' }
 };
 
 function adminIsRtl() {
@@ -1281,9 +1301,56 @@ export async function initAdminModule(helpers) {
     // --- Auth Listeners ---
     const btnLogin = document.getElementById('btnLogin');
     const btnLogout = document.getElementById('btnLogout');
+    const btnGoogleLogin = document.getElementById('btnGoogleLogin');
     const authNickname = document.getElementById('authNickname');
     const authPassword = document.getElementById('authPassword');
     const authStatus = document.getElementById('authStatus');
+    const googleAuthHint = document.getElementById('googleAuthHint');
+    const authLoginDivider = document.getElementById('authLoginDivider');
+
+    const setAuthStatus = (html, tone = 'info') => {
+        if (!authStatus) return;
+        authStatus.style.display = 'block';
+        authStatus.innerHTML = html;
+        if (tone === 'error') {
+            authStatus.style.background = 'rgba(239, 68, 68, 0.1)';
+            authStatus.style.color = 'var(--banned)';
+        } else if (tone === 'ok') {
+            authStatus.style.background = 'rgba(16, 185, 129, 0.12)';
+            authStatus.style.color = '#10b981';
+        } else {
+            authStatus.style.background = 'rgba(108, 99, 255, 0.1)';
+            authStatus.style.color = 'var(--primary)';
+        }
+    };
+
+    const refreshGoogleAuthAvailability = () => {
+        chrome.runtime.sendMessage({ action: 'EMAILCORE_GOOGLE_AUTH_STATUS' }, (response) => {
+            if (chrome.runtime.lastError) {
+                if (btnGoogleLogin) btnGoogleLogin.hidden = true;
+                if (authLoginDivider) authLoginDivider.hidden = true;
+                if (googleAuthHint) {
+                    googleAuthHint.hidden = false;
+                    googleAuthHint.textContent = adminI18n('googleNotConfigured');
+                }
+                return;
+            }
+            const enabled = !!response?.enabled;
+            if (btnGoogleLogin) {
+                btnGoogleLogin.hidden = !enabled;
+                btnGoogleLogin.disabled = !enabled;
+            }
+            if (authLoginDivider) authLoginDivider.hidden = !enabled;
+            if (googleAuthHint) {
+                googleAuthHint.hidden = enabled;
+                if (!enabled) {
+                    googleAuthHint.textContent = response?.message
+                        || adminI18n('googleNotConfigured');
+                }
+            }
+        });
+    };
+    refreshGoogleAuthAvailability();
 
     if (btnLogin) {
         btnLogin.addEventListener('click', async () => {
@@ -1292,10 +1359,7 @@ export async function initAdminModule(helpers) {
 
             if (!nickname) return showToast('⚠️ يرجى إدخال الاسم المستعار');
 
-            authStatus.style.display = 'block';
-            authStatus.innerHTML = '⏳ جاري التحقق...';
-            authStatus.style.background = 'rgba(108, 99, 255, 0.1)';
-            authStatus.style.color = 'var(--primary)';
+            setAuthStatus(adminIsRtl() ? '⏳ جاري التحقق...' : '⏳ Checking…');
 
             try {
                 await window.AuthManager.loginWithNickname(nickname, password);
@@ -1303,33 +1367,87 @@ export async function initAdminModule(helpers) {
                 authPassword.value = '';
                 updateAuthUI();
             } catch (e) {
-                authStatus.style.background = 'rgba(239, 68, 68, 0.1)';
-                authStatus.style.color = 'var(--banned)';
-
                 if (e.message === 'REQUIRED_PASSWORD') {
-                    authStatus.innerHTML = `⚠️ هذا الاسم محمي، يرجى إدخال كلمة المرور للمتابعة`;
+                    setAuthStatus(adminIsRtl()
+                        ? '⚠️ هذا الاسم محمي، يرجى إدخال كلمة المرور للمتابعة'
+                        : '⚠️ This nickname is protected — enter the password', 'error');
                     authPassword.focus();
                 } else if (e.message === 'NEW_USER_PASSWORD_REQUIRED') {
-                    authStatus.innerHTML = `🔑 اسم جديد! يرجى تعيين كلمة مرور لحماية اسمك مستقبلاً`;
+                    setAuthStatus(adminIsRtl()
+                        ? '🔑 اسم جديد! يرجى تعيين كلمة مرور لحماية اسمك مستقبلاً'
+                        : '🔑 New nickname — set a password to protect it', 'error');
                     authPassword.focus();
                 } else {
-                    authStatus.innerHTML = `❌ ${e.message}`;
+                    setAuthStatus(`❌ ${e.message}`, 'error');
                 }
             }
         });
     }
 
+    btnGoogleLogin?.addEventListener('click', async () => {
+        if (btnGoogleLogin.disabled) return;
+        btnGoogleLogin.disabled = true;
+        setAuthStatus(`⏳ ${adminI18n('googleSigningIn')}`);
+        chrome.runtime.sendMessage({ action: 'EMAILCORE_EXTENSION_GOOGLE_LOGIN' }, async (response) => {
+            btnGoogleLogin.disabled = false;
+            if (chrome.runtime.lastError) {
+                setAuthStatus(`❌ ${chrome.runtime.lastError.message}`, 'error');
+                showToast(`❌ ${adminI18n('googleSignInFailed')}`);
+                return;
+            }
+            if (!response?.ok) {
+                if (response?.code === 'firebase_not_configured' || response?.code === 'google_not_configured') {
+                    refreshGoogleAuthAvailability();
+                    setAuthStatus(`⚠️ ${adminI18n('googleNotConfigured')}`, 'error');
+                } else if (response?.code === 'pending') {
+                    setAuthStatus(`⏳ ${adminI18n('googlePending')}`, 'error');
+                } else {
+                    setAuthStatus(`❌ ${response?.error || adminI18n('googleSignInFailed')}`, 'error');
+                }
+                showToast(`❌ ${response?.error || adminI18n('googleSignInFailed')}`);
+                return;
+            }
+            try {
+                if (window.AuthManager?.loginWithGoogleProfile) {
+                    await window.AuthManager.loginWithGoogleProfile({
+                        email: response.email,
+                        username: response.username,
+                        userId: response.userId,
+                    });
+                }
+            } catch (_) { /* local profile is best-effort */ }
+            setAuthStatus(`✅ ${response.username || response.email || ''}`, 'ok');
+            showToast(adminIsRtl()
+                ? `✨ مرحباً بك ${response.username || ''}! تم الدخول عبر Google`
+                : `✨ Welcome ${response.username || ''}! Signed in with Google`);
+            updateAuthUI();
+            try {
+                const mod = await import('../creaty/emailcore-library.js');
+                await mod.refreshEmailCoreConnectionStatus?.();
+                if (response.creatyTokenSynced !== false) {
+                    await mod.refreshEmailCoreLibrary?.({ silent: true });
+                }
+            } catch (_) { /* CREATY panel may not be loaded yet */ }
+        });
+    });
+
     if (btnLogout) {
         btnLogout.addEventListener('click', async () => {
             await window.AuthManager.logout();
-            showToast('🚪 تم تسجيل الخروج');
+            chrome.runtime.sendMessage({ action: 'EMAILCORE_EXTENSION_LOGOUT' }, () => {
+                void chrome.runtime.lastError;
+            });
+            showToast(adminIsRtl() ? '🚪 تم تسجيل الخروج' : '🚪 Signed out');
             updateAuthUI();
+            refreshGoogleAuthAvailability();
         });
     }
 
     document.getElementById('forgotPasswordLink')?.addEventListener('click', (e) => {
         e.preventDefault();
-        alert('نسيت كلمة السر؟\n\nيرجى التواصل مع المدير (Owner) لتزويده باسمك المستعار وسيقوم بإعادة تعيين كلمة السر لك من لوحة التحكم الخاصة به.');
+        alert(adminIsRtl()
+            ? 'نسيت كلمة السر؟\n\nيرجى التواصل مع المدير (Owner) لتزويده باسمك المستعار وسيقوم بإعادة تعيين كلمة السر لك من لوحة التحكم الخاصة به.'
+            : 'Forgot password?\n\nContact the owner with your nickname so they can reset your password from the admin panel.');
     });
 
     // --- Private Customization (AI keys + profile import/export) ---

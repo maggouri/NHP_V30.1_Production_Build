@@ -93,11 +93,33 @@ export const AuthManager = {
                     email: userData.email,
                     nickname: userData.nickname || userData.email.split('@')[0],
                     password: userData.password,
-                    token: 'nickname_auth_token',
+                    token: userData.token || 'nickname_auth_token',
+                    authProvider: userData.authProvider || 'nickname',
                     expiresAt: Date.now() + (3600 * 24 * 365 * 10 * 1000) // 10 سنوات
                 }
             }, resolve);
         });
+    },
+
+    /**
+     * Local profile after EmailCore Google SSO (extension session is the real auth).
+     */
+    loginWithGoogleProfile: async function ({ email, username, userId } = {}) {
+        const mail = String(email || '').trim().toLowerCase();
+        const nick = String(username || '').trim() || (mail ? mail.split('@')[0] : '');
+        if (!mail && !nick) {
+            throw new Error('Google profile missing email');
+        }
+        const userData = {
+            localId: String(userId || `google_${nick || mail}`),
+            email: mail || `${nick}@nichehunter.internal`,
+            nickname: nick || mail.split('@')[0],
+            password: null,
+            token: 'google_auth_token',
+            authProvider: 'google',
+        };
+        await this.saveUser(userData);
+        return userData;
     },
 
     /**
