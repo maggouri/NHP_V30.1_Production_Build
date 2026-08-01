@@ -81,6 +81,8 @@
     const EMAILCORE_LIVE_SYNC_META_KEY = 'emailcore_live_sync_meta';
     const EMAILCORE_LIVE_SYNC_BUSY = 'emailcore_live_sync_busy';
     const EMAILCORE_LIVE_SYNC_DISMISSED_KEY = 'emailcore_live_sync_dismissed_ids';
+    /** Admin-controlled pause for background alarm workers (owner/admin only). */
+    const EMAILCORE_SERVICES_PAUSED_KEY = 'emailcore_services_paused';
     const EMAILCORE_GHOST_LIBRARY_URL = 'http://127.0.0.1:3019/api/library';
     const EMAILCORE_SESSION_KEYS = {
         sessionToken: 'emailcore_session_token',
@@ -107,6 +109,20 @@
             /* keep raw */
         }
         return base;
+    }
+
+    /** Preserve owner | admin | member for Admin UI (do not collapse owner→admin). */
+    function normalizeExtRole(role) {
+        const r = String(role || '').trim().toLowerCase();
+        if (r === 'owner') return 'owner';
+        if (r === 'admin') return 'admin';
+        if (r === 'member' || r === 'user') return 'member';
+        return r || 'unknown';
+    }
+
+    function canControlExtServices(role) {
+        const r = normalizeExtRole(role);
+        return r === 'owner' || r === 'admin';
     }
 
     function formatCreatyApiError(data = {}, status = 0) {
@@ -1423,20 +1439,61 @@
         }
 
         if (action === 'EMAILCORE_PING') {
-            chrome.storage.local.get(['emailcoreProjectDir'], (items) => {
-                const stored = String(items?.emailcoreProjectDir || '').trim();
-                const cachedDir =
-                    stored && !isLikelyWrongProjectPath(stored) ? stored : null;
-                sendResponse({
-                    success: true,
-                    extensionId: chrome.runtime.id,
-                    version: chrome.runtime.getManifest().version,
-                    automationActive: !!emailcoreAutomationState.active,
-                    nativeHost: { ...nativeHostStatus },
-                    projectDir: cachedDir,
-                    handlersLoaded: true,
-                });
-            });
+            (async () => {
+                try {
+                    const auth = await readEmailCoreAuth();
+                    const role = normalizeExtRole(auth.role);
+                    const pausedStore = await chrome.storage.local.get([EMAILCORE_SERVICES_PAUSED_KEY]);
+                    const servicesPaused = pausedStore[EMAILCORE_SERVICES_PAUSED_KEY] === true;
+                    let ghostReachable = false;
+                    try {
+                        const ghostRes = await fetch(EMAILCORE_GHOST_LIBRARY_URL, { method: 'GET' });
+                        ghostReachable = ghostRes.ok;
+                    } catch {
+                        ghostReachable = false;
+                    }
+                    const storedDir = await new Promise((resolve) => {
+                        chrome.storage.local.get(['emailcoreProjectDir'], (items) => {
+                            const stored = String(items?.emailcoreProjectDir || '').trim();
+                            resolve(stored && !isLikelyWrongProjectPath(stored) ? stored : null);
+                        });
+                    });
+                    sendResponse({
+                        success: true,
+                        extensionId: chrome.runtime.id,
+                        version: chrome.runtime.getManifest().version,
+                        bridgeVersion: '1.3.3',
+                        automationActive: !!emailcoreAutomationState.active,
+                        nativeHost: { ...nativeHostStatus },
+                        projectDir: storedDir,
+                        handlersLoaded: true,
+                        role,
+                        authenticated: !!(auth.userId && (auth.sessionToken || auth.token)),
+                        username: auth.username || '',
+                        userId: auth.userId || '',
+                        ghostReachable,
+                        channel: 'chrome_bridge',
+                        services: {
+                            paused: servicesPaused,
+                            status: servicesPaused ? 'stopped' : 'running',
+                            workers: [
+                                { id: 'live_sync', label: 'Live Sync (Ghost library)', alarm: 'emailcore-live-sync-library' },
+                                { id: 'design_jobs', label: 'Design Jobs bridge', alarm: 'emailcore-design-jobs-bridge' },
+                                { id: 'mail_poll', label: 'Mail poll', alarm: 'emailcore-library-mail-poll' },
+                                { id: 'pipeline_alerts', label: 'Pipeline alerts', alarm: 'emailcore-pipeline-alerts' },
+                                { id: 'tp_assist', label: 'TP assist', alarm: 'emailcore-early-radar-tp-assist' },
+                                { id: 'search_tools', label: 'Search Tools sync', alarm: 'emailcore-st-trends' },
+                            ].map((w) => ({ ...w, status: servicesPaused ? 'stopped' : 'running' })),
+                        },
+                    });
+                } catch (err) {
+                    sendResponse({
+                        success: false,
+                        error: err?.message || String(err),
+                        extensionId: chrome.runtime.id,
+                    });
+                }
+            })();
             void resolveEmailcoreProjectDir()
                 .then((projectDir) => {
                     if (projectDir && !isLikelyWrongProjectPath(projectDir)) {
@@ -1446,6 +1503,72 @@
                 })
                 .catch(() => null);
             void ensureNativeHostReady({ silent: true });
+            return true;
+        }
+
+        if (action === 'EMAILCORE_SERVICES_STATUS') {
+            (async () => {
+                try {
+                    const auth = await readEmailCoreAuth();
+                    const pausedStore = await chrome.storage.local.get([EMAILCORE_SERVICES_PAUSED_KEY]);
+                    const paused = pausedStore[EMAILCORE_SERVICES_PAUSED_KEY] === true;
+                    sendResponse({
+                        success: true,
+                        role: normalizeExtRole(auth.role),
+                        services: {
+                            paused,
+                            status: paused ? 'stopped' : 'running',
+                        },
+                    });
+                } catch (err) {
+                    sendResponse({ success: false, error: err?.message || String(err) });
+                }
+            })();
+            return true;
+        }
+
+        if (action === 'EMAILCORE_SERVICES_STOP' || action === 'EMAILCORE_SERVICES_START') {
+            (async () => {
+                try {
+                    const auth = await readEmailCoreAuth();
+                    const role = normalizeExtRole(auth.role);
+                    if (!canControlExtServices(role)) {
+                        sendResponse({
+                            success: false,
+                            error: 'forbidden_role',
+                            message: 'Only owner/admin can stop or start extension services',
+                            role,
+                        });
+                        return;
+                    }
+                    const pause = action === 'EMAILCORE_SERVICES_STOP';
+                    await chrome.storage.local.set({ [EMAILCORE_SERVICES_PAUSED_KEY]: pause });
+                    if (pause) {
+                        const alarmNames = [
+                            EMAILCORE_LIVE_SYNC_ALARM,
+                            EMAILCORE_DESIGN_JOBS_ALARM,
+                            EMAILCORE_MAIL_ALARM,
+                            EMAILCORE_PIPELINE_ALERT_ALARM,
+                            EMAILCORE_TP_ASSIST_ALARM,
+                            EMAILCORE_ST_TRENDS_ALARM,
+                            EMAILCORE_ST_FEEDS_ALARM,
+                        ];
+                        await Promise.all(alarmNames.map((name) => chrome.alarms.clear(name).catch(() => false)));
+                    } else if (typeof ensureEmailcoreServiceAlarms === 'function') {
+                        ensureEmailcoreServiceAlarms();
+                    }
+                    sendResponse({
+                        success: true,
+                        role,
+                        services: {
+                            paused: pause,
+                            status: pause ? 'stopped' : 'running',
+                        },
+                    });
+                } catch (err) {
+                    sendResponse({ success: false, error: err?.message || String(err) });
+                }
+            })();
             return true;
         }
 
@@ -3843,22 +3966,43 @@
         }
     }
 
-    chrome.alarms.create(EMAILCORE_MAIL_ALARM, { periodInMinutes: 1 });
-    chrome.alarms.create(EMAILCORE_TP_ASSIST_ALARM, { periodInMinutes: 2 });
-    chrome.alarms.create(EMAILCORE_ST_TRENDS_ALARM, { periodInMinutes: 15 });
-    chrome.alarms.create(EMAILCORE_ST_FEEDS_ALARM, { periodInMinutes: 6 * 60 });
-    chrome.alarms.create(EMAILCORE_PIPELINE_ALERT_ALARM, { periodInMinutes: 1 });
-    chrome.alarms.create(EMAILCORE_DESIGN_JOBS_ALARM, { periodInMinutes: 1 });
-    chrome.alarms.create(EMAILCORE_LIVE_SYNC_ALARM, { periodInMinutes: 1 });
+    function ensureEmailcoreServiceAlarms() {
+        chrome.alarms.create(EMAILCORE_MAIL_ALARM, { periodInMinutes: 1 });
+        chrome.alarms.create(EMAILCORE_TP_ASSIST_ALARM, { periodInMinutes: 2 });
+        chrome.alarms.create(EMAILCORE_ST_TRENDS_ALARM, { periodInMinutes: 15 });
+        chrome.alarms.create(EMAILCORE_ST_FEEDS_ALARM, { periodInMinutes: 6 * 60 });
+        chrome.alarms.create(EMAILCORE_PIPELINE_ALERT_ALARM, { periodInMinutes: 1 });
+        chrome.alarms.create(EMAILCORE_DESIGN_JOBS_ALARM, { periodInMinutes: 1 });
+        chrome.alarms.create(EMAILCORE_LIVE_SYNC_ALARM, { periodInMinutes: 1 });
+    }
+
+    // Respect Admin pause flag across reloads.
+    chrome.storage.local.get([EMAILCORE_SERVICES_PAUSED_KEY], (stored) => {
+        if (stored[EMAILCORE_SERVICES_PAUSED_KEY] === true) return;
+        ensureEmailcoreServiceAlarms();
+    });
     // Faster pickup for UI remote-control (library-stage) while SW is awake.
     if (!self.__nhpDesignJobsFastPoll) {
         self.__nhpDesignJobsFastPoll = true;
         setInterval(() => {
-            pollDesignJobsBridge().catch(() => {});
+            chrome.storage.local.get([EMAILCORE_SERVICES_PAUSED_KEY], (stored) => {
+                if (stored[EMAILCORE_SERVICES_PAUSED_KEY] === true) return;
+                pollDesignJobsBridge().catch(() => {});
+            });
         }, 8000);
-        pollDesignJobsBridge().catch(() => {});
+        chrome.storage.local.get([EMAILCORE_SERVICES_PAUSED_KEY], (stored) => {
+            if (stored[EMAILCORE_SERVICES_PAUSED_KEY] === true) return;
+            pollDesignJobsBridge().catch(() => {});
+        });
     }
     chrome.alarms.onAlarm.addListener((alarm) => {
+        chrome.storage.local.get([EMAILCORE_SERVICES_PAUSED_KEY], (stored) => {
+            if (stored[EMAILCORE_SERVICES_PAUSED_KEY] === true) return;
+            dispatchEmailcoreAlarm(alarm);
+        });
+    });
+
+    function dispatchEmailcoreAlarm(alarm) {
         if (alarm.name === EMAILCORE_MAIL_ALARM) {
             pollEmailCoreMessages().catch((error) => {
                 const msg = error?.message || String(error);
@@ -3918,14 +4062,20 @@
                 console.warn('[EmailCore][SearchToolsSync][feeds]', msg);
             });
         }
-    });
+    }
 
     // Kick once shortly after SW wake (debounced by busy flags).
     setTimeout(() => {
-        syncSearchToolsTrends().catch(() => {});
+        chrome.storage.local.get([EMAILCORE_SERVICES_PAUSED_KEY], (stored) => {
+            if (stored[EMAILCORE_SERVICES_PAUSED_KEY] === true) return;
+            syncSearchToolsTrends().catch(() => {});
+        });
     }, 20_000);
     setTimeout(() => {
-        syncSearchToolsOtherFeeds().catch(() => {});
+        chrome.storage.local.get([EMAILCORE_SERVICES_PAUSED_KEY], (stored) => {
+            if (stored[EMAILCORE_SERVICES_PAUSED_KEY] === true) return;
+            syncSearchToolsOtherFeeds().catch(() => {});
+        });
     }, 45_000);
     setTimeout(() => {
         pollPipelineAlerts().catch(() => {});

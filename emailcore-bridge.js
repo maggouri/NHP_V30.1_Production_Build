@@ -24,17 +24,20 @@
 
     const ADMIN_SOURCE = 'emailcore-admin';
     const EXT_SOURCE = 'emailcore-extension';
-    const BRIDGE_VERSION = '1.3.2';
+    const BRIDGE_VERSION = '1.3.3';
 
     const ACTION_ALIASES = {
         NHP_SEND_TO_PROMPT_BAG: 'RADAR_SEND_TO_PROMPT_BAG',
     };
 
-    /** SW asleep / reloaded / no onMessage listener — common MV3 transient. */
+    /** SW asleep / reloaded / no onMessage listener — common MV3 transient (do NOT mark bridge stale). */
     function isReceivingEndError(msg) {
-        return /Receiving end does not exist|Could not establish connection|Extension context invalidated/i.test(
-            String(msg || '')
-        );
+        return /Receiving end does not exist|Could not establish connection/i.test(String(msg || ''));
+    }
+
+    /** True only when the content-script extension context is dead (reload required). */
+    function isContextInvalidatedError(msg) {
+        return /Extension context invalidated/i.test(String(msg || ''));
     }
 
     function sleepMs(ms) {
@@ -232,13 +235,15 @@
                     const err = chrome.runtime.lastError;
                     if (err) {
                         const msg = err.message || 'Extension unreachable';
-                        if (isReceivingEndError(msg)) {
+                        // Only invalidate on true context death — SW sleep is transient.
+                        if (isContextInvalidatedError(msg)) {
                             markExtensionStale(msg);
                         }
                         resolve({
                             success: false,
                             error: msg,
-                            contextInvalidated: isReceivingEndError(msg),
+                            contextInvalidated: isContextInvalidatedError(msg),
+                            receivingEndMissing: isReceivingEndError(msg),
                         });
                         return;
                     }
@@ -247,13 +252,14 @@
                 observeSendMessagePromise(maybePromise);
             } catch (err) {
                 const msg = err.message || 'Extension unreachable';
-                if (isReceivingEndError(msg)) {
+                if (isContextInvalidatedError(msg)) {
                     markExtensionStale(msg);
                 }
                 resolve({
                     success: false,
                     error: msg,
-                    contextInvalidated: isReceivingEndError(msg),
+                    contextInvalidated: isContextInvalidatedError(msg),
+                    receivingEndMissing: isReceivingEndError(msg),
                 });
             }
         });
@@ -261,9 +267,12 @@
 
     async function forwardToBackground(action, data) {
         let result = await sendRuntimeMessageOnce(action, data);
-        // One quick retry: MV3 SW often wakes on the second message after idle.
-        if (result?.success === false && isReceivingEndError(result.error) && isExtensionContextAlive()) {
-            await sleepMs(120);
+        // MV3 SW often wakes after 1–2 idle retries — do not mark bridge stale.
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+            if (!(result?.success === false && isReceivingEndError(result.error) && isExtensionContextAlive())) {
+                break;
+            }
+            await sleepMs(120 * (attempt + 1));
             result = await sendRuntimeMessageOnce(action, data);
         }
         return result;
@@ -288,12 +297,28 @@
                 });
                 return;
             }
-            announceReady({ extensionId: chrome.runtime.id });
+            // Wake SW + attach role/services for Admin handshake (owner|admin|member).
+            const ping = await forwardToBackground('EMAILCORE_PING', {});
+            const swOk = ping?.success !== false && !ping?.receivingEndMissing;
+            announceReady({
+                extensionId: chrome.runtime.id,
+                role: ping?.role || null,
+                version: ping?.version || null,
+            });
             reply(requestId, 'EMAILCORE_BRIDGE_PROBE_RESULT', {
                 success: true,
                 bridgeVersion: BRIDGE_VERSION,
                 extensionId: chrome.runtime.id,
                 contextAlive: true,
+                swAlive: swOk,
+                role: ping?.role || 'unknown',
+                authenticated: ping?.authenticated === true,
+                username: ping?.username || '',
+                version: ping?.version || null,
+                services: ping?.services || null,
+                ghostReachable: ping?.ghostReachable === true,
+                channel: 'chrome_bridge',
+                error: swOk ? undefined : (ping?.error || 'service_worker_waking'),
             });
             return;
         }
