@@ -1563,6 +1563,8 @@ const AI_IMAGE_TASK_QUEUE_KEY = 'nhp_ai_image_task_queue';
 const AI_IMAGE_TASK_SAFE_QUEUE_KEY = 'nhp_ai_image_task_safe_queue';
 const AI_IMAGE_TASK_MAX_AGE_MS = 120000;
 const AI_IMAGE_TASK_SAFE_MAX_AGE_MS = 15 * 60 * 1000;
+/** Keep popup busy through generation (submitted → done), not only through inject. */
+const AI_IMAGE_GENERATION_MAX_AGE_MS = 12 * 60 * 1000;
 const AI_IMAGE_TASK_MAX_QUEUE = 8;
 /** Must cover gemini-content.js waitForInputSurface (up to ~90s on cold loads). */
 const AI_IMAGE_DELIVERY_WAIT_MS = 95000;
@@ -6816,9 +6818,14 @@ async function runPngGenTask(taskId, req) {
 function isActiveAiImageTaskForProvider(task, provider, now = Date.now()) {
     if (!task) return false;
     if (getAiImageProviderKey(task.targetUrl || '') !== provider) return false;
-    if ((now - Number(task.createdAt || 0)) >= AI_IMAGE_TASK_MAX_AGE_MS) return false;
     const stage = String(task.stage || 'prepared');
-    return !['done', 'submitted', 'failed', 'image_attached'].includes(stage);
+    const ageMs = now - Number(task.createdAt || 0);
+    // Keep popup busy through generation so pool reuse / deferred close cannot kill it.
+    if (['submitted', 'image_attached'].includes(stage)) {
+        return ageMs < AI_IMAGE_GENERATION_MAX_AGE_MS;
+    }
+    if (ageMs >= AI_IMAGE_TASK_MAX_AGE_MS) return false;
+    return !['done', 'failed'].includes(stage);
 }
 
 function resetStuckAiImageTasksInQueue(now = Date.now()) {
@@ -6854,9 +6861,12 @@ async function pruneExpiredAiImageTasksForProvider(targetUrl) {
         const taskProvider = getAiImageProviderKey(task.targetUrl || '');
         if (taskProvider !== provider) return true;
         const ageMs = now - Number(task.createdAt || 0);
-        if (ageMs >= AI_IMAGE_TASK_MAX_AGE_MS) return false;
         const stage = String(task.stage || 'prepared');
-        if (['done', 'submitted', 'failed', 'image_attached'].includes(stage)) return false;
+        if (stage === 'done' || stage === 'failed') return false;
+        if (['submitted', 'image_attached'].includes(stage)) {
+            return ageMs < AI_IMAGE_GENERATION_MAX_AGE_MS;
+        }
+        if (ageMs >= AI_IMAGE_TASK_MAX_AGE_MS) return false;
         return true;
     });
     if (pendingAiImageTasks.length !== before) {
@@ -6872,6 +6882,45 @@ async function pruneExpiredAiImageTasksForProvider(targetUrl) {
             ]);
         } catch (_) {
         }
+    }
+}
+
+/**
+ * Content-script post-generation close gate. Pooled GPT/GEM windows stay open;
+ * never close while a non-terminal task is bound to the sender window.
+ */
+async function requestCloseAiImagePopupFromSender(sender) {
+    const windowId = sender?.tab?.windowId;
+    const tabId = sender?.tab?.id;
+    if (!Number.isFinite(windowId)) {
+        return { closed: false, reason: 'no_window' };
+    }
+    await loadPendingAiImageTasks();
+    const now = Date.now();
+    const busyOnWindow = pendingAiImageTasks.some((task) => {
+        if (!task || task.targetWindowId !== windowId) return false;
+        const stage = String(task.stage || 'prepared');
+        if (stage === 'done' || stage === 'failed') return false;
+        const ageMs = now - Number(task.createdAt || 0);
+        if (['submitted', 'image_attached'].includes(stage)) {
+            return ageMs < AI_IMAGE_GENERATION_MAX_AGE_MS;
+        }
+        return ageMs < AI_IMAGE_TASK_MAX_AGE_MS;
+    });
+    if (busyOnWindow) {
+        return { closed: false, reason: 'task_busy' };
+    }
+    const inPool = Object.values(aiImageProviderWindowPools || {}).some((pool) =>
+        Array.isArray(pool?.windowIds) && pool.windowIds.includes(windowId)
+    );
+    if (inPool) {
+        return { closed: false, reason: 'pooled_window' };
+    }
+    try {
+        await chrome.windows.remove(windowId);
+        return { closed: true, reason: 'closed', windowId, tabId };
+    } catch (error) {
+        return { closed: false, reason: error?.message || 'remove_failed' };
     }
 }
 
@@ -9989,6 +10038,18 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
         }).catch((error) => {
             sendResponse({ success: false, error: error.message || 'Gemini popup was not created.' });
         });
+        return true;
+    }
+
+    if (req.action === 'REQUEST_CLOSE_AI_IMAGE_POPUP') {
+        (async () => {
+            try {
+                const result = await requestCloseAiImagePopupFromSender(sender);
+                sendResponse({ success: true, ...result });
+            } catch (error) {
+                sendResponse({ success: false, closed: false, reason: error?.message || 'close_failed' });
+            }
+        })();
         return true;
     }
 

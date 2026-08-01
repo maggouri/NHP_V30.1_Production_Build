@@ -329,6 +329,17 @@
         return true;
     }
 
+    function clearInjectStarted(taskKey) {
+        const key = String(taskKey || '').trim();
+        try {
+            if (key) sessionStorage.removeItem(`${AI_INJECT_STARTED_PREFIX}${key}`);
+        } catch (_) {
+        }
+        if (!key || activeStandaloneInjectKey === key) {
+            activeStandaloneInjectKey = null;
+        }
+    }
+
     function isInjectStarted(taskKey) {
         const key = String(taskKey || '').trim();
         if (!key) return activeStandaloneInjectKey !== null;
@@ -337,6 +348,30 @@
         } catch (_) {
             return false;
         }
+    }
+
+    /**
+     * Never raw window.close() — pooled GPT/GEM popups get reused, and a deferred
+     * close from a prior run would kill the next task (prompt/images never arrive).
+     */
+    function scheduleSafeAiPopupClose(delayMs = 8000) {
+        const wait = Math.max(0, Number(delayMs) || 0);
+        setTimeout(() => {
+            try {
+                chrome.runtime.sendMessage({
+                    action: 'REQUEST_CLOSE_AI_IMAGE_POPUP',
+                    reason: 'generation_complete'
+                }, (res) => {
+                    if (chrome.runtime.lastError) return;
+                    if (res?.closed) {
+                        console.log('NHP: AI popup closed after generation (background approved).');
+                    } else {
+                        console.log('NHP: AI popup kept open:', res?.reason || 'pool_or_busy');
+                    }
+                });
+            } catch (_) {
+            }
+        }, wait);
     }
 
     function countComposerImageAttachments() {
@@ -2274,14 +2309,7 @@
         const injectTaskKey = resolveAiTaskKey(task);
         const isStandaloneImageTask = !!(task?.base64Image && task.base64Image !== 'null' && !task?.sessionId);
         const fastImageSend = task?.fastImageSend === true || isStandaloneImageTask;
-        if (isStandaloneImageTask) {
-            if (!tryMarkInjectStarted(injectTaskKey)) {
-                console.warn('NHP: Blocked duplicate inject for task', injectTaskKey || '(legacy)');
-                isTaskRunning = false;
-                return;
-            }
-            clearLegacyAutoInjectionKeys();
-        }
+        let markedInjectStarted = false;
         const chatRefreshEvery = Math.max(
             1,
             Number(task?.chatRefreshEvery || pendingTaskFromBridge?.chatRefreshEvery || SEO_BATCH_CHAT_REFRESH_EVERY_DEFAULT)
@@ -2334,10 +2362,22 @@
                     fastImageSend
                 });
                 if (!workspaceReady) {
+                    // Fresh navigation reloads the tab — must NOT leave inject-started set,
+                    // or the reloaded page skips prompt/image delivery forever.
                     console.log('NHP: Fresh chat navigation in progress — inject deferred.');
+                    clearInjectStarted(injectTaskKey);
                     isTaskRunning = false;
                     return;
                 }
+            }
+            if (isStandaloneImageTask) {
+                if (!tryMarkInjectStarted(injectTaskKey)) {
+                    console.warn('NHP: Blocked duplicate inject for task', injectTaskKey || '(legacy)');
+                    isTaskRunning = false;
+                    return;
+                }
+                markedInjectStarted = true;
+                clearLegacyAutoInjectionKeys();
             }
             console.log("NHP: AI workspace is ready.");
             await acceptAiUploadDialogs(fastImageSend ? 1000 : 4000);
@@ -2439,6 +2479,7 @@
         } catch (error) {
             updateProgress("Automation Error! Check console.", 0);
             console.error("NHP: Automation failed -", error);
+            if (markedInjectStarted) clearInjectStarted(injectTaskKey);
             setAiInjectionStatus({
                 taskId: task?.taskId || task?.requestId || null,
                 stage: 'injection_failed',
@@ -2642,7 +2683,7 @@
                 isTaskRunning = false;
                 finishImageCapture();
                 updateProgress("Success! Designing sent to Studio.", 100);
-                setTimeout(() => window.close(), 15000);
+                scheduleSafeAiPopupClose(15000);
             }
         });
 
@@ -2667,7 +2708,7 @@
                     isTaskRunning = false;
                     finishImageCapture();
                     updateProgress("Capture Complete!", 100);
-                    setTimeout(() => window.close(), 10000);
+                    scheduleSafeAiPopupClose(10000);
                     return;
                 }
 
@@ -2683,7 +2724,7 @@
                     observer.disconnect();
                     isTaskRunning = false;
                     finishImageCapture();
-                    setTimeout(() => window.close(), 5000);
+                    scheduleSafeAiPopupClose(5000);
                     return;
                 }
             }
