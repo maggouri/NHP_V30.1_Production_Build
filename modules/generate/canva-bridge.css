@@ -788,7 +788,8 @@
   background: rgba(74, 222, 128, 0.1);
 }
 
-.canva-bridge-lib-btn-audit.is-running {
+.canva-bridge-lib-btn-audit.is-running,
+.canva-bridge-lib-btn-site-fetch.is-running {
   opacity: 0.65;
   pointer-events: none;
 }

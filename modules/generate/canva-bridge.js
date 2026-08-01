@@ -496,6 +496,7 @@ function canvaEls() {
     libAuditStatus: document.getElementById('canva-bridge-lib-audit-status'),
     libSelectBroken: document.getElementById('canva-bridge-lib-select-broken'),
     libReconcileBtn: document.getElementById('canva-bridge-lib-reconcile-btn'),
+    libFetchSiteBtn: document.getElementById('canva-bridge-lib-fetch-site'),
     libSelectVisible: document.getElementById('canva-bridge-lib-select-visible'),
     libSelectAll: document.getElementById('canva-bridge-lib-select-all'),
     libDeselectAll: document.getElementById('canva-bridge-lib-deselect-all'),
@@ -1434,6 +1435,107 @@ async function canvaReconcileLibraryIndex() {
   } finally {
     canvaLibraryAuditBusy = false;
     canvaUpdateLibraryAuditBadge();
+    canvaUpdateLibraryToolbar();
+  }
+}
+
+const CANVA_SITE_FETCH_OFFLINE_AR =
+  'إضافة NHP / Ghost غير متصل — أعد تحميل الإضافة unpacked ثم تأكد أن Ghost :3019 يعمل.';
+const CANVA_SITE_FETCH_OFFLINE_EN =
+  'Desktop NHP Ext / Ghost not connected — reload unpacked Ext, then ensure Ghost :3019 is running.';
+
+let canvaSiteFetchBusy = false;
+
+async function canvaProbeGhostLibraryHealth(timeoutMs = 2500) {
+  const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = setTimeout(() => {
+    try { ctrl?.abort(); } catch { /* ignore */ }
+  }, timeoutMs);
+  try {
+    const res = await fetch(canvaHelpers.ghostUrl('/api/library'), {
+      method: 'GET',
+      signal: ctrl?.signal,
+    });
+    if (!res.ok) {
+      return { ok: false, reason: 'ghost_http', status: res.status };
+    }
+    return { ok: true };
+  } catch (err) {
+    const msg = String(err?.message || err || '');
+    if (/abort/i.test(msg)) return { ok: false, reason: 'ghost_timeout' };
+    return { ok: false, reason: 'ghost_down', error: msg };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function canvaSiteFetchOfflineToast(result) {
+  const code = String(result?.code || result?.reason || result?.error || '');
+  if (/auth|login|credentials|not_authenticated|سجّل/i.test(code)) {
+    return 'سجّل الدخول بنفس الحساب في الموقع والإضافة (مركز الإدارة → التكاملات)';
+  }
+  if (/ghost|3019|unreachable|timeout|offline|Failed to fetch|NetworkError/i.test(code)) {
+    return `${CANVA_SITE_FETCH_OFFLINE_AR} / ${CANVA_SITE_FETCH_OFFLINE_EN}`;
+  }
+  return result?.error || CANVA_SITE_FETCH_OFFLINE_EN;
+}
+
+async function canvaFetchFromSiteLibrary() {
+  if (canvaSiteFetchBusy || canvaLibraryAuditBusy || canvaState.busy) return;
+  canvaSiteFetchBusy = true;
+  const { libFetchSiteBtn } = canvaEls();
+  if (libFetchSiteBtn) {
+    libFetchSiteBtn.disabled = true;
+    libFetchSiteBtn.classList.add('is-running');
+  }
+  canvaSetMsg('جاري جلب التصاميم من مكتبة الموقع…', 'info');
+  canvaHelpers.showToast?.('☁️ جلب من مكتبة الموقع…');
+
+  try {
+    const ghost = await canvaProbeGhostLibraryHealth(2500);
+    if (!ghost.ok) {
+      const toast = canvaSiteFetchOfflineToast(ghost);
+      canvaSetMsg(toast, 'error');
+      canvaHelpers.showToast?.(`⚠️ ${toast}`);
+      return;
+    }
+
+    const response = await chrome.runtime.sendMessage({
+      action: 'EMAILCORE_FETCH_SITE_LIBRARY',
+      source: 'canva_bridge',
+    });
+
+    if (!response || response.ok === false || response.success === false) {
+      const toast = canvaSiteFetchOfflineToast(response || { reason: 'no_response' });
+      canvaSetMsg(toast, 'error');
+      canvaHelpers.showToast?.(`⚠️ ${toast}`);
+      return;
+    }
+
+    if (typeof canvaHelpers.fetchLibrary === 'function') {
+      await canvaHelpers.fetchLibrary();
+    }
+    canvaRenderLibrary({ force: true });
+
+    const imported = Number(response.imported) || 0;
+    const skipped = Number(response.skipped) || 0;
+    const failed = Number(response.failed) || 0;
+    const listed = Number(response.listed) || 0;
+    const summaryAr = `تم الجلب: ${imported} جديد، ${skipped} مكرر/تخطي، ${failed} فشل (من ${listed} في الموقع)`;
+    const summaryEn = `Fetched: ${imported} new, ${skipped} skipped, ${failed} failed (of ${listed} listed)`;
+    const level = failed && !imported ? 'error' : (failed || skipped === listed ? 'warn' : 'success');
+    canvaSetMsg(`${summaryAr} — ${summaryEn}`, level);
+    canvaHelpers.showToast?.(imported || failed ? (level === 'error' ? `⚠️ ${summaryAr}` : `✅ ${summaryAr}`) : `ℹ️ ${summaryAr}`);
+  } catch (err) {
+    const toast = canvaSiteFetchOfflineToast({ error: err?.message || String(err) });
+    canvaSetMsg(toast, 'error');
+    canvaHelpers.showToast?.(`⚠️ ${toast}`);
+  } finally {
+    canvaSiteFetchBusy = false;
+    if (libFetchSiteBtn) {
+      libFetchSiteBtn.disabled = false;
+      libFetchSiteBtn.classList.remove('is-running');
+    }
     canvaUpdateLibraryToolbar();
   }
 }
@@ -5814,6 +5916,7 @@ function canvaBindEvents() {
   els.libAuditBtn?.addEventListener('click', () => void canvaRunLibraryAudit());
   els.libSelectBroken?.addEventListener('click', () => canvaSelectBrokenLibrary());
   els.libReconcileBtn?.addEventListener('click', () => void canvaReconcileLibraryIndex());
+  els.libFetchSiteBtn?.addEventListener('click', () => void canvaFetchFromSiteLibrary());
   els.libFileInput?.addEventListener('change', () => {
     const files = els.libFileInput?.files;
     if (files?.length) void canvaUploadLibraryFiles(files);

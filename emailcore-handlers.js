@@ -2072,6 +2072,29 @@
             return true;
         }
 
+        if (action === 'EMAILCORE_FETCH_SITE_LIBRARY') {
+            (async () => {
+                try {
+                    const result = await fetchSiteGeneratedLibrary();
+                    sendResponse({ success: !!result?.ok, ok: !!result?.ok, ...result });
+                } catch (err) {
+                    const msg = err?.message || String(err);
+                    const code = /Ghost|3019|unreachable/i.test(msg)
+                        ? 'ghost_down'
+                        : (/سجّل|auth|login|credentials|not_authenticated/i.test(msg)
+                            ? 'auth_required'
+                            : 'fetch_failed');
+                    sendResponse({
+                        success: false,
+                        ok: false,
+                        code,
+                        error: msg,
+                    });
+                }
+            })();
+            return true;
+        }
+
         if (
             action === 'EMAILCORE_DESIGN_LIBRARY_IMPORT_FINAL'
             || action === 'design_library.import_final'
@@ -3018,6 +3041,88 @@
                 }
             }
             return stats;
+        } finally {
+            await chrome.storage.local.set({ [EMAILCORE_LIVE_SYNC_BUSY]: false });
+        }
+    }
+
+    /**
+     * User-initiated pull: site Generated designs library → local Ghost library.
+     * Uses authenticated GET /api/extension/designs/generated?manual=1 (bypasses Live Sync empty gate).
+     * Reuses Live Sync import + dedupe; does not wipe existing local items.
+     */
+    async function fetchSiteGeneratedLibrary() {
+        // Ghost health first — same dependency as Live Sync / NHP40 import path.
+        try {
+            const ghostRes = await fetch(EMAILCORE_GHOST_LIBRARY_URL, { method: 'GET' });
+            if (!ghostRes.ok) {
+                throw new Error(`Ghost library HTTP ${ghostRes.status} (127.0.0.1:3019)`);
+            }
+        } catch (err) {
+            const msg = err?.message || String(err);
+            throw new Error(
+                /Failed to fetch|NetworkError|unreachable|3019/i.test(msg)
+                    ? 'Ghost :3019 is not reachable — start TeePublic Ghost (START_NHP_PORTABLE), then retry'
+                    : msg
+            );
+        }
+
+        const flags = await chrome.storage.local.get([EMAILCORE_LIVE_SYNC_BUSY]);
+        if (flags[EMAILCORE_LIVE_SYNC_BUSY] === true) {
+            await new Promise((r) => setTimeout(r, 800));
+        }
+
+        const creds = await resolveExtensionBoundCreds('site_library_pull');
+        if (!creds) {
+            throw new Error('سجّل الدخول بنفس الحساب في الموقع والإضافة (مركز الإدارة → التكاملات)');
+        }
+
+        await chrome.storage.local.set({ [EMAILCORE_LIVE_SYNC_BUSY]: true });
+        const auth = {
+            apiBase: creds.apiBase,
+            userId: creds.userId,
+            token: creds.token,
+            sessionToken: creds.sessionToken,
+            headers: creds.headers,
+        };
+        try {
+            const listUrl = new URL(`${creds.apiBase}/api/extension/designs/generated`);
+            listUrl.searchParams.set('userId', creds.userId);
+            listUrl.searchParams.set('limit', '200');
+            listUrl.searchParams.set('manual', '1');
+            const listRes = await fetch(listUrl, { headers: creds.headers });
+            const listData = await listRes.json().catch(() => ({}));
+            if (!listRes.ok) {
+                if (/404|not found/i.test(String(listData?.error || listRes.status))) {
+                    throw new Error('Site generated-library endpoint missing — deploy EmailCore, then retry');
+                }
+                throw new Error(listData?.error || `site library list HTTP ${listRes.status}`);
+            }
+
+            const designs = Array.isArray(listData?.designs) ? listData.designs : [];
+            const dismissedStore = await chrome.storage.local.get([EMAILCORE_LIVE_SYNC_DISMISSED_KEY]);
+            const dismissed = new Set(
+                (Array.isArray(dismissedStore[EMAILCORE_LIVE_SYNC_DISMISSED_KEY])
+                    ? dismissedStore[EMAILCORE_LIVE_SYNC_DISMISSED_KEY]
+                    : []).map((id) => String(id || '').trim()).filter(Boolean)
+            );
+
+            const stats = await importDesignsToGhostLibrary(designs, auth, { dismissed });
+            const meta = {
+                lastRunAt: new Date().toISOString(),
+                source: 'canva_bridge_site_fetch',
+                ...stats,
+                listed: designs.length,
+            };
+            await chrome.storage.local.set({ [EMAILCORE_LIVE_SYNC_META_KEY]: meta });
+            if (stats.imported > 0) {
+                try {
+                    chrome.runtime.sendMessage({ action: 'GENERATE_LIBRARY_REFRESH', source: 'site-library-fetch' });
+                } catch {
+                    /* ignore */
+                }
+            }
+            return { ok: true, ...stats, listed: designs.length };
         } finally {
             await chrome.storage.local.set({ [EMAILCORE_LIVE_SYNC_BUSY]: false });
         }
