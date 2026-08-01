@@ -6,6 +6,24 @@
 (function initCreatySessionCard() {
     'use strict';
 
+    // EmailCore / nocochat admin already uses emailcore-bridge.js — skip CREATY card
+    // so idle chrome.runtime.sendMessage does not spam "Receiving end does not exist".
+    {
+        const host = String(location.hostname || '').toLowerCase();
+        const path = String(location.pathname || '/');
+        const isAdminHost =
+            host === 'nocochat.com'
+            || host.endsWith('.nocochat.com')
+            || host === 'emailcore.app'
+            || host.endsWith('.emailcore.app')
+            || host.endsWith('.onrender.com')
+            || host === 'localhost'
+            || host === '127.0.0.1';
+        if (isAdminHost && (path === '/admin' || path.startsWith('/admin/'))) {
+            return;
+        }
+    }
+
     const STORAGE_KEY = 'nhp_session_info';
     const MINIMIZED_KEY = 'nhp_session_card_minimized';
     const POSITION_KEY = 'nhp_session_card_position';
@@ -1053,33 +1071,61 @@
     let loggedNoActiveSession = false;
 
     function queryActiveSessionFromServer() {
-        chrome.runtime.sendMessage({ action: 'CREATY_GET_ACTIVE_SESSION_CARD' }, (response) => {
-            if (response && response.success && response.session) {
-                loggedNoActiveSession = false;
-                const data = response.session;
-                chrome.storage.local.set({ [STORAGE_KEY]: data }, () => {
-                    sessionInfo = data;
-                    
-                    // Request store details dynamically from the background script
-                    chrome.runtime.sendMessage({
-                        action: 'CREATY_LOAD_STORE_PROFILE',
-                        email: data.email
-                    }, (profileRes) => {
-                        if (profileRes && profileRes.success && profileRes.profile) {
-                            sessionInfo.storeProfile = profileRes.profile;
-                            chrome.storage.local.set({ [STORAGE_KEY]: sessionInfo }, () => {
-                                loadSessionAndRender();
+        try {
+            const maybePromise = chrome.runtime.sendMessage({ action: 'CREATY_GET_ACTIVE_SESSION_CARD' }, (response) => {
+                if (chrome.runtime.lastError) {
+                    if (!loggedNoActiveSession) {
+                        loggedNoActiveSession = true;
+                        console.debug('[CREATY-CARD]', chrome.runtime.lastError.message || 'extension unreachable');
+                    }
+                    return;
+                }
+                if (response && response.success && response.session) {
+                    loggedNoActiveSession = false;
+                    const data = response.session;
+                    chrome.storage.local.set({ [STORAGE_KEY]: data }, () => {
+                        sessionInfo = data;
+
+                        // Request store details dynamically from the background script
+                        try {
+                            const profilePromise = chrome.runtime.sendMessage({
+                                action: 'CREATY_LOAD_STORE_PROFILE',
+                                email: data.email
+                            }, (profileRes) => {
+                                if (chrome.runtime.lastError) {
+                                    loadSessionAndRender();
+                                    return;
+                                }
+                                if (profileRes && profileRes.success && profileRes.profile) {
+                                    sessionInfo.storeProfile = profileRes.profile;
+                                    chrome.storage.local.set({ [STORAGE_KEY]: sessionInfo }, () => {
+                                        loadSessionAndRender();
+                                    });
+                                } else {
+                                    loadSessionAndRender();
+                                }
                             });
-                        } else {
+                            if (profilePromise && typeof profilePromise.then === 'function') {
+                                profilePromise.then(() => {}).catch(() => {});
+                            }
+                        } catch (_) {
                             loadSessionAndRender();
                         }
                     });
-                });
-            } else if (!loggedNoActiveSession) {
-                loggedNoActiveSession = true;
-                console.debug('[CREATY-CARD] No active CREATY session (extension not connected)');
+                } else if (!loggedNoActiveSession) {
+                    loggedNoActiveSession = true;
+                    console.debug('[CREATY-CARD] No active CREATY session (extension not connected)');
+                }
+            });
+            if (maybePromise && typeof maybePromise.then === 'function') {
+                maybePromise.then(() => {}).catch(() => {});
             }
-        });
+        } catch (_) {
+            if (!loggedNoActiveSession) {
+                loggedNoActiveSession = true;
+                console.debug('[CREATY-CARD] Extension runtime unavailable');
+            }
+        }
     }
 
     // Set up handshake listeners for page context (Fallback)

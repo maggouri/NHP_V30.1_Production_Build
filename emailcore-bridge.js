@@ -24,11 +24,33 @@
 
     const ADMIN_SOURCE = 'emailcore-admin';
     const EXT_SOURCE = 'emailcore-extension';
-    const BRIDGE_VERSION = '1.3.1';
+    const BRIDGE_VERSION = '1.3.2';
 
     const ACTION_ALIASES = {
         NHP_SEND_TO_PROMPT_BAG: 'RADAR_SEND_TO_PROMPT_BAG',
     };
+
+    /** SW asleep / reloaded / no onMessage listener — common MV3 transient. */
+    function isReceivingEndError(msg) {
+        return /Receiving end does not exist|Could not establish connection|Extension context invalidated/i.test(
+            String(msg || '')
+        );
+    }
+
+    function sleepMs(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    /**
+     * chrome.runtime.sendMessage(msg, cb) ALSO returns a Promise in modern Chrome.
+     * When the SW has no listener that Promise rejects with "Receiving end does not exist"
+     * even if the callback handled lastError — swallow it to stop admin console spam.
+     */
+    function observeSendMessagePromise(maybePromise) {
+        if (maybePromise && typeof maybePromise.then === 'function') {
+            maybePromise.then(() => {}).catch(() => {});
+        }
+    }
 
     function isAdminHost() {
         const host = String(location.hostname || '').toLowerCase();
@@ -194,7 +216,7 @@
         return { ...payload, items: hydrated };
     }
 
-    function forwardToBackground(action, data) {
+    function sendRuntimeMessageOnce(action, data) {
         return new Promise((resolve) => {
             if (!isExtensionContextAlive()) {
                 markExtensionStale('context_invalidated');
@@ -206,34 +228,45 @@
                 return;
             }
             try {
-                chrome.runtime.sendMessage({ action, ...data }, (response) => {
+                const maybePromise = chrome.runtime.sendMessage({ action, ...data }, (response) => {
                     const err = chrome.runtime.lastError;
                     if (err) {
                         const msg = err.message || 'Extension unreachable';
-                        if (/invalidated/i.test(msg)) {
+                        if (isReceivingEndError(msg)) {
                             markExtensionStale(msg);
                         }
                         resolve({
                             success: false,
                             error: msg,
-                            contextInvalidated: /invalidated/i.test(msg),
+                            contextInvalidated: isReceivingEndError(msg),
                         });
                         return;
                     }
                     resolve(response ?? { success: false, error: 'no_response_from_extension' });
                 });
+                observeSendMessagePromise(maybePromise);
             } catch (err) {
                 const msg = err.message || 'Extension unreachable';
-                if (/invalidated/i.test(msg)) {
+                if (isReceivingEndError(msg)) {
                     markExtensionStale(msg);
                 }
                 resolve({
                     success: false,
                     error: msg,
-                    contextInvalidated: /invalidated/i.test(msg),
+                    contextInvalidated: isReceivingEndError(msg),
                 });
             }
         });
+    }
+
+    async function forwardToBackground(action, data) {
+        let result = await sendRuntimeMessageOnce(action, data);
+        // One quick retry: MV3 SW often wakes on the second message after idle.
+        if (result?.success === false && isReceivingEndError(result.error) && isExtensionContextAlive()) {
+            await sleepMs(120);
+            result = await sendRuntimeMessageOnce(action, data);
+        }
+        return result;
     }
 
     window.addEventListener('message', async (event) => {

@@ -274,13 +274,17 @@
   function sendMessage(message) {
     return new Promise((resolve) => {
       try {
-        chrome.runtime.sendMessage(message, (response) => {
+        const maybePromise = chrome.runtime.sendMessage(message, (response) => {
           if (chrome.runtime.lastError) {
             resolve({ success: false, error: chrome.runtime.lastError.message });
             return;
           }
           resolve(response);
         });
+        // MV3: sendMessage also returns a Promise that rejects with Receiving end — swallow it.
+        if (maybePromise && typeof maybePromise.then === 'function') {
+          maybePromise.then(() => {}).catch(() => {});
+        }
       } catch (error) {
         resolve({ success: false, error: error?.message || 'runtime message failed' });
       }
