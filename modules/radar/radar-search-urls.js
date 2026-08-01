@@ -37,7 +37,7 @@ export function buildGoogleAiModeUrl(nicheText, aiTemplate) {
 }
 
 /** Minimum valid TeePublic product thumbnails for Radar image hunt. */
-export const RADAR_TEEPUBLIC_IMAGE_TARGET = 80;
+export const RADAR_TEEPUBLIC_IMAGE_TARGET = 150;
 
 /** Max TeePublic search listing pages when filling image hunt target. */
 export const RADAR_TEEPUBLIC_MAX_LISTING_PAGES = 8;

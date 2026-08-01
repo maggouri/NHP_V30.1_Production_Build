@@ -1699,7 +1699,7 @@ const RADAR_PINTEREST_FETCH_LIMIT = 28;
 const RADAR_PINTEREST_MIN_HYDRATED_THUMB_CHARS = 1800;
 const PINIMG_URL_RE = /https?:\/\/i\.pinimg\.com\/[^"'<>\s\\]+\.(?:jpg|jpeg|png|webp)(?:\?[^"'<>\s\\]*)?/i;
 /** Image hunt: Relevance + Popular + Newest consensus (triple-sort), then fill. */
-const RADAR_TEEPUBLIC_IMAGE_TARGET = 80;
+const RADAR_TEEPUBLIC_IMAGE_TARGET = 150;
 const RADAR_TEEPUBLIC_MAX_LISTING_PAGES = 8;
 const RADAR_TEEPUBLIC_TRIPLE_SORTS = ['relevance', 'popular', 'newest'];
 const RADAR_TEEPUBLIC_TRIPLE_TOP_N = 36;
@@ -1756,7 +1756,7 @@ function buildRadarSearchUrlForSource(sourceKey, niche, aiTemplate, pageOpts = {
         const startVal = Number.isFinite(start) && start >= 0
             ? start
             : pageIdx * RADAR_GOOGLE_IMAGES_RESULTS_PER_PAGE;
-        // Marketplace / all-time: drop tbs=qdr:d so Design Images can fill toward ~80.
+        // Marketplace / all-time: drop tbs=qdr:d so Design Images can fill toward ~150.
         const recentOnly = pageOpts.recentOnly !== false && !pageOpts.allTime;
         const base = recentOnly
             ? `https://www.google.com/search?tbm=isch&q=${enc}&tbs=qdr:d`
@@ -3070,7 +3070,7 @@ async function radarFetchSourceImagesBatch(niche, mode = 'aggregator', options =
     const requestId = options.requestId;
     const query = normalizeRadarNicheQuery(niche);
     if (!query) throw new Error('ÏúÏ»Ï«┘ä ┘å┘èÏ┤Ïº┘ï ┘ä┘äÏ¿Ï¡Ï½ Ï╣┘å Ïº┘äÏÁ┘êÏ▒.');
-    const batchLimit = Math.min(Math.max(1, Number(options.batchLimit) || 10), 80);
+    const batchLimit = Math.min(Math.max(1, Number(options.batchLimit) || 10), 150);
     const urlOnly = options.urlOnly === true || options.hydrateThumbs === false;
     const seenIncoming = new Set(
         (Array.isArray(options.seenUrls) ? options.seenUrls : [])
@@ -3151,8 +3151,14 @@ async function radarFetchSourceImagesBatch(niche, mode = 'aggregator', options =
             const isFirstWave = pageNum <= 1 && pageOffset === 0 && !sc.tripleSortDone;
 
             if (isFirstWave) {
+                const huntTarget = Math.max(1, Number(options.huntTarget) || 0);
+                const tpTarget = Math.max(
+                    perSourceSlice * 4,
+                    RADAR_TEEPUBLIC_TRIPLE_TOP_N,
+                    huntTarget > 0 ? Math.min(huntTarget, RADAR_TEEPUBLIC_IMAGE_TARGET) : RADAR_TEEPUBLIC_IMAGE_TARGET
+                );
                 const [localSettled, oracleSettled] = await Promise.allSettled([
-                    fetchRadarTeepublicTripleSortImages(query, Math.max(perSourceSlice * 4, RADAR_TEEPUBLIC_TRIPLE_TOP_N), {
+                    fetchRadarTeepublicTripleSortImages(query, tpTarget, {
                         urlOnly: options.urlOnly === true || options.hydrateThumbs === false,
                         hydrateThumbs: options.hydrateThumbs,
                         topN: RADAR_TEEPUBLIC_TRIPLE_TOP_N
@@ -12020,7 +12026,8 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
                     requestId: req.requestId,
                     skipOracle,
                     urlOnly: req.urlOnly === true,
-                    hydrateThumbs: req.hydrateThumbs
+                    hydrateThumbs: req.hydrateThumbs,
+                    huntTarget: req.huntTarget
                 };
                 // Drop undefined batchLimit so non-batch Note hunts still work.
                 if (batchOpts.batchLimit == null && !req.seenUrls && !req.cursor && req.urlOnly !== true && req.hydrateThumbs !== false) {
