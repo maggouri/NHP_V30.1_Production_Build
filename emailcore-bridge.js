@@ -24,7 +24,7 @@
 
     const ADMIN_SOURCE = 'emailcore-admin';
     const EXT_SOURCE = 'emailcore-extension';
-    const BRIDGE_VERSION = '1.3.3';
+    const BRIDGE_VERSION = '1.3.4';
 
     const ACTION_ALIASES = {
         NHP_SEND_TO_PROMPT_BAG: 'RADAR_SEND_TO_PROMPT_BAG',
@@ -267,12 +267,12 @@
 
     async function forwardToBackground(action, data) {
         let result = await sendRuntimeMessageOnce(action, data);
-        // MV3 SW often wakes after 1–2 idle retries — do not mark bridge stale.
-        for (let attempt = 0; attempt < 3; attempt += 1) {
+        // MV3 SW often wakes after a few idle retries — do not mark bridge stale.
+        for (let attempt = 0; attempt < 5; attempt += 1) {
             if (!(result?.success === false && isReceivingEndError(result.error) && isExtensionContextAlive())) {
                 break;
             }
-            await sleepMs(120 * (attempt + 1));
+            await sleepMs(150 * (attempt + 1));
             result = await sendRuntimeMessageOnce(action, data);
         }
         return result;

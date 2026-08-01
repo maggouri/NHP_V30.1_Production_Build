@@ -1447,7 +1447,10 @@
                     const servicesPaused = pausedStore[EMAILCORE_SERVICES_PAUSED_KEY] === true;
                     let ghostReachable = false;
                     try {
-                        const ghostRes = await fetch(EMAILCORE_GHOST_LIBRARY_URL, { method: 'GET' });
+                        const ghostRes = await fetch(EMAILCORE_GHOST_LIBRARY_URL, {
+                            method: 'GET',
+                            signal: AbortSignal.timeout(1500),
+                        });
                         ghostReachable = ghostRes.ok;
                     } catch {
                         ghostReachable = false;
@@ -1462,7 +1465,7 @@
                         success: true,
                         extensionId: chrome.runtime.id,
                         version: chrome.runtime.getManifest().version,
-                        bridgeVersion: '1.3.3',
+                        bridgeVersion: '1.3.4',
                         automationActive: !!emailcoreAutomationState.active,
                         nativeHost: { ...nativeHostStatus },
                         projectDir: storedDir,
