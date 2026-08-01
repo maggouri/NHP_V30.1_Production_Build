@@ -126,7 +126,7 @@ export const RADAR_IMAGE_SOURCES = Object.freeze({
 
 /**
  * Resolve which image sources to query.
- * - marketplace / design_gallery: TeePublic + Amazon + Redbubble + Etsy + Google Images
+ * - marketplace / design_gallery: TeePublic + Amazon + Redbubble + Etsy + Google Images + Pinterest
  * - aggregator: Note UI default (includes Pinterest + Google AI + marketplaces)
  */
 export function resolveRadarFetchSources(mode) {
@@ -149,7 +149,8 @@ export function resolveRadarFetchSources(mode) {
             'amazon',
             'redbubble',
             'etsy',
-            RADAR_IMAGE_SOURCES.googleImages
+            RADAR_IMAGE_SOURCES.googleImages,
+            RADAR_IMAGE_SOURCES.pinterest,
         ];
     }
     return [

@@ -1864,7 +1864,8 @@ function resolveRadarImageFetchSources(mode) {
     if (key === 'redbubble') return ['redbubble'];
     if (key === 'etsy') return ['etsy'];
     if (isRadarMarketplaceMode(key)) {
-        return ['teepublic', 'amazon', 'redbubble', 'etsy', 'google_images'];
+        // Design Images / Trends Images: include Pinterest (UI filter is always shown).
+        return ['teepublic', 'amazon', 'redbubble', 'etsy', 'google_images', 'pinterest'];
     }
     return ['pinterest', 'google_images', 'google_ai', 'teepublic', 'amazon', 'redbubble', 'etsy'];
 }
@@ -1973,7 +1974,7 @@ function isRejectedGoogleRadarImageCandidate(raw) {
     if (/[?&](?:w|h|width|height)=\d{1,2}(?:&|$)/i.test(lower)) return true;
     if (/\/\d{1,2}x\d{1,2}\//i.test(lower)) return true;
     if (/\.svg(?:\?|$)/i.test(lower)) return true;
-    const isGoogleCdn = /(?:encrypted-tbn0\.gstatic\.com|googleusercontent\.com|gstatic\.com\/images)/i.test(lower);
+    const isGoogleCdn = /(?:encrypted-tbn\d*\.gstatic\.com|googleusercontent\.com|gstatic\.com\/images)/i.test(lower);
     const isRaster = /\.(?:jpg|jpeg|png|webp)(?:\?|$)/i.test(lower);
     return !isGoogleCdn && !isRaster;
 }
@@ -2064,9 +2065,12 @@ function pruneInvalidRadarImageHuntItems(images = [], modeKey = '', urlOnly = fa
                 return isValidTeepublicProductImageUrl(url);
             }
             if (src === 'google_images' || src === 'google_ai') {
+                // Design Images stores remote CDN URLs only — drop inline data: SERP thumbs.
+                if (urlOnly && url.startsWith('data:image/')) return false;
                 return !isRejectedGoogleRadarImageCandidate(url);
             }
             if (src === 'pinterest') {
+                if (urlOnly && url.startsWith('data:image/')) return false;
                 return !isRejectedPinterestRadarImageCandidate(url);
             }
             if (src === 'amazon' || src === 'redbubble' || src === 'etsy') {
@@ -2290,9 +2294,17 @@ function extractEtsyImagesFromHtml(html, pageUrl, limit = RADAR_MARKETPLACE_FETC
     const seen = new Set();
     const text = decodeRadarListingHtml(html);
     const cap = Math.max(1, Math.min(limit, RADAR_MARKETPLACE_FETCH_LIMIT));
-    for (const match of text.matchAll(/https?:\/\/i\.etsystatic\.com\/[^"'<>\s\\]+\.(?:jpg|jpeg|png|webp)(?:\?[^"'<>\s\\]*)?/gi)) {
-        pushMarketplaceRadarImageCandidate(bucket, seen, match[0], 'etsy', pageUrl, cap);
-        if (bucket.length >= cap) return bucket.slice(0, cap);
+    const patterns = [
+        /https?:\/\/i\.etsystatic\.com\/[^"'<>\s\\]+\.(?:jpg|jpeg|png|webp)(?:\?[^"'<>\s\\]*)?/gi,
+        /https?:\/\/[^"'<>\s\\]*etsystatic\.com\/[^"'<>\s\\]+\.(?:jpg|jpeg|png|webp)(?:\?[^"'<>\s\\]*)?/gi,
+        /https?:\\\/\\\/i\.etsystatic\.com\\\/[^"'<>\s\\]+\.(?:jpg|jpeg|png|webp)/gi,
+    ];
+    for (const pattern of patterns) {
+        for (const match of text.matchAll(pattern)) {
+            const raw = String(match[0] || '').replace(/\\\//g, '/');
+            pushMarketplaceRadarImageCandidate(bucket, seen, raw, 'etsy', pageUrl, cap);
+            if (bucket.length >= cap) return bucket.slice(0, cap);
+        }
     }
     return bucket.slice(0, cap);
 }
@@ -2537,7 +2549,7 @@ function extractGoogleImagesFromHtml(html, pageUrl, limit = RADAR_GOOGLE_IMAGES_
     const httpsPatterns = [
         /"ou"\s*:\s*"(https?:[^"\\]+)"/gi,
         /imgurl=([^&"'<>\\]+)/gi,
-        /https?:\/\/encrypted-tbn0\.gstatic\.com\/[^"'<>\s\\]+/gi,
+        /https?:\/\/encrypted-tbn\d*\.gstatic\.com\/[^"'<>\s\\]+/gi,
         /https?:\/\/[^"'<>\s\\]*googleusercontent\.com\/[^"'<>\s\\]+/gi,
         /https?:\/\/[^"'<>\s\\]*gstatic\.com\/images\/[^"'<>\s\\]+/gi
     ];
@@ -3152,11 +3164,14 @@ async function radarFetchSourceImagesBatch(niche, mode = 'aggregator', options =
 
             if (isFirstWave) {
                 const huntTarget = Math.max(1, Number(options.huntTarget) || 0);
-                const tpTarget = Math.max(
-                    perSourceSlice * 4,
-                    RADAR_TEEPUBLIC_TRIPLE_TOP_N,
-                    huntTarget > 0 ? Math.min(huntTarget, RADAR_TEEPUBLIC_IMAGE_TARGET) : RADAR_TEEPUBLIC_IMAGE_TARGET
-                );
+                // Marketplace: keep TeePublic pack sized for fair multi-source merge (not full huntTarget).
+                const tpTarget = marketplaceMode
+                    ? Math.max(perSourceSlice * 3, RADAR_TEEPUBLIC_TRIPLE_TOP_N, 48)
+                    : Math.max(
+                        perSourceSlice * 4,
+                        RADAR_TEEPUBLIC_TRIPLE_TOP_N,
+                        huntTarget > 0 ? Math.min(huntTarget, RADAR_TEEPUBLIC_IMAGE_TARGET) : RADAR_TEEPUBLIC_IMAGE_TARGET
+                    );
                 const [localSettled, oracleSettled] = await Promise.allSettled([
                     fetchRadarTeepublicTripleSortImages(query, tpTarget, {
                         urlOnly: options.urlOnly === true || options.hydrateThumbs === false,
@@ -3318,7 +3333,8 @@ async function radarFetchSourceImagesBatch(niche, mode = 'aggregator', options =
     if (activeSources.length && needMore()) {
         const slices = await Promise.all(activeSources.map((sk) => fetchSourcePageSlice(sk)));
 
-        // TeePublic consensus pack first (triple-sort inspiration), then fair round-robin for other sources.
+        // TeePublic consensus pack first (capped in marketplace so Amazon/Etsy/Google/Pinterest share the batch),
+        // then fair round-robin for remaining queues (including leftover TeePublic).
         const queues = slices.map((slice) => {
             const sc = cursor[slice.sourceKey];
             if (!sc) return { slice, items: [], idx: 0 };
@@ -3336,10 +3352,20 @@ async function radarFetchSourceImagesBatch(niche, mode = 'aggregator', options =
         });
 
         const teepublicQueue = queues.find((q) => q.slice?.sourceKey === 'teepublic');
-        if (teepublicQueue?.items?.length) {
-            while (needMore() && teepublicQueue.idx < teepublicQueue.items.length) {
+        const teepublicPrefill = marketplaceMode
+            ? Math.min(
+                teepublicQueue?.items?.length || 0,
+                Math.max(perSourceSlice, Math.min(Math.ceil(batchLimit * 0.4), batchLimit - Math.max(0, sources.length - 1)))
+            )
+            : (teepublicQueue?.items?.length || 0);
+        if (teepublicQueue?.items?.length && teepublicPrefill > 0) {
+            while (
+                needMore()
+                && teepublicQueue.idx < teepublicPrefill
+                && teepublicQueue.idx < teepublicQueue.items.length
+            ) {
                 if (tryAddItem(teepublicQueue.items[teepublicQueue.idx])) {
-                    /* keep draining consensus pack */
+                    /* keep draining consensus prefill */
                 }
                 teepublicQueue.idx += 1;
                 teepublicQueue.consumed += 1;
@@ -3350,7 +3376,6 @@ async function radarFetchSourceImagesBatch(niche, mode = 'aggregator', options =
         while (needMore() && progressed) {
             progressed = false;
             for (const q of queues) {
-                if (q === teepublicQueue) continue;
                 if (!needMore() || q.idx >= q.items.length) continue;
                 if (tryAddItem(q.items[q.idx])) progressed = true;
                 q.idx += 1;
