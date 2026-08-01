@@ -6861,7 +6861,18 @@ export async function handlePromptBagGenerate(payload = {}) {
   if (payload.mergeMode && generatePendingImages.length >= 2) {
     const composite = await generateBuildMergeCompositeFromPending();
     if (composite?.file) {
-      primary = { file: composite.file, previewUrl: composite.previewUrl, name: composite.file.name };
+      // Replace dual pending thumbs with ONE composite so chat + API are a single unified send.
+      generateClearAllImages();
+      generatePendingImages.push({
+        id: generateMakeAttachId(),
+        file: composite.file,
+        previewUrl: composite.previewUrl,
+        name: composite.file.name || 'merge-reference.jpg',
+        sourceName: composite.file.name || 'merge-reference.jpg',
+      });
+      primary = generatePendingImages[0];
+      generateRenderAttachChips();
+      generateAutoResizeInput();
     }
   }
 

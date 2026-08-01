@@ -29,6 +29,23 @@
     const POSITION_KEY = 'nhp_session_card_position';
     const PROFILE_SYNC_KEY = 'creaty_last_store_profile_update';
 
+    function observeSendMessagePromise(maybePromise) {
+        if (maybePromise && typeof maybePromise.then === 'function') {
+            maybePromise.then(() => {}).catch(() => {});
+        }
+    }
+
+    function sendRuntimeMessage(message, callback) {
+        try {
+            const maybePromise = chrome.runtime.sendMessage(message, (response) => {
+                if (typeof callback === 'function') callback(response);
+            });
+            observeSendMessagePromise(maybePromise);
+        } catch (_) {
+            if (typeof callback === 'function') callback(undefined);
+        }
+    }
+
     let sessionInfo = null;
     let cardElement = null;
     let dragOffset = { x: 0, y: 0 };
@@ -1161,7 +1178,7 @@
         };
 
         if (action === 'load_profile') {
-            chrome.runtime.sendMessage({
+            sendRuntimeMessage({
                 action: 'CREATY_LOAD_STORE_PROFILE',
                 accountEmail: payload.email,
                 email: payload.email,
@@ -1170,7 +1187,7 @@
         }
 
         if (action === 'generate_store') {
-            chrome.runtime.sendMessage({
+            sendRuntimeMessage({
                 action: 'CREATY_GENERATE_STORE',
                 accountEmail: payload.email,
                 email: payload.email,
@@ -1181,7 +1198,7 @@
         }
 
         if (action === 'save_profile') {
-            chrome.runtime.sendMessage({
+            sendRuntimeMessage({
                 action: 'CREATY_SAVE_STORE_PROFILE',
                 accountEmail: payload.email,
                 email: payload.email,
@@ -1199,7 +1216,7 @@
                         [PROFILE_SYNC_KEY]: syncPayload,
                     }, () => {
                         try {
-                            chrome.runtime.sendMessage({
+                            sendRuntimeMessage({
                                 action: 'CREATY_STORE_PROFILE_SAVED',
                                 email: syncPayload.email,
                                 profile: syncPayload.profile,

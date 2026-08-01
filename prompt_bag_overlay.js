@@ -3,6 +3,22 @@
   if (hostName === 'remotedesktop.google.com' || hostName.endsWith('.remotedesktop.google.com')) {
     return;
   }
+  // EmailCore admin uses emailcore-bridge.js — skip Prompt Bag overlay so idle
+  // chrome.runtime.sendMessage does not spam "Receiving end does not exist".
+  {
+    const path = String(location.pathname || '/');
+    const isAdminHost =
+      hostName === 'nocochat.com'
+      || hostName.endsWith('.nocochat.com')
+      || hostName === 'emailcore.app'
+      || hostName.endsWith('.emailcore.app')
+      || hostName.endsWith('.onrender.com')
+      || hostName === 'localhost'
+      || hostName === '127.0.0.1';
+    if (isAdminHost && (path === '/admin' || path.startsWith('/admin/'))) {
+      return;
+    }
+  }
   if (window.__NHP_PROMPT_BAG_OVERLAY__) return;
   window.__NHP_PROMPT_BAG_OVERLAY__ = true;
 

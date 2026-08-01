@@ -3,7 +3,7 @@
   "default_locale": "en",
   "name": "__MSG_extName__",
   "short_name": "Niche Hunter Pro",
-  "version": "40.0.33",
+  "version": "40.0.34",
   "description": "__MSG_extDescription__",
   "icons": {
     "16": "icons/icon16.png",
@@ -178,6 +178,16 @@
         "https://teepublic.com/*",
         "*://*.teepublic.com/*"
       ],
+      "exclude_matches": [
+        "https://emailcore.app/admin",
+        "https://emailcore.app/admin/*",
+        "https://*.emailcore.app/admin",
+        "https://*.emailcore.app/admin/*",
+        "https://nocochat.com/admin",
+        "https://nocochat.com/admin/*",
+        "https://*.nocochat.com/admin",
+        "https://*.nocochat.com/admin/*"
+      ],
       "js": [
         "content_script.js",
         "creaty-field-watch-overlay.js",
@@ -203,7 +213,17 @@
       ],
       "exclude_matches": [
         "https://remotedesktop.google.com/*",
-        "https://*.remotedesktop.google.com/*"
+        "https://*.remotedesktop.google.com/*",
+        "https://emailcore.app/admin",
+        "https://emailcore.app/admin/*",
+        "https://*.emailcore.app/admin",
+        "https://*.emailcore.app/admin/*",
+        "https://nocochat.com/admin",
+        "https://nocochat.com/admin/*",
+        "https://*.nocochat.com/admin",
+        "https://*.nocochat.com/admin/*",
+        "https://www.nocochat.com/admin",
+        "https://www.nocochat.com/admin/*"
       ],
       "js": [
         "prompt_bag_image_prompts.js",
